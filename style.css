@@ -1,0 +1,6 @@
+body { font-family: 'Kanit', sans-serif; background-color: #f0f2f5; padding: 20px; text-align: center; }
+.admin-box { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); display: inline-block; }
+input { padding: 10px; border-radius: 5px; border: 1px solid #ddd; margin: 5px; }
+button { padding: 10px 20px; background-color: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer; }
+button:hover { background-color: #218838; }
+.queue-card { background: #fff; margin: 10px auto; padding: 15px; width: 80%; border-left: 5px solid #007bff; border-radius: 8px; shadow: 0 2px 4px rgba(0,0,0,0.05); }
