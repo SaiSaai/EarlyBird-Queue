@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin - จัดการคิวแบด</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1>ระบบจัดการคิว (Admin)</h1>
+    
+    <div class="admin-box">
+        <h3>เพิ่มคู่แข่งขัน</h3>
+        <input type="text" id="pairA" placeholder="ทีม A (เช่น เอ/บี)"> VS 
+        <input type="text" id="pairB" placeholder="ทีม B (เช่น ซี/ดี)">
+        <button id="addBtn">เพิ่มเข้าสู่คิว</button>
+    </div>
+
+    <hr>
+    <div id="admin-queue-list"></div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, onSnapshot, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+             apiKey: "AIzaSyDQbnx83sbs1sO4xsuLUV50uxbBinr2VtY",
+            authDomain: "earlybird-queue.firebaseapp.com",
+            projectId: "earlybird-queue",
+            storageBucket: "earlybird-queue.firebasestorage.app",
+            messagingSenderId: "310694006567",
+            appId: "1:310694006567:web:f56fc19ed03b81bf8c2302",
+            measurementId: "G-CHJP8C4V5S"
+        };
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // ฟังก์ชันเพิ่มข้อมูล
+        document.getElementById('addBtn').onclick = async () => {
+            const pA = document.getElementById('pairA').value;
+            const pB = document.getElementById('pairB').value;
+            if(pA && pB) {
+                await addDoc(collection(db, "queues"), {
+                    pairA: pA,
+                    pairB: pB,
+                    status: "รอแข่ง",
+                    timestamp: Date.now()
+                });
+                alert("เพิ่มคิวสำเร็จ!");
+            }
+        };
+
+        // แสดงรายการคิวในหน้า Admin (เพื่อให้กดลบหรือจัดการได้)
+        onSnapshot(collection(db, "queues"), (snapshot) => {
+            const list = document.getElementById('admin-queue-list');
+            list.innerHTML = "<h3>รายการคิวปัจจุบัน</h3>";
+            snapshot.forEach(res => {
+                const data = res.data();
+                list.innerHTML += `
+                    <p>
+                        ${data.pairA} vs ${data.pairB} [${data.status}]
+                        <button onclick="deleteQueue('${res.id}')">ลบ</button>
+                    </p>`;
+            });
+        });
+        
+        // ฟังก์ชันลบคิว (ทำให้เรียกใช้จากปุ่มได้)
+        window.deleteQueue = async (id) => {
+            await deleteDoc(doc(db, "queues", id));
+        };
+    </script>
+</body>
+</html>

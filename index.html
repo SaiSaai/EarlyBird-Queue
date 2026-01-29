@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>คิวแบดมินตัน</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1>คิวแข่งวันนี้</h1>
+    <div id="queue-list"></div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
+        import { getFirestore, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-analytics.js";
+
+        const firebaseConfig = { 
+             apiKey: "AIzaSyDQbnx83sbs1sO4xsuLUV50uxbBinr2VtY",
+            authDomain: "earlybird-queue.firebaseapp.com",
+            projectId: "earlybird-queue",
+            storageBucket: "earlybird-queue.firebasestorage.app",
+            messagingSenderId: "310694006567",
+            appId: "1:310694006567:web:f56fc19ed03b81bf8c2302",
+            measurementId: "G-CHJP8C4V5S"
+        };
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // ดึงข้อมูลคิวแบบ Real-time
+        onSnapshot(collection(db, "queues"), (snapshot) => {
+            const list = document.getElementById('queue-list');
+            list.innerHTML = "";
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                list.innerHTML += `<p>${data.pairA} vs ${data.pairB} - สถานะ: ${data.status}</p>`;
+            });
+        });
+    </script>
+</body>
+</html>
