@@ -93,28 +93,56 @@
             document.getElementById('confirmBtn').innerText = `ยืนยันลงสนาม (${selectedPlayers.length})`;
         }
 
-        document.getElementById('confirmBtn').onclick = () => {
-            if (selectedPlayers.length === 0) return;
-            const emptyCourt = Array.from(document.querySelectorAll('.court-card')).find(c => c.querySelectorAll('.occupied').length === 0);
-            
-            if (emptyCourt) fillCourt(emptyCourt, [...selectedPlayers]);
-            else addToQueue([...selectedPlayers]);
+// --- แก้ไขส่วนยืนยันลงสนาม ---
+       document.getElementById('confirmBtn').onclick = () => {
+    if (selectedPlayers.length === 0) return;
+    
+    // หาเลขสนามที่ว่าง (เช็คว่าไม่มีคนที่มีคลาส occupied)
+    const emptyCourt = Array.from(document.querySelectorAll('.court-card')).find(c => {
+        return c.querySelectorAll('.occupied').length === 0;
+    });
 
-            selectedPlayers = [];
-            updateSelectionUI();
-        };
+    if (emptyCourt) {
+        // ส่งคนตามจำนวนที่เลือกจริง (ไม่จำเป็นต้องครบ 4 ก็ไม่ Error)
+        fillCourt(emptyCourt, [...selectedPlayers]);
+    } else {
+        addToQueue([...selectedPlayers]);
+    }
+
+    // ล้างรายชื่อที่เลือกออกจากหน้าจอ Waiting List
+    const selectedElements = document.querySelectorAll('.player-item.sel-team-a, .player-item.sel-team-b');
+    selectedElements.forEach(el => el.remove());
+
+    // รีเซ็ตค่าตัวแปร
+    selectedPlayers = [];
+    updateSelectionUI();
+};
 
         // --- 2. Fill Court & Queue ---
         function fillCourt(courtEl, players) {
-            const slotsA = courtEl.querySelectorAll('.team-a .slot');
-            const slotsB = courtEl.querySelectorAll('.team-b .slot');
-            players.forEach((name, i) => {
-                const target = (i < 2) ? slotsA[i] : slotsB[i-2];
-                target.innerText = name;
-                target.classList.add('occupied');
-            });
-            courtEl.classList.add('playing');
+    const slotsA = courtEl.querySelectorAll('.team-box:first-of-type .slot'); // ทีม A
+    const slotsB = courtEl.querySelectorAll('.team-box:last-of-type .slot');  // ทีม B
+    
+    players.forEach((name, i) => {
+        let targetSlot;
+        if (i < 2) {
+            targetSlot = slotsA[i];
+        } else {
+            targetSlot = slotsB[i - 2];
         }
+
+        // เช็คก่อนว่ามีช่องรองรับไหม (ป้องกัน Error property of undefined)
+        if (targetSlot) {
+            targetSlot.innerText = name;
+            targetSlot.classList.add('occupied');
+        }
+    });
+    
+    // ถ้ามีคนลงสนามอย่างน้อย 1 คน ให้เปลี่ยนสถานะเป็นกำลังแข่ง
+    if (players.length > 0) {
+        courtEl.classList.add('playing');
+    }
+}
 
         function addToQueue(players) {
             const queueList = document.getElementById('queue-list');
