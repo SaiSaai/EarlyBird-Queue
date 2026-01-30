@@ -3,6 +3,7 @@
 <head>
     <title>คิวแบดมินตัน</title>
     <link rel="stylesheet" href="style.css">
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 </head>
 <body>
     <h1>คิวแข่งวันนี้</h1>
@@ -33,6 +34,36 @@
                 list.innerHTML += `<p>${data.pairA} vs ${data.pairB} - สถานะ: ${data.status}</p>`;
             });
         });
+        async function main() {
+    // 2. สั่งให้ LIFF ทำงาน
+    await liff.init({ liffId: "รหัส-LIFF-ID-ของคุณ" });
+
+    if (!liff.isLoggedIn()) {
+      liff.login(); // ถ้ายังไม่ล็อกอิน ให้เด้งหน้า Login ของ Line
+    } else {
+      const profile = await liff.getProfile();
+      
+      // 3. เอาข้อมูลจาก Line ไปบันทึกลง Firebase (Users Table)
+      const userRef = doc(db, "users", profile.userId);
+      await setDoc(userRef, {
+        line_user_id: profile.userId,
+        display_name: profile.displayName,
+        profile_image_url: profile.pictureUrl,
+        last_seen: Date.now()
+      }, { merge: true });
+
+      console.log("ยินดีต้อนรับคุณ", profile.displayName);
+      
+      // โชว์รูปโปรไฟล์บนหน้าเว็บหน่อย
+      document.getElementById('user-info').innerHTML = `
+        <img src="${profile.pictureUrl}" width="50" style="border-radius:50%">
+        <p>สวัสดีคุณ ${profile.displayName}</p>
+        <button onclick="checkIn()">เข้าก๊วนวันนี้</button>
+      `;
+    }
+  }
+
+  main();
     </script>
 </body>
 </html>
