@@ -2,7 +2,6 @@
 <html>
 <head>
     <title>Admin - จัดการคิวแบด</title>
-    <!--<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>-->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" integrity="sha512-CNgIRecGo7nphbeZ04Sc13ka07paqdeTu0WR1IM4wKauwzSZ9RaHdqujWZt1lYv67giJGxRAvDUqMfG128E3GA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <link rel="stylesheet" href="style.css">
     <style>
@@ -22,11 +21,7 @@
             height: 100vh;
             overflow: hidden;
         }
-        .court-container {
-            flex: 1;
-            padding: 20px;
-            overflow-y: auto;
-        }
+        .court-container { flex: 1; padding: 20px; overflow-y: auto; }
         .side-panel {
             width: 350px;
             background-color: var(--card-bg);
@@ -45,11 +40,7 @@
             background: var(--accent-blue);
             font-size: 0.9em;
         }
-        #qrcode img {
-            margin: 0 auto;
-            border: 10px solid white;
-            border-radius: 10px;
-        }
+        #qrcode img { margin: 0 auto; border: 10px solid white; border-radius: 10px; }
     </style>
 </head>
 <body>
@@ -61,7 +52,7 @@
             + เปิดรอบก๊วนใหม่
         </button>
         <button id="mockUserBtn" style="padding: 12px; border-radius: 10px; border: 1px solid #ccc; background: #eee; cursor: pointer; margin-left: 10px;">
-    🤖 สุ่มคนจำลอง 15 คน
+            🤖 สุ่มคนจำลอง 15 คน
         </button>
 
         <div id="session-qr-area" style="display:none; margin: 20px 0; text-align: center; background: white; padding: 20px; border-radius: 15px;">
@@ -70,8 +61,7 @@
             <p id="session-id-text" style="font-size: 0.8em; color: #888;"></p>
         </div>
 
-        <div id="courts-grid">
-            </div>
+        <div id="courts-grid"></div>
     </div>
 
     <div class="side-panel">
@@ -82,7 +72,6 @@
     </div>
 
     <script type="module">
-        // --- 1. Security Check ---
         const ADMIN_PASSWORD = "mysecretpass"; 
         const urlParams = new URLSearchParams(window.location.search);
         const enteredPass = urlParams.get('pass');
@@ -92,9 +81,9 @@
             window.location.href = "index.html"; 
         }
 
-        // --- 2. Firebase Setup ---
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-firestore.js";
+        // เพิ่ม setDoc ในการ import
+        import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDQbnx83sbs1sO4xsuLUV50uxbBinr2VtY",
@@ -112,12 +101,6 @@
 
         // --- 3. Session Logic ---
         document.getElementById('startSessionBtn').onclick = async () => {
-            /*const sessionRef = await addDoc(collection(db, "sessions"), {
-                session_name: "ก๊วนแบดมินตัน",
-                is_closed: false,
-                created_at: Date.now()
-            });*/
-            // เช็คก่อนว่า QRCode พร้อมใช้งานไหม
             if (typeof QRCode === "undefined") {
                 alert("ระบบสร้าง QR ยังไม่พร้อม กรุณารอ 2-3 วินาทีแล้วกดใหม่ครับ");
                 return;
@@ -133,13 +116,9 @@
             const checkInURL = `https://early-bird-queue.vercel.app/index.html?session=${currentSessionId}`;
             
             document.getElementById('session-qr-area').style.display = 'block';
-            /*document.getElementById('qrcode').innerHTML = ""; 
-            new QRCode(document.getElementById("qrcode"), {
-                text: checkInURL,
-                width: 180,
-                height: 180
-            });*/
-            // เรียกใช้ QRCode
+            const qrcodeContainer = document.getElementById("qrcode");
+            qrcodeContainer.innerHTML = ""; 
+
             new QRCode(qrcodeContainer, {
                 text: checkInURL,
                 width: 180,
@@ -148,39 +127,33 @@
                 colorLight : "#ffffff",
                 correctLevel : QRCode.CorrectLevel.H
             });
-            document.getElementById('session-id-text').innerText = "Session ID: " + currentSessionId;
             
+            document.getElementById('session-id-text').innerText = "Session ID: " + currentSessionId;
             listenToAttendance(currentSessionId);
+        };
 
-            // ฟังก์ชันสร้างคนจำลอง
-            document.getElementById('mockUserBtn').onclick = async () => {
-                if (!currentSessionId) {
-                    alert("กรุณากด 'เปิดรอบก๊วนใหม่' ก่อนสร้างคนจำลองครับ");
-                    return;
-                }
+        // --- ฟังก์ชันสร้างคนจำลอง (ย้ายออกมาข้างนอกเพื่อให้กดได้ตลอด) ---
+        document.getElementById('mockUserBtn').onclick = async () => {
+            if (!currentSessionId) {
+                alert("กรุณากด 'เปิดรอบก๊วนใหม่' ก่อนสร้างคนจำลองครับ");
+                return;
+            }
 
-                const mockNames = [
-                    "พี่เอ็ม", "น้องบี", "เจ๊ดา", "เก่ง", "ตั้ม", 
-                    "ฟ้า", "ปอนด์", "นัท", "แชมป์", "อาร์ม", 
-                    "ปลา", "กิ๊ฟ", "โอม", "นุช", "บอย"
-                ];
+            const mockNames = ["พี่เอ็ม", "น้องบี", "เจ๊ดา", "เก่ง", "ตั้ม", "ฟ้า", "ปอนด์", "นัท", "แชมป์", "อาร์ม", "ปลา", "กิ๊ฟ", "โอม", "นุช", "บอย"];
+            const levels = ["YELLOW", "GREEN", "BLUE", "RED", "BLACK"];
 
-                const levels = ["YELLOW", "GREEN", "BLUE", "RED", "BLACK"];
-
-                for (let i = 0; i < mockNames.length; i++) {
-                    const mockId = "mock_user_" + i;
-                    const attendanceRef = doc(db, `sessions/${currentSessionId}/attendance`, mockId);
-                    
-                    await setDoc(attendanceRef, {
-                        user_id: mockId,
-                        display_name: mockNames[i],
-                        level_color: levels[Math.floor(Math.random() * levels.length)], // สุ่มระดับฝีมือ
-                        check_in_time: Date.now() + (i * 1000), // ให้เวลาห่างกันนิดหน่อยเพื่อทดสอบ FIFO
-                        is_paid: false
-                    });
-                }
-                alert("สร้างคนจำลอง 15 คนสำเร็จแล้ว!");
-            };
+            for (let i = 0; i < mockNames.length; i++) {
+                const mockId = "mock_user_" + i;
+                const attendanceRef = doc(db, `sessions/${currentSessionId}/attendance`, mockId);
+                await setDoc(attendanceRef, {
+                    user_id: mockId,
+                    display_name: mockNames[i],
+                    level_color: levels[Math.floor(Math.random() * levels.length)],
+                    check_in_time: Date.now() + (i * 1000),
+                    is_paid: false
+                });
+            }
+            alert("สร้างคนจำลอง 15 คนสำเร็จแล้ว!");
         };
 
         function listenToAttendance(sessionId) {
@@ -195,17 +168,15 @@
                     listDiv.innerHTML += `
                         <div class="player-tag">
                             <span>${user.display_name}</span>
-                            <button onclick="addToQueue('${user.user_id}', '${user.display_name}')" style="border:none; background:#fff; border-radius:5px; cursor:pointer;">จัดคิว</button>
+                            <button onclick="addToQueue('${user.user_id}', '${user.display_name}')" style="border:none; background:#fff; border-radius:5px; cursor:pointer; padding: 2px 8px;">จัดคิว</button>
                         </div>
                     `;
                 });
             });
         }
 
-        // --- 4. แก้ปัญหา Scope (ทำให้ HTML เรียกใช้ฟังก์ชันได้) ---
         window.addToQueue = (userId, name) => {
             alert("กำลังเตรียมระบบจัดคิวสำหรับ: " + name);
-            // เดี๋ยวเราจะมาเขียนระบบลากวางตรงนี้ต่อครับ
         };
 
     </script>
