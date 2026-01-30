@@ -148,21 +148,46 @@
         }
 
         document.getElementById('confirmBtn').onclick = async () => {
-            if (selectedPlayers.length === 0) return;
-            
-            const emptyCourt = Array.from(document.querySelectorAll('.court-card')).find(c => !c.classList.contains('playing'));
-            const playersCopy = [...selectedPlayers];
+    if (selectedPlayers.length === 0) return;
+    
+    const emptyCourt = Array.from(document.querySelectorAll('.court-card')).find(c => !c.classList.contains('playing'));
+    const playersCopy = [...selectedPlayers];
 
-            if (emptyCourt) {
-                await fillCourtInDB(emptyCourt, playersCopy);
-            } else {
-                addToQueueUI(playersCopy);
-            }
+    // 💡 หัวใจสำคัญ: ไม่ว่าจะลงสนามหรือลงคิวกลาง ต้องอัปเดต Database ว่า "กำลังรอเล่น/เล่นอยู่"
+    // เพื่อให้ชื่อหายไปจาก Waiting List ทันที
+    const batch = writeBatch(db);
+    playersCopy.forEach(p => {
+        const ref = doc(db, `sessions/${currentSessionId}/attendance`, p.id);
+        batch.update(ref, { is_playing: true }); // ตั้งเป็น true เพื่อให้ Query กรองออก
+    });
+    await batch.commit();
 
-            selectedPlayers = [];
-            updateSelectionUI();
-        };
+    if (emptyCourt) {
+        // ลงสนามทันที
+        fillCourtUI(emptyCourt, playersCopy);
+    } else {
+        // ไปพักที่คิวกลาง
+        addToQueueUI(playersCopy);
+    }
 
+    selectedPlayers = [];
+    updateSelectionUI();
+};
+
+// แยกส่วน Fill Court ออกมาเป็น UI เฉพาะ (เพราะเราอัปเดต DB ไปแล้วข้างบน)
+function fillCourtUI(courtEl, players) {
+    const slotsA = courtEl.querySelectorAll('.team-a .slot');
+    const slotsB = courtEl.querySelectorAll('.team-b .slot');
+    players.forEach((p, i) => {
+        const target = (i < 2) ? slotsA[i] : slotsB[i-2];
+        if(target) { 
+            target.innerText = p.name; 
+            target.dataset.uid = p.id; 
+            target.classList.add('occupied'); 
+        }
+    });
+    courtEl.classList.add('playing');
+}
         // --- 3. Match Management ---
         async function fillCourtInDB(courtEl, players) {
             const courtId = courtEl.id;
