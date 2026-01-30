@@ -33,6 +33,23 @@
 
         button { border: none; padding: 8px 12px; border-radius: 8px; cursor: pointer; font-family: 'Kanit'; font-weight: bold; }
         .btn-delete { background: none; color: red; font-size: 0.8em; }
+
+        /* เพิ่มสไตล์คอลัมน์ */
+    .admin-layout { display: flex; height: 100vh; overflow: hidden; }
+    
+    .panel-checkin { width: 200px; background: #f8f9fa; border-right: 1px solid #ddd; padding: 15px; display: flex; flex-direction: column; }
+    .panel-queue { width: 220px; background: #fff; border-right: 1px solid #ddd; padding: 15px; display: flex; flex-direction: column; box-shadow: 5px 0 10px rgba(0,0,0,0.02); }
+    .panel-main { flex: 1; padding: 20px; overflow-y: auto; background: var(--primary-bg); }
+
+    .list-title { font-size: 1rem; margin-bottom: 10px; border-bottom: 2px solid var(--accent-blue); padding-bottom: 5px; }
+    
+    /* ปรับปุ่มให้ตัวใหญ่ขึ้นเหมาะกับนิ้วจิ้ม */
+    .player-item { 
+        padding: 12px; margin-bottom: 8px; border-radius: 10px; 
+        background: white; border: 1px solid #eee; box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        cursor: pointer; font-weight: bold; text-align: center;
+    }
+    .player-item:active { background: #e7f3ff; }
     </style>
 </head>
 <body>
@@ -56,6 +73,29 @@
         <div class="courts-wrapper" id="main-grid"></div>
     </div>
 
+    <div class="admin-layout">
+    <div class="panel-checkin">
+        <h3 class="list-title">👥 มาแล้ว</h3>
+        <div id="checkin-list" class="list-box"></div>
+        <button id="mockUserBtn" style="margin-top:10px; font-size:0.7em;">🤖 สุ่มคนจำลอง</button>
+    </div>
+
+    <div class="panel-queue">
+        <h3 class="list-title">⏳ คิวกลาง</h3>
+        <div id="queue-list" class="list-box" style="min-height: 200px; background: #fff9e6; border: 2px dashed #ffeeba;">
+            </div>
+        <p style="font-size: 0.7em; color: #888; margin-top: 10px;">* จิ้มชื่อในนี้ แล้วไปจิ้มช่องว่างในสนาม</p>
+    </div>
+
+    <div class="panel-main">
+        <div class="admin-controls">
+            <button onclick="createSession()" style="background: var(--accent-green); padding: 10px 20px;">🚀 เปิดก๊วนใหม่</button>
+            <button onclick="addNewCourt()" style="background: var(--accent-blue); padding: 10px 20px;">➕ เพิ่มสนาม</button>
+            <div id="qrcode" style="margin-left: 20px;"></div>
+        </div>
+        <div class="courts-wrapper" id="main-grid"></div>
+    </div>
+</div>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
         import { getFirestore, collection, addDoc, onSnapshot, doc, setDoc } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-firestore.js";
