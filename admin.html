@@ -3,21 +3,97 @@
 <head>
     <title>Admin - จัดการคิวแบด</title>
     <link rel="stylesheet" href="style.css">
+    <style>
+    :root {
+        --primary-bg: #fdfcf0; /* พาสเทลเหลืองอ่อน */
+        --card-bg: #ffffff;
+        --accent-green: #b9fbc0;
+        --accent-blue: #a2d2ff;
+        --text-color: #555;
+    }
+
+    body {
+        font-family: 'Kanit', sans-serif;
+        background-color: var(--primary-bg);
+        color: var(--text-color);
+        margin: 0;
+        display: flex;
+        height: 100vh;
+        overflow: hidden;
+    }
+
+    /* ฝั่งซ้าย: หน้าจอสนาม */
+    .court-container {
+        flex: 1;
+        padding: 20px;
+        overflow-y: auto;
+    }
+
+    /* ฝั่งขวา: รายชื่อคนรอ (Slide-out) */
+    .side-panel {
+        width: 350px;
+        background-color: var(--card-bg);
+        border-left: 2px solid #eee;
+        padding: 20px;
+        box-shadow: -2px 0 10px rgba(0,0,0,0.05);
+    }
+
+    .court-card {
+        background: var(--card-bg);
+        border-radius: 15px;
+        padding: 15px;
+        margin-bottom: 15px;
+        border-bottom: 5px solid var(--accent-green);
+    }
+
+    .player-tag {
+        display: inline-block;
+        padding: 5px 12px;
+        margin: 4px;
+        border-radius: 20px;
+        background: var(--accent-blue);
+        font-size: 0.9em;
+    }
+</style>
 </head>
 <body>
     <h1>ระบบจัดการคิว (Admin)</h1>
     
-    <div class="admin-box">
-        <h3>เพิ่มคู่แข่งขัน</h3>
-        <input type="text" id="pairA" placeholder="ทีม A (เช่น เอ/บี)"> VS 
-        <input type="text" id="pairB" placeholder="ทีม B (เช่น ซี/ดี)">
-        <button id="addBtn">เพิ่มเข้าสู่คิว</button>
+    <div class="court-container">
+        <h2>🏸 สนามแข่งขัน</h2>
+        <button id="startSessionBtn" style="padding: 10px 20px; border-radius: 10px; border: none; background: var(--accent-green); cursor: pointer;">
+            + เปิดรอบก๊วนใหม่
+        </button>
+        
+        <div id="session-qr-area" style="display:none; margin: 15px 0;">
+            <div id="qrcode"></div>
+        </div>
+
+        <div id="courts-grid">
+            </div>
     </div>
 
-    <hr>
-    <div id="admin-queue-list"></div>
+    <div class="side-panel">
+        <h3>👥 รายชื่อสมาชิกที่เช็คอิน</h3>
+        <div id="waiting-list">
+            <p style="color: #ccc;">ยังไม่มีคนเช็คอิน...</p>
+        </div>
+    </div>
 
     <script type="module">
+        // 1. ตั้งรหัสผ่านที่คุณต้องการ (เปลี่ยนเป็นอะไรก็ได้)
+    const ADMIN_PASSWORD = "mysecretpass"; 
+
+    // 2. เช็คค่าจาก URL Parameter ที่ชื่อ 'pass'
+    const urlParams = new URLSearchParams(window.location.search);
+    const enteredPass = urlParams.get('pass');
+
+    // 3. ถ้าพาสเวิร์ดไม่ตรง ให้ดีดไปหน้า index.html ทันที
+    if (enteredPass !== ADMIN_PASSWORD) {
+        alert("ขออภัย คุณไม่มีสิทธิ์เข้าถึงหน้านี้");
+        window.location.href = "index.html"; 
+    }
+
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
         import { getFirestore, collection, addDoc, onSnapshot, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-firestore.js";
 
@@ -33,39 +109,44 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // ฟังก์ชันเพิ่มข้อมูล
-        document.getElementById('addBtn').onclick = async () => {
-            const pA = document.getElementById('pairA').value;
-            const pB = document.getElementById('pairB').value;
-            if(pA && pB) {
-                await addDoc(collection(db, "queues"), {
-                    pairA: pA,
-                    pairB: pB,
-                    status: "รอแข่ง",
-                    timestamp: Date.now()
-                });
-                alert("เพิ่มคิวสำเร็จ!");
-            }
-        };
+        // เพิ่มส่วนนี้ใน <script type="module"> ของหน้า admin.html
 
-        // แสดงรายการคิวในหน้า Admin (เพื่อให้กดลบหรือจัดการได้)
-        onSnapshot(collection(db, "queues"), (snapshot) => {
-            const list = document.getElementById('admin-queue-list');
-            list.innerHTML = "<h3>รายการคิวปัจจุบัน</h3>";
-            snapshot.forEach(res => {
-                const data = res.data();
-                list.innerHTML += `
-                    <p>
-                        ${data.pairA} vs ${data.pairB} [${data.status}]
-                        <button onclick="deleteQueue('${res.id}')">ลบ</button>
-                    </p>`;
-            });
+let currentSessionId = ""; // ตัวแปรเก็บ Session ปัจจุบัน
+
+// 1. ฟังก์ชันสร้าง Session และเปิดรับคน
+document.getElementById('startSessionBtn').onclick = async () => {
+    const sessionRef = await addDoc(collection(db, "sessions"), {
+        session_name: "ก๊วนแบดมินตัน",
+        is_closed: false,
+        created_at: Date.now()
+    });
+    currentSessionId = sessionRef.id;
+    
+    // เจน QR Code (ใช้ URL ของเว็บคุณ)
+    const checkInURL = `https://early-bird-queue.vercel.app/?session=${currentSessionId}`;
+    new QRCode(document.getElementById("qrcode"), checkInURL);
+    
+    // เริ่มฟังว่ามีใครเช็คอินเข้ามาใน Session นี้หรือยัง
+    listenToAttendance(currentSessionId);
+};
+
+// 2. ฟังก์ชันดึงรายชื่อคนเช็คอิน (Real-time)
+function listenToAttendance(sessionId) {
+    const attendanceRef = collection(db, `sessions/${sessionId}/attendance`);
+    onSnapshot(attendanceRef, (snapshot) => {
+        const listDiv = document.getElementById('waiting-list');
+        listDiv.innerHTML = "<h3>สมาชิกที่มาแล้ว</h3>";
+        snapshot.forEach(doc => {
+            const user = doc.data();
+            listDiv.innerHTML += `
+                <div class="player-tag">
+                    <span>${user.display_name}</span>
+                    <button onclick="addToQueue('${user.user_id}', '${user.display_name}')">จัดคิว</button>
+                </div>
+            `;
         });
-        
-        // ฟังก์ชันลบคิว (ทำให้เรียกใช้จากปุ่มได้)
-        window.deleteQueue = async (id) => {
-            await deleteDoc(doc(db, "queues", id));
-        };
+    });
+}
     </script>
 </body>
 </html>
