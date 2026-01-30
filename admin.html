@@ -2,7 +2,6 @@
 <html>
 <head>
     <title>Admin - จัดการคิวแบด</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" integrity="sha512-CNgIRecGo7nphbeZ04Sc13ka07paqdeTu0WR1IM4wKauwzSZ9RaHdqujWZt1lYv67giJGxRAvDUqMfG128E3GA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <link rel="stylesheet" href="style.css">
     <style>
         :root {
@@ -39,29 +38,60 @@
             border-radius: 12px;
             background: var(--accent-blue);
             font-size: 0.9em;
+            font-weight: bold;
         }
-        #qrcode img { margin: 0 auto; border: 10px solid white; border-radius: 10px; }
+        #qrcode {
+            display: flex;
+            justify-content: center;
+            margin: 20px 0;
+        }
+        #qrcode img {
+            border: 10px solid white;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+        .admin-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        button {
+            transition: transform 0.1s;
+        }
+        button:active {
+            transform: scale(0.95);
+        }
     </style>
 </head>
 <body>
 
     <div class="court-container">
-        <h1>ระบบจัดการคิว (Admin)</h1>
-        <h2>🏸 สนามแข่งขัน</h2>
-        <button id="startSessionBtn" style="padding: 12px 24px; border-radius: 10px; border: none; background: var(--accent-green); font-weight: bold; cursor: pointer;">
-            + เปิดรอบก๊วนใหม่
-        </button>
-        <button id="mockUserBtn" style="padding: 12px; border-radius: 10px; border: 1px solid #ccc; background: #eee; cursor: pointer; margin-left: 10px;">
-            🤖 สุ่มคนจำลอง 15 คน
-        </button>
-
-        <div id="session-qr-area" style="display:none; margin: 20px 0; text-align: center; background: white; padding: 20px; border-radius: 15px;">
-            <p>ให้สมาชิกสแกนเพื่อเข้าก๊วน:</p>
+        <div class="admin-header">
+            <h1>🏸 ระบบจัดการคิว (Admin)</h1>
+        </div>
+        
+        <div style="margin-bottom: 20px;">
+            <button id="startSessionBtn" style="padding: 12px 24px; border-radius: 10px; border: none; background: var(--accent-green); font-weight: bold; cursor: pointer; font-size: 16px;">
+                + เปิดรอบก๊วนใหม่
+            </button>
+            <button id="mockUserBtn" style="padding: 12px 24px; border-radius: 10px; border: 1px solid #ccc; background: #eee; cursor: pointer; margin-left: 10px; font-weight: bold;">
+                🤖 สุ่มคนจำลอง 15 คน
+            </button>
+        </div>
+        
+        <div id="session-qr-area" style="display:none; margin: 20px 0; text-align: center; background: white; padding: 20px; border-radius: 15px; max-width: 300px;">
+            <p style="font-weight: bold;">ให้สมาชิกสแกนเพื่อเข้าก๊วน:</p>
             <div id="qrcode"></div>
             <p id="session-id-text" style="font-size: 0.8em; color: #888;"></p>
         </div>
 
-        <div id="courts-grid"></div>
+        <hr style="border: 0; border-top: 1px solid #eee; margin: 30px 0;">
+        
+        <div id="courts-grid">
+            <h3>สนามแข่งขัน (Court Grid)</h3>
+            <p style="color: #999;">รอกดเปิดก๊วนเพื่อเริ่มจัดการสนาม...</p>
+        </div>
     </div>
 
     <div class="side-panel">
@@ -71,7 +101,10 @@
         </div>
     </div>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
     <script type="module">
+        // --- 1. Security Check ---
         const ADMIN_PASSWORD = "mysecretpass"; 
         const urlParams = new URLSearchParams(window.location.search);
         const enteredPass = urlParams.get('pass');
@@ -81,9 +114,9 @@
             window.location.href = "index.html"; 
         }
 
+        // --- 2. Firebase Setup ---
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
-        // เพิ่ม setDoc ในการ import
-        import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, onSnapshot, doc, setDoc } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDQbnx83sbs1sO4xsuLUV50uxbBinr2VtY",
@@ -101,8 +134,9 @@
 
         // --- 3. Session Logic ---
         document.getElementById('startSessionBtn').onclick = async () => {
-            if (typeof QRCode === "undefined") {
-                alert("ระบบสร้าง QR ยังไม่พร้อม กรุณารอ 2-3 วินาทีแล้วกดใหม่ครับ");
+            // เช็คว่า Library QRCode โหลดหรือยัง
+            if (typeof window.QRCode === "undefined") {
+                alert("ระบบสร้าง QR กำลังโหลด... กรุณารอ 2 วินาทีแล้วลองใหม่อีกครั้ง");
                 return;
             }
 
@@ -119,20 +153,20 @@
             const qrcodeContainer = document.getElementById("qrcode");
             qrcodeContainer.innerHTML = ""; 
 
-            new QRCode(qrcodeContainer, {
+            new window.QRCode(qrcodeContainer, {
                 text: checkInURL,
                 width: 180,
                 height: 180,
                 colorDark : "#000000",
                 colorLight : "#ffffff",
-                correctLevel : QRCode.CorrectLevel.H
+                correctLevel : window.QRCode.CorrectLevel.H
             });
             
             document.getElementById('session-id-text').innerText = "Session ID: " + currentSessionId;
             listenToAttendance(currentSessionId);
         };
 
-        // --- ฟังก์ชันสร้างคนจำลอง (ย้ายออกมาข้างนอกเพื่อให้กดได้ตลอด) ---
+        // --- 4. ฟังก์ชันสร้างคนจำลอง ---
         document.getElementById('mockUserBtn').onclick = async () => {
             if (!currentSessionId) {
                 alert("กรุณากด 'เปิดรอบก๊วนใหม่' ก่อนสร้างคนจำลองครับ");
@@ -156,27 +190,33 @@
             alert("สร้างคนจำลอง 15 คนสำเร็จแล้ว!");
         };
 
+        // --- 5. ดึงข้อมูลคนเช็คอิน Real-time ---
         function listenToAttendance(sessionId) {
             const attendanceRef = collection(db, `sessions/${sessionId}/attendance`);
             onSnapshot(attendanceRef, (snapshot) => {
                 const listDiv = document.getElementById('waiting-list');
                 listDiv.innerHTML = "";
-                if (snapshot.empty) listDiv.innerHTML = '<p style="color: #ccc;">ยังไม่มีคนเช็คอิน...</p>';
+                if (snapshot.empty) {
+                    listDiv.innerHTML = '<p style="color: #ccc;">ยังไม่มีคนเช็คอิน...</p>';
+                    return;
+                }
                 
                 snapshot.forEach(doc => {
                     const user = doc.data();
                     listDiv.innerHTML += `
                         <div class="player-tag">
                             <span>${user.display_name}</span>
-                            <button onclick="addToQueue('${user.user_id}', '${user.display_name}')" style="border:none; background:#fff; border-radius:5px; cursor:pointer; padding: 2px 8px;">จัดคิว</button>
+                            <button onclick="addToQueue('${user.user_id}', '${user.display_name}')" style="border:none; background:#fff; border-radius:5px; cursor:pointer; padding: 4px 10px; font-weight: bold;">จัดคิว</button>
                         </div>
                     `;
                 });
             });
         }
 
+        // --- 6. ฟังก์ชันจัดคิว ---
         window.addToQueue = (userId, name) => {
-            alert("กำลังเตรียมระบบจัดคิวสำหรับ: " + name);
+            alert("พร้อมจัดคิวให้คุณ " + name + " แล้วครับ!");
+            // ในขั้นตอนถัดไป เราจะเขียนให้ชื่อคนไปลงสนามที่เลือก
         };
 
     </script>
