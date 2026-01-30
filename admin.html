@@ -1,70 +1,59 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Badminton Admin - Court Management</title>
+    <title>Badminton Admin Pro - System</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
     <style>
         :root { --primary-bg: #fdfcf0; --card-bg: #ffffff; --accent-green: #b9fbc0; --accent-blue: #a2d2ff; --accent-red: #ffcfd2; --text-color: #555; }
-        body { font-family: 'Kanit', sans-serif; background-color: var(--primary-bg); color: var(--text-color); margin: 0; display: flex; height: 100vh; }
+        body { font-family: 'Kanit', sans-serif; background-color: var(--primary-bg); color: var(--text-color); margin: 0; display: flex; height: 100vh; overflow: hidden; }
         
-        /* Layout Sidebar & Main */
-        .side-panel { width: 300px; background: var(--card-bg); border-right: 2px solid #eee; padding: 20px; display: flex; flex-direction: column; }
+        /* Layout Sidebar */
+        .side-panel { width: 320px; background: var(--card-bg); border-right: 2px solid #eee; padding: 15px; display: flex; flex-direction: column; gap: 10px; }
+        .list-box { flex: 1; border: 2px solid #eee; border-radius: 10px; overflow-y: auto; padding: 5px; background: #fafafa; }
+        
+        /* Main Content */
         .court-container { flex: 1; padding: 20px; overflow-y: auto; }
+        .admin-controls { display: flex; gap: 10px; margin-bottom: 20px; background: white; padding: 15px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
 
-        /* Header & Buttons */
-        .admin-controls { display: flex; gap: 10px; margin-bottom: 20px; align-items: center; background: white; padding: 15px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-        button { border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-family: 'Kanit'; font-weight: bold; transition: 0.2s; }
-        button:active { transform: scale(0.95); }
-        .btn-add { background: var(--accent-blue); color: #444; }
-        .btn-session { background: var(--accent-green); }
-
-        /* Court Grid Layout (แถวละ 2 สนาม) */
+        /* Court Grid */
         .courts-wrapper { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .court-card { background: white; border-radius: 20px; padding: 15px; box-shadow: 0 8px 15px rgba(0,0,0,0.05); border-top: 10px solid #ddd; }
+        .court-card.playing { border-top-color: var(--accent-green); background: #f0fff4; }
         
-        /* Court Card */
-        .court-card { background: white; border-radius: 20px; padding: 15px; box-shadow: 0 8px 15px rgba(0,0,0,0.05); border-top: 10px solid var(--accent-green); position: relative; }
-        .court-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-        .court-select { padding: 5px; border-radius: 5px; border: 1px solid #ddd; font-family: 'Kanit'; }
+        /* Team Slots */
+        .match-area { display: flex; align-items: center; justify-content: space-around; margin: 10px 0; }
+        .team-box { width: 110px; min-height: 80px; display: flex; flex-direction: column; gap: 5px; }
+        .slot { background: #eee; min-height: 35px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 0.8em; cursor: pointer; border: 1px dashed #ccc; }
+        .slot.occupied { background: var(--accent-blue); border: none; font-weight: bold; }
         
-        .match-area { display: flex; align-items: center; justify-content: space-around; background: #fdfdfd; border: 1px solid #eee; border-radius: 15px; padding: 10px; margin: 10px 0; }
-        .team-box { width: 110px; min-height: 90px; display: flex; flex-direction: column; gap: 8px; padding: 10px; background: #fff; border: 2px dashed #eee; border-radius: 10px; }
-        .vs-circle { font-size: 0.8em; font-weight: bold; color: #999; }
-        
-        /* Player Tag */
-        .player-slot { background: var(--accent-blue); padding: 10px; border-radius: 8px; font-size: 0.85em; font-weight: bold; text-align: center; cursor: grab; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        
-        /* Waiting List */
-        #waiting-list { flex: 1; overflow-y: auto; border: 2px dashed #ccc; border-radius: 15px; padding: 10px; background: #fafafa; }
-        .waiting-tag { background: white; padding: 12px; margin-bottom: 8px; border-radius: 10px; cursor: grab; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border-left: 5px solid var(--accent-blue); font-weight: bold; }
-        
-        .shuttle-ui { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 10px; font-size: 0.9em; }
-        .btn-clear { width: 100%; background: var(--accent-red); color: #444; padding: 10px; border-radius: 10px; }
+        /* Elements */
+        .player-item { background: white; padding: 10px; margin-bottom: 5px; border-radius: 8px; cursor: pointer; border: 1px solid #ddd; font-weight: bold; font-size: 0.9em; transition: 0.2s; }
+        .player-item:hover { background: var(--accent-blue); }
+        .selected-player { border: 2px solid #007bff; background: #e7f3ff; }
+
+        button { border: none; padding: 8px 12px; border-radius: 8px; cursor: pointer; font-family: 'Kanit'; font-weight: bold; }
+        .btn-delete { background: none; color: red; font-size: 0.8em; }
     </style>
 </head>
 <body>
 
     <div class="side-panel">
-        <h3>👥 สมาชิกที่มาแล้ว</h3>
-        <p style="font-size: 0.8em; color: #888;">ลากรายชื่อลงสนามเพื่อจัดคิว</p>
-        <div id="waiting-list">
-            </div>
-        <button id="mockUserBtn" style="margin-top: 10px; background: #eee;">🤖 สุ่ม 15 คนจำลอง</button>
+        <h3>👥 1. สมาชิกที่มาแล้ว</h3>
+        <div class="list-box" id="checkin-list"></div>
+        
+        <h3>⏳ 2. คิวกลาง (รอลงสนาม)</h3>
+        <div class="list-box" id="queue-list"></div>
+        <button id="mockUserBtn" style="background: #eee;">🤖 สุ่มคนจำลอง</button>
     </div>
 
     <div class="court-container">
         <div class="admin-controls">
-            <button id="startSessionBtn" class="btn-session">🚀 เปิดรอบก๊วนใหม่</button>
-            <button id="addCourtBtn" class="btn-add">➕ เพิ่มสนาม</button>
-            <div id="session-info" style="margin-left: auto; font-size: 0.8em; color: #999;"></div>
+            <button onclick="createSession()" style="background: var(--accent-green);">🚀 เปิดก๊วน</button>
+            <button onclick="addNewCourt()" style="background: var(--accent-blue);">➕ เพิ่มสนาม</button>
+            <div id="qrcode"></div>
         </div>
 
-        <div id="qrcode-area" style="display:none; text-align: center; margin-bottom: 20px;">
-            <div id="qrcode" style="display: inline-block; padding: 10px; background: white; border-radius: 10px;"></div>
-        </div>
-
-        <div class="courts-wrapper" id="main-grid">
-            </div>
+        <div class="courts-wrapper" id="main-grid"></div>
     </div>
 
     <script type="module">
@@ -75,96 +64,136 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
+        let selectedPlayer = null;
         let currentSessionId = "";
-        let courtCount = 0;
 
-        // --- ฟังก์ชันเพิ่มสนามใหม่ ---
-        window.addNewCourt = () => {
-            courtCount++;
-            const grid = document.getElementById('main-grid');
-            const courtId = `court-${courtCount}`;
-            
-            // สร้าง Dropdown ตัวเลือกสนาม 01-25
-            let options = "";
-            for(let i=1; i<=25; i++) {
-                let val = i.toString().padStart(2, '0');
-                options += `<option value="${val}" ${i === courtCount ? 'selected' : ''}>สนาม ${val}</option>`;
-            }
-
-            const html = `
-                <div class="court-card" id="${courtId}">
-                    <div class="court-header">
-                        <select class="court-select">${options}</select>
-                        <span style="font-size: 0.7em; color: green;">● กำลังแข่งขัน</span>
-                    </div>
-                    <div class="match-area">
-                        <div class="team-box sortable-court" id="${courtId}-tA"></div>
-                        <div class="vs-circle">VS</div>
-                        <div class="team-box sortable-court" id="${courtId}-tB"></div>
-                    </div>
-                    <div class="shuttle-ui">
-                        🏸 ลูกแบด: <button onclick="this.nextElementSibling.innerText++">+</button>
-                        <span class="s-count">1</span>
-                        <button onclick="this.previousElementSibling.innerText > 0 ? this.previousElementSibling.innerText-- : 0">-</button>
-                    </div>
-                    <button class="btn-clear" onclick="clearCourt('${courtId}')">จบเกม / เคลียร์</button>
-                </div>
-            `;
-            grid.insertAdjacentHTML('beforeend', html);
-            initSortable(courtId);
+        // --- 1. Queue Management ---
+        window.moveToQueue = (name, el) => {
+            const queueList = document.getElementById('queue-list');
+            const div = document.createElement('div');
+            div.className = "player-item";
+            div.innerText = name;
+            div.onclick = () => selectPlayer(name, div);
+            queueList.appendChild(div);
+            el.remove();
         };
 
-        // --- ระบบ Drag & Drop ---
-        function initSortable(courtId) {
-            const config = { group: 'players', animation: 150 };
-            Sortable.create(document.getElementById(`${courtId}-tA`), config);
-            Sortable.create(document.getElementById(`${courtId}-tB`), config);
-            Sortable.create(document.getElementById('waiting-list'), config);
+        function selectPlayer(name, el) {
+            document.querySelectorAll('.player-item').forEach(i => i.classList.remove('selected-player'));
+            selectedPlayer = { name, el };
+            el.classList.add('selected-player');
         }
 
-        window.clearCourt = (id) => {
-            if(confirm("ต้องการเคลียร์สนามนี้ใช่ไหม?")) {
-                document.getElementById(`${id}-tA`).innerHTML = "";
-                document.getElementById(`${id}-tB`).innerHTML = "";
-                document.querySelector(`#${id} .s-count`).innerText = "1";
+        // --- 2. Court Management ---
+        window.addNewCourt = () => {
+            const grid = document.getElementById('main-grid');
+            const courtCards = document.querySelectorAll('.court-card');
+            let lastNum = 0;
+            
+            courtCards.forEach(card => {
+                const num = parseInt(card.querySelector('.court-select').value);
+                if (num > lastNum) lastNum = num;
+            });
+            
+            const nextNum = (lastNum + 1).toString().padStart(2, '0');
+            const courtId = Date.now();
+
+            const html = `
+                <div class="court-card" id="c-${courtId}">
+                    <div class="court-header">
+                        <select class="court-select">${generateOptions(nextNum)}</select>
+                        <select onchange="toggleMode(this, '${courtId}')"><option value="double">คู่</option><option value="single">เดี่ยว</option></select>
+                        <button class="btn-delete" onclick="document.getElementById('c-${courtId}').remove()">ลบสนาม</button>
+                    </div>
+                    <div class="match-area">
+                        <div class="team-box" id="tA-${courtId}">${generateSlots(2, 'A', courtId)}</div>
+                        <div style="font-size:0.7em">VS</div>
+                        <div class="team-box" id="tB-${courtId}">${generateSlots(2, 'B', courtId)}</div>
+                    </div>
+                    <div style="display:flex; gap:5px;">
+                        <button onclick="startMatch('${courtId}')" style="flex:1; background:var(--accent-green)">เริ่มเล่น</button>
+                        <button onclick="endMatch('${courtId}')" style="flex:1; background:var(--accent-red)">จบเกม</button>
+                    </div>
+                </div>`;
+            grid.insertAdjacentHTML('beforeend', html);
+        };
+
+        function generateOptions(selected) {
+            let options = "";
+            for(let i=1; i<=25; i++) {
+                let v = i.toString().padStart(2, '0');
+                options += `<option value="${v}" ${v==selected?'selected':''}>สนาม ${v}</option>`;
+            }
+            return options;
+        }
+
+        function generateSlots(count, team, courtId) {
+            let s = "";
+            for(let i=1; i<=count; i++) s += `<div class="slot" onclick="assignPlayer(this)">ว่าง</div>`;
+            return s;
+        }
+
+        window.toggleMode = (el, courtId) => {
+            const count = el.value === 'single' ? 1 : 2;
+            document.getElementById(`tA-${courtId}`).innerHTML = generateSlots(count, 'A', courtId);
+            document.getElementById(`tB-${courtId}`).innerHTML = generateSlots(count, 'B', courtId);
+        };
+
+        window.assignPlayer = (el) => {
+            if (el.classList.contains('occupied')) {
+                // ถ้าจิ้มคนในสนาม ให้เอากลับไปที่คิวกลาง
+                moveToQueue(el.innerText, document.createElement('div')); // จำลอง el
+                el.innerText = "ว่าง";
+                el.classList.remove('occupied');
+            } else if (selectedPlayer) {
+                el.innerText = selectedPlayer.name;
+                el.classList.add('occupied');
+                selectedPlayer.el.remove();
+                selectedPlayer = null;
             }
         };
 
-        // --- Buttons Events ---
-        document.getElementById('addCourtBtn').onclick = () => window.addNewCourt();
+        window.startMatch = (id) => document.getElementById(`c-${id}`).classList.add('playing');
+        window.endMatch = (id) => {
+            const card = document.getElementById(`c-${id}`);
+            card.classList.remove('playing');
+            card.querySelectorAll('.slot').forEach(s => {
+                s.innerText = "ว่าง";
+                s.classList.remove('occupied');
+            });
+        };
 
-        document.getElementById('startSessionBtn').onclick = async () => {
-            const sessionRef = await addDoc(collection(db, "sessions"), { created_at: Date.now() });
-            currentSessionId = sessionRef.id;
-            document.getElementById('qrcode-area').style.display = 'block';
-            document.getElementById('qrcode').innerHTML = "";
-            new QRCode(document.getElementById("qrcode"), { text: `https://early-bird-queue.vercel.app/index.html?session=${currentSessionId}`, width: 120, height: 120 });
-            
-            // เพิ่มสนามเริ่มต้น 2 สนาม
-            window.addNewCourt();
-            window.addNewCourt();
-            
+        // --- 3. Firebase & Session ---
+        window.createSession = async () => {
+            const ref = await addDoc(collection(db, "sessions"), { created_at: Date.now() });
+            currentSessionId = ref.id;
+            new QRCode(document.getElementById("qrcode"), { text: `https://early-bird-queue.vercel.app/index.html?session=${currentSessionId}`, width: 80, height: 80 });
             listenToAttendance(currentSessionId);
+            addNewCourt(); addNewCourt();
         };
 
-        document.getElementById('mockUserBtn').onclick = async () => {
-            if (!currentSessionId) return alert("เปิดรอบก่อน!");
-            const names = ["พี่เอ็ม", "น้องบี", "เจ๊ดา", "เก่ง", "ตั้ม", "ฟ้า", "ปอนด์", "นัท", "แชมป์", "อาร์ม", "ปลา", "กิ๊ฟ", "โอม", "นุช", "บอย"];
-            for (let name of names) {
-                await addDoc(collection(db, `sessions/${currentSessionId}/attendance`), { display_name: name });
-            }
+        document.getElementById('mockUserBtn').onclick = () => {
+            const names = ["เอ็ม", "บี", "ดา", "เก่ง", "ตั้ม", "ฟ้า", "ปอนด์", "นัท", "แชมป์", "อาร์ม"];
+            const list = document.getElementById('checkin-list');
+            names.forEach(n => {
+                const div = document.createElement('div');
+                div.className = "player-item";
+                div.innerText = n;
+                div.onclick = () => moveToQueue(n, div);
+                list.appendChild(div);
+            });
         };
 
         function listenToAttendance(sessionId) {
-            onSnapshot(collection(db, `sessions/${sessionId}/attendance`), (snapshot) => {
-                const list = document.getElementById('waiting-list');
-                // เราจะไม่ล้าง list ทั้งหมดเพื่อไม่ให้ขัดจังหวะการลาก 
-                // แต่จะเช็คว่าชื่อไหนยังไม่มีค่อยเพิ่มเข้าไป
-                snapshot.docChanges().forEach((change) => {
+            onSnapshot(collection(db, `sessions/${sessionId}/attendance`), (snap) => {
+                const list = document.getElementById('checkin-list');
+                snap.docChanges().forEach(change => {
                     if (change.type === "added") {
+                        const n = change.doc.data().display_name;
                         const div = document.createElement('div');
-                        div.className = "waiting-tag";
-                        div.innerHTML = change.doc.data().display_name;
+                        div.className = "player-item";
+                        div.innerText = n;
+                        div.onclick = () => moveToQueue(n, div);
                         list.appendChild(div);
                     }
                 });
