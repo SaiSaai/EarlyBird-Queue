@@ -228,46 +228,57 @@ function fillCourtUI(courtEl, players) {
             list.appendChild(group);
         }
 
-        window.endMatch = async (courtId) => {
-            const courtEl = document.getElementById(courtId);
-            const playerIds = Array.from(courtEl.querySelectorAll('.occupied')).map(s => s.dataset.uid);
-            
-            const batch = writeBatch(db);
-            const now = Date.now();
+        // แก้ไขฟังก์ชันจบเกมให้ชัวร์ว่าเซตเป็น false
+window.endMatch = async (courtId) => {
+    const courtEl = document.getElementById(courtId);
+    const playerIds = Array.from(courtEl.querySelectorAll('.occupied')).map(s => s.dataset.uid);
+    
+    if (playerIds.length > 0) {
+        const batch = writeBatch(db);
+        const now = Date.now();
+        playerIds.forEach(uid => {
+            const ref = doc(db, `sessions/${currentSessionId}/attendance`, uid);
+            batch.update(ref, { is_playing: false, last_match_end: now });
+        });
+        await batch.commit();
+    }
 
-            playerIds.forEach(uid => {
-                const ref = doc(db, `sessions/${currentSessionId}/attendance`, uid);
-                // 💡 จบเกมแล้วอัปเดตเวลาใหม่ เพื่อให้ไปอยู่ "ท้ายคิว" (FIFO)
-                batch.update(ref, { is_playing: false, last_match_end: now });
-            });
-
-            await batch.commit();
-
-            // Clear UI
-            courtEl.classList.remove('playing');
-            courtEl.querySelectorAll('.slot').forEach(s => { s.innerText = "ว่าง"; s.classList.remove('occupied'); delete s.dataset.uid; });
-        };
+    // Clear UI
+    courtEl.classList.remove('playing');
+    courtEl.querySelectorAll('.slot').forEach(s => { 
+        s.innerText = "ว่าง"; 
+        s.classList.remove('occupied'); 
+        delete s.dataset.uid; 
+    });
+};
 
         // --- 4. Utilities ---
         window.addNewCourt = () => {
-            const grid = document.getElementById('main-grid');
-            let max = 0;
-            document.querySelectorAll('.court-select').forEach(s => max = Math.max(max, parseInt(s.value)));
-            const next = (max + 1).toString().padStart(2, '0');
-            const id = `court-${Date.now()}`;
-            grid.insertAdjacentHTML('beforeend', `
-                <div class="court-card" id="${id}">
-                    <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
-                        <select class="court-select">${generateOptions(next)}</select>
-                        <button onclick="this.closest('.court-card').remove()" style="color:red; background:none; padding:0;">ลบ</button>
-                    </div>
-                    <div style="display:flex; gap:10px;">
-                        <div class="team-box team-a" style="background:var(--team-a)"><div class="slot">ว่าง</div><div class="slot">ว่าง</div></div>
-                        <div class="team-box team-b" style="background:var(--team-b)"><div class="slot">ว่าง</div><div class="slot">ว่าง</div></div>
-                    </div>
-                    <button onclick="endMatch('${id}')" style="width:100%; background:var(--accent-red); margin-top:10px;">จบเกม / เคลียร์</button>
-                </div>`);
-        };
+    const grid = document.getElementById('main-grid');
+    let max = 0;
+    document.querySelectorAll('.court-select').forEach(s => max = Math.max(max, parseInt(s.value)));
+    const next = (max + 1).toString().padStart(2, '0');
+    const id = `court-${Date.now()}`;
+    
+    grid.insertAdjacentHTML('beforeend', `
+        <div class="court-card" id="${id}">
+            <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                <select class="court-select">${generateOptions(next)}</select>
+                <button onclick="this.closest('.court-card').remove()" style="color:red; background:none; padding:0;">ลบสนาม</button>
+            </div>
+            <div style="display:flex; gap:10px;">
+                <div class="team-box team-a" style="background:var(--team-a)">
+                    <div class="slot" onclick="removePlayerFromSlot(this, '${id}')">ว่าง</div>
+                    <div class="slot" onclick="removePlayerFromSlot(this, '${id}')">ว่าง</div>
+                </div>
+                <div class="team-box team-b" style="background:var(--team-b)">
+                    <div class="slot" onclick="removePlayerFromSlot(this, '${id}')">ว่าง</div>
+                    <div class="slot" onclick="removePlayerFromSlot(this, '${id}')">ว่าง</div>
+                </div>
+            </div>
+            <button onclick="endMatch('${id}')" style="width:100%; background:var(--accent-red); margin-top:10px;">จบเกม / เคลียร์</button>
+        </div>`);
+};
 
         function generateOptions(sel) {
             let opt = "";
@@ -289,6 +300,38 @@ function fillCourtUI(courtEl, players) {
                 });
             }
         };
+
+        window.removePlayerFromSlot = async (slotEl, courtId) => {
+    const uid = slotEl.dataset.uid;
+    const name = slotEl.innerText;
+
+    if (!uid || name === "ว่าง") return; // ถ้าเป็นช่องว่างอยู่แล้วไม่ต้องทำอะไร
+
+    if (confirm(`ต้องการเอา "${name}" ออกจากสนามใช่หรือไม่?`)) {
+        const batch = writeBatch(db);
+        const now = Date.now();
+
+        // 1. อัปเดต DB ให้คนนี้กลับไปรอ (FIFO)
+        const ref = doc(db, `sessions/${currentSessionId}/attendance`, uid);
+        batch.update(ref, { 
+            is_playing: false, 
+            last_match_end: now // กลับไปต่อท้ายคิว (หรือใช้เวลาเดิมถ้าไม่อยากให้เสียคิว)
+        });
+
+        await batch.commit();
+
+        // 2. ล้าง UI ในช่องนั้น
+        slotEl.innerText = "ว่าง";
+        slotEl.classList.remove('occupied');
+        delete slotEl.dataset.uid;
+
+        // 3. เช็คว่าถ้าในสนามไม่เหลือคนเลย ให้เอาสีเขียว (Playing) ออก
+        const courtEl = document.getElementById(courtId);
+        if (courtEl.querySelectorAll('.occupied').length === 0) {
+            courtEl.classList.remove('playing');
+        }
+    }
+};
     </script>
 </body>
 </html>
