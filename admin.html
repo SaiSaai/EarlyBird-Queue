@@ -1,64 +1,57 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Badminton Admin - Group Selection</title>
+    <title>Badminton Admin - Smart Cycle</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
-        :root { --primary-bg: #fdfcf0; --card-bg: #ffffff; --team-a: #a2d2ff; --team-b: #b9fbc0; --accent-red: #ffcfd2; --text-color: #555; }
-        body { font-family: 'Kanit', sans-serif; background-color: var(--primary-bg); color: var(--text-color); margin: 0; display: flex; height: 100vh; overflow: hidden; }
+        :root { --primary-bg: #fdfcf0; --team-a: #a2d2ff; --team-b: #b9fbc0; --accent-red: #ffcfd2; }
+        body { font-family: 'Kanit', sans-serif; background-color: var(--primary-bg); margin: 0; display: flex; height: 100vh; overflow: hidden; }
         
-        /* Layout */
-        .panel-left { width: 250px; background: #fff; border-right: 2px solid #eee; padding: 15px; display: flex; flex-direction: column; }
-        .panel-center { width: 250px; background: #fff9e6; border-right: 2px solid #eee; padding: 15px; display: flex; flex-direction: column; }
+        .panel-left, .panel-center { width: 260px; background: #fff; border-right: 2px solid #eee; padding: 15px; display: flex; flex-direction: column; }
         .panel-main { flex: 1; padding: 20px; overflow-y: auto; }
-
-        .list-box { flex: 1; border: 1px solid #ddd; border-radius: 10px; overflow-y: auto; padding: 5px; background: #fafafa; }
+        .list-box { flex: 1; border: 1px solid #ddd; border-radius: 10px; overflow-y: auto; padding: 8px; background: #fafafa; }
         
-        /* Player Items */
+        /* Player Selection Styles */
         .player-item { 
-            padding: 10px; margin-bottom: 5px; border-radius: 8px; border: 1px solid #ddd; 
-            background: white; cursor: pointer; font-weight: bold; text-align: center; position: relative;
+            padding: 12px; margin-bottom: 8px; border-radius: 10px; border: 2px solid #ddd; 
+            background: white; cursor: pointer; font-weight: bold; text-align: center; transition: 0.2s;
         }
-        .player-item.selected { border: 3px solid #007bff; background: #e7f3ff; }
-        .player-item.selected::after { content: attr(data-order); position: absolute; right: 5px; top: 2px; font-size: 10px; color: #007bff; }
+        /* สีตามลำดับการเลือก */
+        .sel-team-a { border-color: var(--team-a); background: #e7f3ff; box-shadow: 0 0 8px var(--team-a); }
+        .sel-team-b { border-color: var(--team-b); background: #f0fff4; box-shadow: 0 0 8px var(--team-b); }
 
-        /* Group in Queue */
-        .queue-group { background: white; border: 2px solid #ffeeba; border-radius: 10px; padding: 5px; margin-bottom: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        /* Queue Group */
+        .queue-group { background: white; border: 2px solid #ffeeba; border-radius: 12px; padding: 8px; margin-bottom: 12px; cursor: pointer; }
+        .q-team-split { display: flex; gap: 5px; margin-top: 5px; }
+        .q-box { flex: 1; font-size: 0.75em; padding: 5px; border-radius: 5px; text-align: center; font-weight: bold; }
 
         /* Courts */
         .courts-wrapper { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
         .court-card { background: white; border-radius: 20px; padding: 15px; box-shadow: 0 8px 15px rgba(0,0,0,0.05); border-top: 10px solid #ccc; }
         .court-card.playing { border-top-color: #4caf50; }
-        
-        .match-area { display: flex; gap: 10px; align-items: center; justify-content: center; margin: 15px 0; }
-        .team-box { flex: 1; display: flex; flex-direction: column; gap: 5px; padding: 8px; border-radius: 10px; min-height: 80px; }
-        .team-a { background: var(--team-a); }
-        .team-b { background: var(--team-b); }
-        .slot { background: rgba(255,255,255,0.5); padding: 8px; border-radius: 5px; font-size: 0.85em; text-align: center; font-weight: bold; }
+        .team-box { flex: 1; display: flex; flex-direction: column; gap: 5px; padding: 10px; border-radius: 12px; min-height: 80px; }
+        .slot { background: rgba(255,255,255,0.7); padding: 10px; border-radius: 8px; font-size: 0.9em; text-align: center; font-weight: bold; }
 
-        button { border: none; padding: 10px; border-radius: 8px; cursor: pointer; font-family: 'Kanit'; font-weight: bold; }
-        .btn-confirm { background: #007bff; color: white; margin-top: 10px; }
+        button { border: none; padding: 12px; border-radius: 10px; cursor: pointer; font-family: 'Kanit'; font-weight: bold; }
     </style>
 </head>
 <body>
 
     <div class="panel-left">
-        <h3>👥 1. มาแล้ว</h3>
-        <p style="font-size: 0.7em;">จิ้มเพื่อเลือก (0/4)</p>
+        <h3>👥 1. รอจัดคิว</h3>
         <div id="checkin-list" class="list-box"></div>
-        <button id="confirmBtn" class="btn-confirm">ยืนยันลงสนาม (0)</button>
-        <button id="mockUserBtn" style="margin-top:5px; font-size:0.7em;">🤖 สุ่มคนจำลอง</button>
+        <button id="confirmBtn" style="background: #007bff; color: white; margin-top: 10px;">ยืนยันลงสนาม (0)</button>
     </div>
 
-    <div class="panel-center">
+    <div class="panel-center" style="background: #fff9e6;">
         <h3>⏳ 2. คิวกลาง</h3>
         <div id="queue-list" class="list-box"></div>
     </div>
 
     <div class="panel-main">
-        <div style="display:flex; gap:10px; margin-bottom:20px;">
-            <button onclick="createSession()" style="background: #b9fbc0;">🚀 เปิดก๊วน</button>
-            <button onclick="addNewCourt()" style="background: #a2d2ff;">➕ เพิ่มสนาม</button>
+        <div style="display:flex; gap:10px; margin-bottom:20px; align-items: center;">
+            <button onclick="createSession()" style="background: var(--team-b);">🚀 เปิดก๊วน</button>
+            <button onclick="addNewCourt()" style="background: var(--team-a);">➕ เพิ่มสนาม</button>
             <div id="qrcode"></div>
         </div>
         <div class="courts-wrapper" id="main-grid"></div>
@@ -75,111 +68,116 @@
         let selectedPlayers = [];
         let currentSessionId = "";
 
-        // --- 1. Selection Logic ---
+        // --- 1. Selection with Colors ---
         window.toggleSelect = (name, el) => {
             const index = selectedPlayers.indexOf(name);
             if (index > -1) {
                 selectedPlayers.splice(index, 1);
-                el.classList.remove('selected');
-            } else {
-                if (selectedPlayers.length < 4) {
-                    selectedPlayers.push(name);
-                    el.classList.add('selected');
-                }
+            } else if (selectedPlayers.length < 4) {
+                selectedPlayers.push(name);
             }
-            document.getElementById('confirmBtn').innerText = `ยืนยันลงสนาม (${selectedPlayers.length})`;
-            el.setAttribute('data-order', selectedPlayers.indexOf(name) + 1);
+            updateSelectionUI();
         };
+
+        function updateSelectionUI() {
+            const allItems = document.querySelectorAll('.player-item');
+            allItems.forEach(el => {
+                const name = el.innerText;
+                const idx = selectedPlayers.indexOf(name);
+                el.classList.remove('sel-team-a', 'sel-team-b');
+                if (idx !== -1) {
+                    if (idx < 2) el.classList.add('sel-team-a');
+                    else el.classList.add('sel-team-b');
+                }
+            });
+            document.getElementById('confirmBtn').innerText = `ยืนยันลงสนาม (${selectedPlayers.length})`;
+        }
 
         document.getElementById('confirmBtn').onclick = () => {
             if (selectedPlayers.length === 0) return;
+            const emptyCourt = Array.from(document.querySelectorAll('.court-card')).find(c => c.querySelectorAll('.occupied').length === 0);
             
-            // หาเลขสนามที่ว่าง (ไม่มีคนเล่น)
-            const emptyCourt = Array.from(document.querySelectorAll('.court-card')).find(c => {
-                return c.querySelectorAll('.occupied').length === 0;
-            });
+            if (emptyCourt) fillCourt(emptyCourt, [...selectedPlayers]);
+            else addToQueue([...selectedPlayers]);
 
-            if (emptyCourt) {
-                fillCourt(emptyCourt, [...selectedPlayers]);
-            } else {
-                addToQueue([...selectedPlayers]);
-            }
-
-            // เคลียร์ค่าที่เลือก
             selectedPlayers = [];
-            document.querySelectorAll('.player-item.selected').forEach(el => el.remove());
-            document.getElementById('confirmBtn').innerText = `ยืนยันลงสนาม (0)`;
+            updateSelectionUI();
         };
 
         // --- 2. Fill Court & Queue ---
         function fillCourt(courtEl, players) {
             const slotsA = courtEl.querySelectorAll('.team-a .slot');
             const slotsB = courtEl.querySelectorAll('.team-b .slot');
-            
             players.forEach((name, i) => {
-                if (i < 2) {
-                    slotsA[i].innerText = name;
-                    slotsA[i].classList.add('occupied');
-                } else {
-                    slotsB[i-2].innerText = name;
-                    slotsB[i-2].classList.add('occupied');
-                }
+                const target = (i < 2) ? slotsA[i] : slotsB[i-2];
+                target.innerText = name;
+                target.classList.add('occupied');
             });
             courtEl.classList.add('playing');
         }
 
         function addToQueue(players) {
             const queueList = document.getElementById('queue-list');
-            const groupDiv = document.createElement('div');
-            groupDiv.className = "queue-group";
-            groupDiv.innerHTML = `<div style="font-size:0.7em; color:#999; text-align:center;">ก๊วน 4 คน</div>`;
-            players.forEach(name => {
-                const p = document.createElement('div');
-                p.style.fontSize = "0.8em";
-                p.style.textAlign = "center";
-                p.innerText = name;
-                groupDiv.appendChild(p);
-            });
-            groupDiv.onclick = () => {
-                const emptyCourt = Array.from(document.querySelectorAll('.court-card')).find(c => c.querySelectorAll('.occupied').length === 0);
-                if (emptyCourt) {
-                    fillCourt(emptyCourt, players);
-                    groupDiv.remove();
-                } else {
-                    alert("สนามยังไม่ว่าง!");
-                }
+            const group = document.createElement('div');
+            group.className = "queue-group";
+            group.innerHTML = `
+                <div class="q-team-split">
+                    <div class="q-box" style="background:var(--team-a)">${players[0]}<br>${players[1] || ''}</div>
+                    <div style="align-self:center; font-size:10px;">VS</div>
+                    <div class="q-box" style="background:var(--team-b)">${players[2] || ''}<br>${players[3] || ''}</div>
+                </div>`;
+            group.onclick = () => {
+                const court = Array.from(document.querySelectorAll('.court-card')).find(c => c.querySelectorAll('.occupied').length === 0);
+                if (court) { fillCourt(court, players); group.remove(); }
             };
-            queueList.appendChild(groupDiv);
+            queueList.appendChild(group);
         }
 
-        // --- 3. Court Management ---
+        // --- 3. End Match & Return to Top ---
+        window.endMatch = (id) => {
+            const card = document.getElementById(`c-${id}`);
+            const finishedPlayers = [];
+            card.querySelectorAll('.occupied').forEach(s => {
+                finishedPlayers.push(s.innerText);
+                s.innerText = "ว่าง";
+                s.classList.remove('occupied');
+            });
+            card.classList.remove('playing');
+            
+            // ส่งกลับไปที่ Waiting List (เพิ่มที่ด้านบนสุด)
+            finishedPlayers.reverse().forEach(name => addPlayerToUI(name, true));
+        };
+
+        // --- 4. UI Helpers ---
+        function addPlayerToUI(name, toTop = false) {
+            const list = document.getElementById('checkin-list');
+            const div = document.createElement('div');
+            div.className = "player-item";
+            div.innerText = name;
+            div.onclick = () => toggleSelect(name, div);
+            
+            if (toTop) list.prepend(div);
+            else list.appendChild(div);
+        }
+
         window.addNewCourt = () => {
             const grid = document.getElementById('main-grid');
             let maxNum = 0;
-            document.querySelectorAll('.court-select').forEach(s => {
-                if (parseInt(s.value) > maxNum) maxNum = parseInt(s.value);
-            });
+            document.querySelectorAll('.court-select').forEach(s => maxNum = Math.max(maxNum, parseInt(s.value)));
             const nextNum = (maxNum + 1).toString().padStart(2, '0');
             const id = Date.now();
-
-            const html = `
+            grid.insertAdjacentHTML('beforeend', `
                 <div class="court-card" id="c-${id}">
-                    <div style="display:flex; justify-content:space-between;">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
                         <select class="court-select">${generateOptions(nextNum)}</select>
-                        <button onclick="this.closest('.court-card').remove()" style="color:red; background:none; font-size:12px;">ลบ</button>
+                        <button onclick="this.closest('.court-card').remove()" style="color:red; background:none; padding:0;">ลบ</button>
                     </div>
-                    <div class="match-area">
-                        <div class="team-box team-a">
-                            <div class="slot">ว่าง</div><div class="slot">ว่าง</div>
-                        </div>
-                        <div style="font-weight:bold; color:#999;">VS</div>
-                        <div class="team-box team-b">
-                            <div class="slot">ว่าง</div><div class="slot">ว่าง</div>
-                        </div>
+                    <div style="display:flex; gap:10px;">
+                        <div class="team-box" style="background:var(--team-a)"><div class="slot">ว่าง</div><div class="slot">ว่าง</div></div>
+                        <div class="team-box" style="background:var(--team-b)"><div class="slot">ว่าง</div><div class="slot">ว่าง</div></div>
                     </div>
-                    <button onclick="endMatch('${id}')" style="width:100%; background:var(--accent-red);">จบเกม / เคลียร์</button>
-                </div>`;
-            grid.insertAdjacentHTML('beforeend', html);
+                    <button onclick="endMatch('${id}')" style="width:100%; background:var(--accent-red); margin-top:10px;">จบเกม</button>
+                </div>`);
         };
 
         function generateOptions(sel) {
@@ -191,37 +189,17 @@
             return opt;
         }
 
-        window.endMatch = (id) => {
-            const card = document.getElementById(`c-${id}`);
-            card.classList.remove('playing');
-            card.querySelectorAll('.slot').forEach(s => {
-                s.innerText = "ว่าง";
-                s.classList.remove('occupied');
-            });
-        };
-
-        // --- 4. Firebase ---
         window.createSession = async () => {
             const ref = await addDoc(collection(db, "sessions"), { created_at: Date.now() });
             currentSessionId = ref.id;
-            new QRCode(document.getElementById("qrcode"), { text: `URL...${currentSessionId}`, width: 60, height: 60 });
+            new QRCode(document.getElementById("qrcode"), { text: `https://.../index.html?session=${currentSessionId}`, width: 50, height: 50 });
             listenToAttendance(currentSessionId);
             addNewCourt(); addNewCourt();
+            
+            // ปุ่ม Mock สำหรับทดสอบ
+            addPlayerToUI("เอ็ม"); addPlayerToUI("บี"); addPlayerToUI("ดา"); addPlayerToUI("เก่ง");
+            addPlayerToUI("ตั้ม"); addPlayerToUI("ฟ้า"); addPlayerToUI("ปอนด์"); addPlayerToUI("นัท");
         };
-
-        document.getElementById('mockUserBtn').onclick = () => {
-            const names = ["เอ็ม", "บี", "ดา", "เก่ง", "ตั้ม", "ฟ้า", "ปอนด์", "นัท", "แชมป์", "อาร์ม", "ปุ้ย", "เล็ก"];
-            names.forEach(n => addPlayerToUI(n));
-        };
-
-        function addPlayerToUI(name) {
-            const list = document.getElementById('checkin-list');
-            const div = document.createElement('div');
-            div.className = "player-item";
-            div.innerText = name;
-            div.onclick = () => toggleSelect(name, div);
-            list.appendChild(div);
-        }
 
         function listenToAttendance(sid) {
             onSnapshot(collection(db, `sessions/${sid}/attendance`), snap => {
