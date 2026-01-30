@@ -2,7 +2,8 @@
 <html>
 <head>
     <title>Admin - จัดการคิวแบด</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <!--<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>-->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" integrity="sha512-CNgIRecGo7nphbeZ04Sc13ka07paqdeTu0WR1IM4wKauwzSZ9RaHdqujWZt1lYv67giJGxRAvDUqMfG128E3GA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <link rel="stylesheet" href="style.css">
     <style>
         :root {
@@ -108,6 +109,17 @@
 
         // --- 3. Session Logic ---
         document.getElementById('startSessionBtn').onclick = async () => {
+            /*const sessionRef = await addDoc(collection(db, "sessions"), {
+                session_name: "ก๊วนแบดมินตัน",
+                is_closed: false,
+                created_at: Date.now()
+            });*/
+            // เช็คก่อนว่า QRCode พร้อมใช้งานไหม
+            if (typeof QRCode === "undefined") {
+                alert("ระบบสร้าง QR ยังไม่พร้อม กรุณารอ 2-3 วินาทีแล้วกดใหม่ครับ");
+                return;
+            }
+
             const sessionRef = await addDoc(collection(db, "sessions"), {
                 session_name: "ก๊วนแบดมินตัน",
                 is_closed: false,
@@ -118,11 +130,20 @@
             const checkInURL = `https://early-bird-queue.vercel.app/index.html?session=${currentSessionId}`;
             
             document.getElementById('session-qr-area').style.display = 'block';
-            document.getElementById('qrcode').innerHTML = ""; 
+            /*document.getElementById('qrcode').innerHTML = ""; 
             new QRCode(document.getElementById("qrcode"), {
                 text: checkInURL,
                 width: 180,
                 height: 180
+            });*/
+            // เรียกใช้ QRCode
+            new QRCode(qrcodeContainer, {
+                text: checkInURL,
+                width: 180,
+                height: 180,
+                colorDark : "#000000",
+                colorLight : "#ffffff",
+                correctLevel : QRCode.CorrectLevel.H
             });
             document.getElementById('session-id-text').innerText = "Session ID: " + currentSessionId;
             
