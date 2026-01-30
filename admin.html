@@ -2,71 +2,68 @@
 <html>
 <head>
     <title>Admin - จัดการคิวแบด</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <link rel="stylesheet" href="style.css">
     <style>
-    :root {
-        --primary-bg: #fdfcf0; /* พาสเทลเหลืองอ่อน */
-        --card-bg: #ffffff;
-        --accent-green: #b9fbc0;
-        --accent-blue: #a2d2ff;
-        --text-color: #555;
-    }
-
-    body {
-        font-family: 'Kanit', sans-serif;
-        background-color: var(--primary-bg);
-        color: var(--text-color);
-        margin: 0;
-        display: flex;
-        height: 100vh;
-        overflow: hidden;
-    }
-
-    /* ฝั่งซ้าย: หน้าจอสนาม */
-    .court-container {
-        flex: 1;
-        padding: 20px;
-        overflow-y: auto;
-    }
-
-    /* ฝั่งขวา: รายชื่อคนรอ (Slide-out) */
-    .side-panel {
-        width: 350px;
-        background-color: var(--card-bg);
-        border-left: 2px solid #eee;
-        padding: 20px;
-        box-shadow: -2px 0 10px rgba(0,0,0,0.05);
-    }
-
-    .court-card {
-        background: var(--card-bg);
-        border-radius: 15px;
-        padding: 15px;
-        margin-bottom: 15px;
-        border-bottom: 5px solid var(--accent-green);
-    }
-
-    .player-tag {
-        display: inline-block;
-        padding: 5px 12px;
-        margin: 4px;
-        border-radius: 20px;
-        background: var(--accent-blue);
-        font-size: 0.9em;
-    }
-</style>
+        :root {
+            --primary-bg: #fdfcf0;
+            --card-bg: #ffffff;
+            --accent-green: #b9fbc0;
+            --accent-blue: #a2d2ff;
+            --text-color: #555;
+        }
+        body {
+            font-family: 'Kanit', sans-serif;
+            background-color: var(--primary-bg);
+            color: var(--text-color);
+            margin: 0;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+        .court-container {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        .side-panel {
+            width: 350px;
+            background-color: var(--card-bg);
+            border-left: 2px solid #eee;
+            padding: 20px;
+            box-shadow: -2px 0 10px rgba(0,0,0,0.05);
+            overflow-y: auto;
+        }
+        .player-tag {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 15px;
+            margin-bottom: 8px;
+            border-radius: 12px;
+            background: var(--accent-blue);
+            font-size: 0.9em;
+        }
+        #qrcode img {
+            margin: 0 auto;
+            border: 10px solid white;
+            border-radius: 10px;
+        }
+    </style>
 </head>
 <body>
-    <h1>ระบบจัดการคิว (Admin)</h1>
-    
+
     <div class="court-container">
+        <h1>ระบบจัดการคิว (Admin)</h1>
         <h2>🏸 สนามแข่งขัน</h2>
-        <button id="startSessionBtn" style="padding: 10px 20px; border-radius: 10px; border: none; background: var(--accent-green); cursor: pointer;">
+        <button id="startSessionBtn" style="padding: 12px 24px; border-radius: 10px; border: none; background: var(--accent-green); font-weight: bold; cursor: pointer;">
             + เปิดรอบก๊วนใหม่
         </button>
         
-        <div id="session-qr-area" style="display:none; margin: 15px 0;">
+        <div id="session-qr-area" style="display:none; margin: 20px 0; text-align: center; background: white; padding: 20px; border-radius: 15px;">
+            <p>ให้สมาชิกสแกนเพื่อเข้าก๊วน:</p>
             <div id="qrcode"></div>
+            <p id="session-id-text" style="font-size: 0.8em; color: #888;"></p>
         </div>
 
         <div id="courts-grid">
@@ -74,31 +71,29 @@
     </div>
 
     <div class="side-panel">
-        <h3>👥 รายชื่อสมาชิกที่เช็คอิน</h3>
+        <h3>👥 สมาชิกที่เช็คอินแล้ว</h3>
         <div id="waiting-list">
             <p style="color: #ccc;">ยังไม่มีคนเช็คอิน...</p>
         </div>
     </div>
 
     <script type="module">
-        // 1. ตั้งรหัสผ่านที่คุณต้องการ (เปลี่ยนเป็นอะไรก็ได้)
-    const ADMIN_PASSWORD = "mysecretpass"; 
+        // --- 1. Security Check ---
+        const ADMIN_PASSWORD = "mysecretpass"; 
+        const urlParams = new URLSearchParams(window.location.search);
+        const enteredPass = urlParams.get('pass');
 
-    // 2. เช็คค่าจาก URL Parameter ที่ชื่อ 'pass'
-    const urlParams = new URLSearchParams(window.location.search);
-    const enteredPass = urlParams.get('pass');
+        if (enteredPass !== ADMIN_PASSWORD) {
+            alert("ขออภัย คุณไม่มีสิทธิ์เข้าถึงหน้านี้");
+            window.location.href = "index.html"; 
+        }
 
-    // 3. ถ้าพาสเวิร์ดไม่ตรง ให้ดีดไปหน้า index.html ทันที
-    if (enteredPass !== ADMIN_PASSWORD) {
-        alert("ขออภัย คุณไม่มีสิทธิ์เข้าถึงหน้านี้");
-        window.location.href = "index.html"; 
-    }
-
+        // --- 2. Firebase Setup ---
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, onSnapshot, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
-             apiKey: "AIzaSyDQbnx83sbs1sO4xsuLUV50uxbBinr2VtY",
+            apiKey: "AIzaSyDQbnx83sbs1sO4xsuLUV50uxbBinr2VtY",
             authDomain: "earlybird-queue.firebaseapp.com",
             projectId: "earlybird-queue",
             storageBucket: "earlybird-queue.firebasestorage.app",
@@ -109,44 +104,56 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // เพิ่มส่วนนี้ใน <script type="module"> ของหน้า admin.html
+        let currentSessionId = "";
 
-let currentSessionId = ""; // ตัวแปรเก็บ Session ปัจจุบัน
+        // --- 3. Session Logic ---
+        document.getElementById('startSessionBtn').onclick = async () => {
+            const sessionRef = await addDoc(collection(db, "sessions"), {
+                session_name: "ก๊วนแบดมินตัน",
+                is_closed: false,
+                created_at: Date.now()
+            });
+            currentSessionId = sessionRef.id;
+            
+            const checkInURL = `https://early-bird-queue.vercel.app/index.html?session=${currentSessionId}`;
+            
+            document.getElementById('session-qr-area').style.display = 'block';
+            document.getElementById('qrcode').innerHTML = ""; 
+            new QRCode(document.getElementById("qrcode"), {
+                text: checkInURL,
+                width: 180,
+                height: 180
+            });
+            document.getElementById('session-id-text').innerText = "Session ID: " + currentSessionId;
+            
+            listenToAttendance(currentSessionId);
+        };
 
-// 1. ฟังก์ชันสร้าง Session และเปิดรับคน
-document.getElementById('startSessionBtn').onclick = async () => {
-    const sessionRef = await addDoc(collection(db, "sessions"), {
-        session_name: "ก๊วนแบดมินตัน",
-        is_closed: false,
-        created_at: Date.now()
-    });
-    currentSessionId = sessionRef.id;
-    
-    // เจน QR Code (ใช้ URL ของเว็บคุณ)
-    const checkInURL = `https://early-bird-queue.vercel.app/?session=${currentSessionId}`;
-    new QRCode(document.getElementById("qrcode"), checkInURL);
-    
-    // เริ่มฟังว่ามีใครเช็คอินเข้ามาใน Session นี้หรือยัง
-    listenToAttendance(currentSessionId);
-};
+        function listenToAttendance(sessionId) {
+            const attendanceRef = collection(db, `sessions/${sessionId}/attendance`);
+            onSnapshot(attendanceRef, (snapshot) => {
+                const listDiv = document.getElementById('waiting-list');
+                listDiv.innerHTML = "";
+                if (snapshot.empty) listDiv.innerHTML = '<p style="color: #ccc;">ยังไม่มีคนเช็คอิน...</p>';
+                
+                snapshot.forEach(doc => {
+                    const user = doc.data();
+                    listDiv.innerHTML += `
+                        <div class="player-tag">
+                            <span>${user.display_name}</span>
+                            <button onclick="addToQueue('${user.user_id}', '${user.display_name}')" style="border:none; background:#fff; border-radius:5px; cursor:pointer;">จัดคิว</button>
+                        </div>
+                    `;
+                });
+            });
+        }
 
-// 2. ฟังก์ชันดึงรายชื่อคนเช็คอิน (Real-time)
-function listenToAttendance(sessionId) {
-    const attendanceRef = collection(db, `sessions/${sessionId}/attendance`);
-    onSnapshot(attendanceRef, (snapshot) => {
-        const listDiv = document.getElementById('waiting-list');
-        listDiv.innerHTML = "<h3>สมาชิกที่มาแล้ว</h3>";
-        snapshot.forEach(doc => {
-            const user = doc.data();
-            listDiv.innerHTML += `
-                <div class="player-tag">
-                    <span>${user.display_name}</span>
-                    <button onclick="addToQueue('${user.user_id}', '${user.display_name}')">จัดคิว</button>
-                </div>
-            `;
-        });
-    });
-}
+        // --- 4. แก้ปัญหา Scope (ทำให้ HTML เรียกใช้ฟังก์ชันได้) ---
+        window.addToQueue = (userId, name) => {
+            alert("กำลังเตรียมระบบจัดคิวสำหรับ: " + name);
+            // เดี๋ยวเราจะมาเขียนระบบลากวางตรงนี้ต่อครับ
+        };
+
     </script>
 </body>
 </html>
