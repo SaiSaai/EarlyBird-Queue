@@ -163,19 +163,20 @@
         }
 
         // --- 3. End Match & Return to Top ---
-        window.endMatch = (id) => {
-            const card = document.getElementById(`c-${id}`);
-            const finishedPlayers = [];
-            card.querySelectorAll('.occupied').forEach(s => {
-                finishedPlayers.push(s.innerText);
-                s.innerText = "ว่าง";
-                s.classList.remove('occupied');
-            });
-            card.classList.remove('playing');
-            
-            // ส่งกลับไปที่ Waiting List (เพิ่มที่ด้านบนสุด)
-            finishedPlayers.reverse().forEach(name => addPlayerToUI(name, true));
-        };
+        window.endMatch = async (courtId, playerIds) => {
+    // 1. เคลียร์สถานะในสนาม (UI)
+    // ... โค้ดเคลียร์ UI เดิมของคุณ ...
+
+    // 2. อัปเดต Database
+    const now = Date.now();
+    playerIds.forEach(async (uid) => {
+        const attendanceRef = doc(db, `sessions/${currentSessionId}/attendance`, uid);
+        await updateDoc(attendanceRef, {
+            is_playing: false,
+            last_match_end: now // ตั้งเวลาเป็น 'ปัจจุบัน' เพื่อให้ไปต่อท้ายคิว
+        });
+    });
+};
 
         // --- 4. UI Helpers ---
         function addPlayerToUI(name, toTop = false) {
