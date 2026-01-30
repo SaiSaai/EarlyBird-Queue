@@ -60,7 +60,10 @@
         <button id="startSessionBtn" style="padding: 12px 24px; border-radius: 10px; border: none; background: var(--accent-green); font-weight: bold; cursor: pointer;">
             + เปิดรอบก๊วนใหม่
         </button>
-        
+        <button id="mockUserBtn" style="padding: 12px; border-radius: 10px; border: 1px solid #ccc; background: #eee; cursor: pointer; margin-left: 10px;">
+    🤖 สุ่มคนจำลอง 15 คน
+        </button>
+
         <div id="session-qr-area" style="display:none; margin: 20px 0; text-align: center; background: white; padding: 20px; border-radius: 15px;">
             <p>ให้สมาชิกสแกนเพื่อเข้าก๊วน:</p>
             <div id="qrcode"></div>
@@ -148,6 +151,36 @@
             document.getElementById('session-id-text').innerText = "Session ID: " + currentSessionId;
             
             listenToAttendance(currentSessionId);
+
+            // ฟังก์ชันสร้างคนจำลอง
+            document.getElementById('mockUserBtn').onclick = async () => {
+                if (!currentSessionId) {
+                    alert("กรุณากด 'เปิดรอบก๊วนใหม่' ก่อนสร้างคนจำลองครับ");
+                    return;
+                }
+
+                const mockNames = [
+                    "พี่เอ็ม", "น้องบี", "เจ๊ดา", "เก่ง", "ตั้ม", 
+                    "ฟ้า", "ปอนด์", "นัท", "แชมป์", "อาร์ม", 
+                    "ปลา", "กิ๊ฟ", "โอม", "นุช", "บอย"
+                ];
+
+                const levels = ["YELLOW", "GREEN", "BLUE", "RED", "BLACK"];
+
+                for (let i = 0; i < mockNames.length; i++) {
+                    const mockId = "mock_user_" + i;
+                    const attendanceRef = doc(db, `sessions/${currentSessionId}/attendance`, mockId);
+                    
+                    await setDoc(attendanceRef, {
+                        user_id: mockId,
+                        display_name: mockNames[i],
+                        level_color: levels[Math.floor(Math.random() * levels.length)], // สุ่มระดับฝีมือ
+                        check_in_time: Date.now() + (i * 1000), // ให้เวลาห่างกันนิดหน่อยเพื่อทดสอบ FIFO
+                        is_paid: false
+                    });
+                }
+                alert("สร้างคนจำลอง 15 คนสำเร็จแล้ว!");
+            };
         };
 
         function listenToAttendance(sessionId) {
