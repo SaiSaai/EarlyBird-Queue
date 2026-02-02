@@ -80,28 +80,52 @@
         .btn-start { background: #4caf50; color: white; }
         .btn-end { background: var(--accent-red); color: #d00; display: none; }
 
-        /* ✅ Fix Toggle System */
-        .toggle-btn { float: right; background: #eee; padding: 2px 8px; border-radius: 5px; font-size: 0.7em; cursor: pointer; }
-        .side-panel.collapsed { width: 45px !important; padding: 15px 5px !important; }
-        .side-panel.collapsed h3, 
-        .side-panel.collapsed p, 
-        .side-panel.collapsed .list-box, 
-        .side-panel.collapsed button { display: none !important; }
-        .side-panel.collapsed::before { content: "MENU"; writing-mode: vertical-rl; text-orientation: mixed; font-weight: bold; color: #ccc; margin-top: 20px; display: block; text-align: center; width: 100%; }
+        /* แก้ไขสไตล์ตอนซ่อน Panel */
+    .side-panel.collapsed { 
+        width: 45px !important; 
+        padding: 15px 5px !important; 
+        cursor: pointer; /* ทำให้รู้ว่ากดได้ */
+        background: #f0f0f0 !important; /* เปลี่ยนสีนิดหน่อยให้รู้ว่าพักไว้ */
+    }
+
+    /* ซ่อนเนื้อหาเดิม */
+    .side-panel.collapsed h3, 
+    .side-panel.collapsed p, 
+    .side-panel.collapsed .list-box, 
+    .side-panel.collapsed button { display: none !important; }
+
+    /* แสดงชื่อ Panel แนวตั้ง */
+    .side-panel.collapsed::after {
+        display: block;
+        writing-mode: vertical-rl;
+        text-orientation: mixed;
+        font-weight: bold;
+        font-size: 0.9em;
+        color: #666;
+        margin: 20px auto;
+        white-space: nowrap;
+    }
+
+    /* กำหนดชื่อแต่ละ Panel ตอนซ่อน */
+    #panel-fifo.collapsed::after { content: "👥 รอจัดคิว (FIFO)"; }
+    #panel-queue.collapsed::after { content: "⏳ คิวกลาง (ก๊วน)"; }
+
+    /* ปุ่ม Toggle เดิม (ถ้ายังอยากกดปุ่มเล็ก) */
+    .toggle-btn { float: right; background: #ddd; padding: 2px 8px; border-radius:
     </style>
 </head>
 <body>
 
-    <div class="side-panel" id="panel-fifo">
-        <h3>👥 คิวรอ <span class="toggle-btn" onclick="togglePanel('panel-fifo')">❌ ซ่อน</span></h3>
+    <div class="side-panel" id="panel-fifo" onclick="checkAndOpen(this)">
+        <h3>👥 คิวรอ <span class="toggle-btn" onclick="event.stopPropagation(); togglePanel('panel-fifo')">❌ ซ่อน</span></h3>
         <p style="font-size: 0.75em; color: #888; margin-top: -10px;">รอนานที่สุดอยู่บนสุด</p>
         <div id="checkin-list" class="list-box"></div>
         <button id="confirmBtn" class="btn-confirm">ยืนยัน (0)</button>
         <button id="mockUserBtn" style="margin-top:8px; background:#eee; font-size:0.8em;">🤖 สุ่มคน</button>
     </div>
 
-    <div class="side-panel" id="panel-queue" style="background: #fffdf5;">
-        <h3>⏳ คิวกลาง <span class="toggle-btn" onclick="togglePanel('panel-queue')">❌ ซ่อน</span></h3>
+    <div class="side-panel" id="panel-queue" style="background: #fffdf5;" onclick="checkAndOpen(this)">
+        <h3>⏳ คิวกลาง <span class="toggle-btn" onclick="event.stopPropagation(); togglePanel('panel-queue')">❌ ซ่อน</span></h3>
         <div id="queue-list" class="list-box"></div>
     </div>
 
@@ -137,11 +161,18 @@
         window.togglePanel = (id) => {
             const panel = document.getElementById(id);
             if (!panel) return;
-            const btn = panel.querySelector('.toggle-btn');
             panel.classList.toggle('collapsed');
-            btn.innerText = panel.classList.contains('collapsed') ? "➕ แสดง" : "❌ ซ่อน";
+            const btn = panel.querySelector('.toggle-btn');
+            if (btn) btn.innerText = panel.classList.contains('collapsed') ? "➕" : "❌ ซ่อน";
         };
 
+        // ฟังก์ชันสำหรับ "คลิกเพื่อเปิด" เมื่อ Panel ถูกซ่อนอยู่
+        window.checkAndOpen = (el) => {
+            if (el.classList.contains('collapsed')) {
+                togglePanel(el.id);
+            }
+        };
+        
         // --- Session Logic ---
         window.createSession = async () => {
             const sessionRef = await addDoc(collection(db, "sessions"), { created_at: serverTimestamp(), is_closed: false });
