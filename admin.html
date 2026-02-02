@@ -3,42 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Badminton Admin Pro - Fixed Slots</title>
+    <title>Badminton Admin Pro - Bug Fixed</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
-        :root { 
-            --primary-bg: #fdfcf0; 
-            --team-a: #a2d2ff; 
-            --team-b: #b9fbc0; 
-            --accent-red: #ffcfd2; 
-            --text-color: #444; 
-        }
+        :root { --primary-bg: #fdfcf0; --team-a: #a2d2ff; --team-b: #b9fbc0; --accent-red: #ffcfd2; --text-color: #444; }
         body { font-family: 'Kanit', sans-serif; background-color: var(--primary-bg); color: var(--text-color); margin: 0; display: flex; height: 100vh; overflow: hidden; }
         .side-panel { width: 280px; background: #fff; border-right: 2px solid #eee; padding: 15px; display: flex; flex-direction: column; transition: 0.3s; position: relative; }
         .panel-main { flex: 1; padding: 20px; overflow-y: auto; }
         .list-box { flex: 1; border: 1px solid #ddd; border-radius: 12px; overflow-y: auto; padding: 10px; background: #fafafa; }
-        
         .player-item { padding: 10px; margin-bottom: 8px; border-radius: 10px; border: 2px solid #eee; background: white; cursor: pointer; font-weight: bold; text-align: center; }
-        /* สีตามลำดับ Slot */
         .sel-a { border-color: var(--team-a); background: #e7f3ff; box-shadow: 0 0 5px var(--team-a); }
         .sel-b { border-color: var(--team-b); background: #f0fff4; box-shadow: 0 0 5px var(--team-b); }
-
         .queue-group { background: white; border: 2px solid #ffeeba; border-radius: 12px; padding: 10px; margin-bottom: 12px; cursor: pointer; }
         .q-split { display: flex; gap: 8px; margin-top: 8px; }
         .q-tag { flex: 1; font-size: 0.8em; padding: 6px; border-radius: 6px; text-align: center; font-weight: bold; }
-
         .courts-wrapper { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
         .court-card { background: white; border-radius: 20px; padding: 15px; box-shadow: 0 8px 15px rgba(0,0,0,0.05); border-top: 10px solid #ddd; }
         .court-card.playing { border-top-color: #4caf50; }
-        
         .team-box { flex: 1; display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: 15px; min-height: 90px; }
         .slot { background: rgba(255,255,255,0.8); padding: 10px; border-radius: 8px; font-size: 0.9em; text-align: center; font-weight: bold; cursor: pointer; }
         .slot.occupied { background: white; border: 1px solid rgba(0,0,0,0.1); }
-
         button { border: none; padding: 10px; border-radius: 10px; cursor: pointer; font-family: 'Kanit'; font-weight: bold; }
         .btn-confirm { background: #007bff; color: white; margin-top: 10px; width: 100%; }
-
         .side-panel.collapsed { width: 45px !important; padding: 10px 5px !important; cursor: pointer; background: #eee !important; }
         .side-panel.collapsed * { display: none !important; }
         .side-panel.collapsed::after { content: attr(data-label); writing-mode: vertical-rl; text-orientation: mixed; font-weight: bold; margin: 20px auto; display: block; }
@@ -84,10 +71,10 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // 🟢 เปลี่ยนจาก Array เป็น Object ล็อกตำแหน่ง 1,2 (Team A) และ 3,4 (Team B)
         let selectedSlots = [null, null, null, null]; 
         let currentSessionId = "";
         let queuedPlayerIds = new Set();
+        let lastSnapshotData = []; // เก็บข้อมูลล่าสุดไว้สำหรับ Re-render
 
         window.togglePanel = (id) => document.getElementById(id).classList.toggle('collapsed');
         window.checkAndOpen = (el) => { if (el.classList.contains('collapsed')) togglePanel(el.id); };
@@ -100,43 +87,50 @@
             addNewCourt(); addNewCourt();
         };
 
+        function renderFIFO() {
+            const list = document.getElementById('checkin-list');
+            list.innerHTML = "";
+            lastSnapshotData.forEach(player => {
+                const { id, data } = player;
+                const isSelected = selectedSlots.some(p => p?.id === id);
+                // ต้อง (ไม่เล่นอยู่) AND (ไม่อยู่ในคิวกลาง) OR (กำลังถูกเลือก/แก้ไขอยู่)
+                if (!data.is_playing && (!queuedPlayerIds.has(id) || isSelected)) {
+                    const div = document.createElement('div');
+                    div.className = "player-item";
+                    div.innerText = data.display_name;
+                    div.onclick = () => toggleSelect(id, data.display_name);
+                    list.appendChild(div);
+                }
+            });
+            updateSelectionUI();
+        }
+
         function listenToAttendance() {
             if(!currentSessionId) return;
             const q = query(collection(db, `sessions/${currentSessionId}/attendance`), orderBy("last_match_end", "asc"));
             onSnapshot(q, (snapshot) => {
-                const list = document.getElementById('checkin-list');
-                list.innerHTML = "";
+                lastSnapshotData = [];
                 snapshot.forEach(docSnap => {
-                    const data = docSnap.data();
-                    const id = docSnap.id;
-                    const isSelected = selectedSlots.some(p => p?.id === id);
-                    if (!data.is_playing && (!queuedPlayerIds.has(id) || isSelected)) {
-                        const div = document.createElement('div');
-                        div.className = "player-item";
-                        div.innerText = data.display_name;
-                        div.onclick = () => toggleSelect(id, data.display_name);
-                        list.appendChild(div);
-                    }
+                    lastSnapshotData.push({ id: docSnap.id, data: docSnap.data() });
                 });
-                updateSelectionUI();
+                renderFIFO();
             });
         }
 
         window.toggleSelect = (id, name) => {
             const index = selectedSlots.findIndex(p => p?.id === id);
             if (index > -1) {
-                selectedSlots[index] = null; // เอาออก
+                selectedSlots[index] = null;
             } else {
                 const emptyIdx = selectedSlots.findIndex(p => p === null);
-                if (emptyIdx > -1) selectedSlots[emptyIdx] = { id, name }; // ใส่ในที่ว่างแรกที่เจอ
+                if (emptyIdx > -1) selectedSlots[emptyIdx] = { id, name };
             }
-            updateSelectionUI();
+            renderFIFO(); // บังคับ Render ใหม่ทันทีเพื่อเช็คสถานะ
         };
 
         function updateSelectionUI() {
             const count = selectedSlots.filter(p => p !== null).length;
             document.getElementById('confirmBtn').innerText = `ยืนยันลงสนาม (${count})`;
-            
             document.querySelectorAll('.player-item').forEach(el => {
                 const name = el.innerText;
                 const idx = selectedSlots.findIndex(p => p?.name === name);
@@ -160,23 +154,23 @@
                 await batch.commit();
                 fillCourtUI(emptyCourt, players);
             } else {
-                // ถ้าสนามไม่ว่าง หรือคนไม่ครบ 4 แต่จะลงคิวกลาง
+                // ลงคิวกลาง
                 players.forEach(p => queuedPlayerIds.add(p.id));
-                addToQueueUI([...selectedSlots]); // ส่งไปทั้งก้อนที่มี null ด้วยเพื่อรักษาตำแหน่ง
+                addToQueueUI([...selectedSlots]);
             }
             selectedSlots = [null, null, null, null];
-            updateSelectionUI();
+            renderFIFO(); // เคลียร์ชื่อออกจาก FIFO ทันที
         };
 
         function addToQueueUI(slotsCopy) {
             const div = document.createElement('div');
             div.className = "queue-group";
-            const p = slotsCopy.map(p => p ? p.name : "-");
+            const pNames = slotsCopy.map(p => p ? p.name : "-");
             div.innerHTML = `
-                <div style="font-size:0.7em; color:#999; text-align:center;">คิวกลุ่ม (คลิกเพื่อลงสนาม/แก้ไข)</div>
+                <div style="font-size:0.7em; color:#999; text-align:center;">คิวกลุ่ม (ลงสนาม/แก้ไข)</div>
                 <div class="q-split">
-                    <div class="q-tag" style="background:var(--team-a)">${p[0]}<br>${p[1]}</div>
-                    <div class="q-tag" style="background:var(--team-b)">${p[2]}<br>${p[3]}</div>
+                    <div class="q-tag" style="background:var(--team-a)">${pNames[0]}<br>${pNames[1]}</div>
+                    <div class="q-tag" style="background:var(--team-b)">${pNames[2]}<br>${pNames[3]}</div>
                 </div>
             `;
 
@@ -186,16 +180,20 @@
 
                 if (emptyCourt && playersOnly.length === 4) {
                     const batch = writeBatch(db);
-                    playersOnly.forEach(p => { batch.update(doc(db, `sessions/${currentSessionId}/attendance`, p.id), { is_playing: true }); queuedPlayerIds.delete(p.id); });
+                    playersOnly.forEach(p => { 
+                        batch.update(doc(db, `sessions/${currentSessionId}/attendance`, p.id), { is_playing: true }); 
+                        queuedPlayerIds.delete(p.id); 
+                    });
                     await batch.commit();
                     fillCourtUI(emptyCourt, playersOnly);
                     div.remove();
+                    renderFIFO();
                 } else {
-                    // แก้ไข: คืนค่ากลับไปที่ Slot เดิมเป๊ะๆ
+                    // โหมดแก้ไข
                     playersOnly.forEach(p => queuedPlayerIds.delete(p.id));
                     selectedSlots = [...slotsCopy];
                     div.remove();
-                    listenToAttendance();
+                    renderFIFO();
                 }
             };
             document.getElementById('queue-list').appendChild(div);
@@ -237,15 +235,14 @@
 
         window.assignSlot = async (slotEl, courtId, slotIdx) => {
             const oldUid = slotEl.dataset.uid;
-            if (selectedSlots.every(p => p === null)) {
+            const firstPIdx = selectedSlots.findIndex(p => p !== null);
+            if (firstPIdx === -1) {
                 if (oldUid && confirm("เอาออก?")) {
                     await updateDoc(doc(db, `sessions/${currentSessionId}/attendance`, oldUid), { is_playing: false, last_match_end: Date.now() });
                     slotEl.innerText = "ว่าง"; slotEl.classList.remove('occupied'); delete slotEl.dataset.uid;
                 }
                 return;
             }
-            // ถ้ามีการเลือกคนใน FIFO อยู่ ให้เอาคนแรกที่เลือกมาใส่ Slot นี้
-            const firstPIdx = selectedSlots.findIndex(p => p !== null);
             const newP = selectedSlots[firstPIdx];
             const batch = writeBatch(db);
             if (oldUid) batch.update(doc(db, `sessions/${currentSessionId}/attendance`, oldUid), { is_playing: false, last_match_end: Date.now() });
@@ -253,7 +250,7 @@
             await batch.commit();
             slotEl.innerText = newP.name; slotEl.dataset.uid = newP.id; slotEl.classList.add('occupied');
             selectedSlots[firstPIdx] = null; 
-            updateSelectionUI();
+            renderFIFO();
         };
 
         window.startMatch = (id) => {
