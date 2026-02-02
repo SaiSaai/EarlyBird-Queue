@@ -67,6 +67,8 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, collection, doc, setDoc, addDoc, onSnapshot, query, orderBy, updateDoc, serverTimestamp, writeBatch } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        // เพิ่มตัวแปร global ไว้ด้านบนสุดของ script
+        let nextCourtNumber = 1;
 
         const firebaseConfig = {
             apiKey: "AIzaSyDQbnx83sbs1sO4xsuLUV50uxbBinr2VtY",
@@ -236,27 +238,42 @@
 
         window.addNewCourt = () => {
             const id = `court-${Date.now()}`;
+            const currentNum = nextCourtNumber++; // ดึงค่าปัจจุบันมาใช้แล้วบวกเพิ่มรอไว้
+            
             document.getElementById('main-grid').insertAdjacentHTML('beforeend', `
                 <div class="court-card" id="${id}">
-                    <div style="display:flex; justify-content:space-between;">
-                        <select style="font-size:1em;">${generateOptions()}</select>
-                        <button onclick="this.closest('.court-card').remove()" style="color:red; background:none;">ลบ</button>
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <select class="court-select" style="font-size:1.1em; font-weight:bold; color:#2196f3; background:none; border:1px solid #eee; padding:2px 5px;">
+                            ${generateOptions(currentNum)}
+                        </select>
+                        <button onclick="this.closest('.court-card').remove()" style="color:#ff4d4d; background:none; font-size:0.8em; border:1px solid #ffebeb; padding:2px 8px;">ลบสนาม</button>
                     </div>
-                    <span id="status-${id}" style="font-size:0.7em; color:#999;">🟢 ว่าง</span>
-                    <div style="display:flex; gap:10px; margin-top:5px;">
-                        <div class="team-box" style="background:var(--team-a)"><div class="slot" onclick="assignSlot(this, '${id}')">ว่าง</div><div class="slot" onclick="assignSlot(this, '${id}')">ว่าง</div></div>
-                        <div class="team-box" style="background:var(--team-b)"><div class="slot" onclick="assignSlot(this, '${id}')">ว่าง</div><div class="slot" onclick="assignSlot(this, '${id}')">ว่าง</div></div>
+                    <span id="status-${id}" style="font-size:0.75em; font-weight:bold; color:#999; margin-top:5px; display:block;">🟢 พร้อมใช้งาน</span>
+                    
+                    <div style="display:flex; gap:10px; margin-top:8px;">
+                        <div class="team-box" style="background:var(--team-a)">
+                            <div class="slot" onclick="assignSlot(this, '${id}')">ว่าง</div>
+                            <div class="slot" onclick="assignSlot(this, '${id}')">ว่าง</div>
+                        </div>
+                        <div class="team-box" style="background:var(--team-b)">
+                            <div class="slot" onclick="assignSlot(this, '${id}')">ว่าง</div>
+                            <div class="slot" onclick="assignSlot(this, '${id}')">ว่าง</div>
+                        </div>
                     </div>
+
                     <div class="shuttle-counter">
-                        <span>🏸 ลูกแบด:</span>
-                        <button onclick="changeShuttle('${id}', -1)">-</button>
-                        <b id="shuttle-${id}">1</b>
-                        <button onclick="changeShuttle('${id}', 1)">+</button>
+                        <span style="font-size:0.9em;">🏸 ลูกแบด:</span>
+                        <button onclick="changeShuttle('${id}', -1)" style="width:25px; background:#fff; border:1px solid #ddd;">-</button>
+                        <b id="shuttle-${id}" style="min-width:20px; text-align:center;">1</b>
+                        <button onclick="changeShuttle('${id}', 1)" style="width:25px; background:#fff; border:1px solid #ddd;">+</button>
                     </div>
+
                     <button id="btn-start-${id}" class="btn-start" onclick="startMatch('${id}')">▶️ เริ่มเกม</button>
-                    <button id="btn-end-${id}" class="btn-end" onclick="endMatch('${id}')">⏹️ จบเกม / เคลียร์</button>
-                </div>`);
-            checkAndFillEmptyCourts(); // เพิ่มสนามใหม่ให้เช็คคิวด้วย
+                    <button id="btn-end-${id}" class="btn-end" onclick="endMatch('${id}')">⏹️ จบเกม / เคลียร์สนาม</button>
+                </div>
+            `);
+            
+            checkAndFillEmptyCourts(); 
         };
 
         window.assignSlot = async (el, courtId) => {
@@ -318,8 +335,29 @@
             });
         }
 
-        function generateOptions() {
-            let opt = ""; for(let i=1; i<=10; i++) opt += `<option>สนาม ${i}</option>`; return opt;
+        //function generateOptions() {
+        //    let opt = ""; for(let i=1; i<=10; i++) opt += `<option>สนาม ${i}</option>`; return opt;
+        //}
+
+        // ปรับฟังก์ชัน generateOptions ให้เลือกค่าเริ่มต้นตามที่ส่งไป
+        function generateOptions(selectedNum) {
+            let opt = ""; 
+            for(let i=1; i<=20; i++) {
+                const selected = (i === selectedNum) ? "selected" : "";
+                opt += `<option value="${i}" ${selected}>สนาม ${i}</option>`;
+            }
+            return opt;
+        }
+
+        // ปรับปรุง SortableJS ให้ไม่บัคกับ Dropdown
+        function initSortable() {
+            new Sortable(document.getElementById('main-grid'), { 
+                animation: 150, 
+                ghostClass: 'sortable-ghost',
+                // กรองสิ่งที่ไม่ต้องการให้ลาก: select, button, และ slot
+                filter: "select, button, .slot, option", 
+                preventOnFilter: false // ยอมให้เหตุการณ์คลิกผ่านไปยังตัวเลือกได้
+            });
         }
 
         document.getElementById('mockBtn').onclick = async () => {
