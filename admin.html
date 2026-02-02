@@ -3,68 +3,53 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Badminton Admin - Dropdown Fixed</title>
+    <title>Badminton Admin - 20 Players Mockup</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
         :root { --primary-bg: #fdfcf0; --team-a: #a2d2ff; --team-b: #b9fbc0; --accent-red: #ffcfd2; --text-color: #444; --playing-bg: #f0fff4; }
         body { font-family: 'Kanit', sans-serif; background-color: var(--primary-bg); color: var(--text-color); margin: 0; display: flex; height: 100vh; overflow: hidden; }
-        
-        .side-panel { width: 280px; background: #fff; border-right: 2px solid #eee; padding: 15px; display: flex; flex-direction: column; transition: 0.3s; flex-shrink: 0; }
+        .side-panel { width: 280px; background: #fff; border-right: 2px solid #eee; padding: 15px; display: flex; flex-direction: column; flex-shrink: 0; }
         .panel-main { flex: 1; padding: 20px; overflow-y: auto; }
         .list-box { flex: 1; border: 1px solid #ddd; border-radius: 12px; overflow-y: auto; padding: 10px; background: #fafafa; }
-        
-        /* Drag Handle: เฉพาะแถบด้านบนสนามที่ลากได้ */
-        .court-header { cursor: grab; display: flex; justify-content: space-between; align-items: center; padding-bottom: 5px; border-bottom: 1px solid #eee; margin-bottom: 8px; }
-        .court-header:active { cursor: grabbing; }
-
+        .court-header { cursor: grab; display: flex; justify-content: space-between; align-items: center; padding: 5px; background: #f8f9fa; border-radius: 8px 8px 0 0; margin: -15px -15px 10px -15px; border-bottom: 1px solid #eee; }
         .player-item { padding: 10px; margin-bottom: 8px; border-radius: 10px; border: 2px solid #eee; background: white; cursor: pointer; font-weight: bold; text-align: center; }
         .sel-a { border-color: var(--team-a); background: #e7f3ff; }
         .sel-b { border-color: var(--team-b); background: #f0fff4; }
-
-        .queue-group { background: white; border: 2px solid #ffeeba; border-radius: 12px; padding: 10px; margin-bottom: 12px; cursor: pointer; border-left: 8px solid #ffd166; }
-        .q-split { display: flex; gap: 8px; margin-top: 8px; }
-        .q-tag { flex: 1; font-size: 0.8em; padding: 6px; border-radius: 6px; text-align: center; font-weight: bold; }
-
         .courts-wrapper { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 20px; }
-        .court-card { background: white; border-radius: 20px; padding: 15px; box-shadow: 0 8px 15px rgba(0,0,0,0.05); border-top: 10px solid #ccc; position: relative; }
+        .court-card { background: white; border-radius: 20px; padding: 15px; box-shadow: 0 8px 15px rgba(0,0,0,0.05); border-top: 10px solid #ccc; }
         .court-card.playing { border-top-color: #4caf50; background: var(--playing-bg); }
-
         .team-box { flex: 1; display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: 15px; min-height: 90px; }
         .slot { background: white; padding: 10px; border-radius: 8px; font-size: 0.9em; text-align: center; font-weight: bold; border: 1px dashed #ccc; cursor: pointer; }
         .slot.occupied { border-style: solid; border-color: rgba(0,0,0,0.1); }
-
         select, button { font-family: 'Kanit'; font-weight: bold; border-radius: 10px; border: none; cursor: pointer; }
-        select { background: #fff; border: 1px solid #ddd; padding: 3px 8px; font-size: 1em; }
-        
         .btn-confirm { background: #007bff; color: white; width: 100%; padding: 12px; margin-top: 10px; }
         .btn-start { background: #4caf50; color: white; padding: 10px; width: 100%; margin-top: 8px; }
         .btn-end { background: var(--accent-red); color: #d00; padding: 10px; width: 100%; margin-top: 8px; display: none; }
         .shuttle-counter { display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 10px; background: #f9f9f9; padding: 5px; border-radius: 10px; }
-        
-        .side-panel.collapsed { width: 40px !important; padding: 10px 5px !important; cursor: pointer; background: #eee !important; }
-        .side-panel.collapsed * { display: none !important; }
-        .side-panel.collapsed::after { content: attr(data-label); writing-mode: vertical-rl; text-orientation: mixed; font-weight: bold; margin: 20px auto; display: block; color: #888; }
-        .sortable-ghost { opacity: 0.3; }
+        .queue-group { background: white; border: 2px solid #ffeeba; border-radius: 12px; padding: 10px; margin-bottom: 12px; cursor: pointer; border-left: 8px solid #ffd166; }
+        .q-split { display: flex; gap: 8px; margin-top: 8px; }
+        .q-tag { flex: 1; font-size: 0.8em; padding: 6px; border-radius: 6px; text-align: center; font-weight: bold; }
     </style>
 </head>
 <body>
 
-    <div class="side-panel" id="panel-fifo" data-label="👥 คิวรอ" onclick="checkAndOpen('panel-fifo')">
-        <h3>👥 คิวรอ <span onclick="event.stopPropagation(); togglePanel('panel-fifo')">❌</span></h3>
+    <div class="side-panel" id="panel-fifo">
+        <h3>👥 คิวรอ</h3>
         <div id="checkin-list" class="list-box"></div>
         <button id="confirmBtn" class="btn-confirm">ยืนยันลงสนาม (0)</button>
+        <button id="mockBtn" style="margin-top:10px; background:#eee; color:#666; width:100%; padding:8px; font-size:0.8em; border-radius:10px; border:1px dashed #ccc;">🤖 สุ่มรายชื่อทดสอบ (20 คน)</button>
     </div>
 
-    <div class="side-panel" id="panel-queue" data-label="⏳ คิวกลาง" onclick="checkAndOpen('panel-queue')" style="background: #fffdf5;">
-        <h3>⏳ คิวกลาง <span onclick="event.stopPropagation(); togglePanel('panel-queue')">❌</span></h3>
+    <div class="side-panel" id="panel-queue" style="background: #fffdf5;">
+        <h3>⏳ คิวกลาง</h3>
         <div id="queue-list" class="list-box"></div>
     </div>
 
     <div class="panel-main">
         <div style="display:flex; gap:15px; margin-bottom:20px;">
-            <button onclick="createSession()" style="background: #4caf50; color: white; padding: 10px 20px;">🚀 เปิดก๊วน</button>
+            <button onclick="createSession()" style="background: #4caf50; color: white; padding: 10px 20px;">🚀 เปิดก๊วนใหม่</button>
             <button onclick="addNewCourt()" style="background: #2196f3; color: white; padding: 10px 20px;">➕ เพิ่มสนาม</button>
             <div id="qrcode" style="margin-left: auto;"></div>
         </div>
@@ -94,12 +79,6 @@
         let middleQueue = [];
         let nextCourtNumber = 1;
 
-        window.togglePanel = (id) => document.getElementById(id).classList.toggle('collapsed');
-        window.checkAndOpen = (id) => {
-            const el = document.getElementById(id);
-            if (el.classList.contains('collapsed')) el.classList.remove('collapsed');
-        };
-
         window.createSession = async () => {
             const sessionRef = await addDoc(collection(db, "sessions"), { created_at: serverTimestamp() });
             currentSessionId = sessionRef.id;
@@ -107,27 +86,23 @@
             listenToAttendance();
             addNewCourt(); addNewCourt();
             
-            // Fix Sortable: ใช้ handle เพื่อให้ไม่กวน Dropdown
             new Sortable(document.getElementById('main-grid'), { 
-                animation: 150, 
-                handle: '.court-header', // ให้ลากได้เฉพาะที่หัวสนาม
-                ghostClass: 'sortable-ghost',
-                filter: 'select, button, .slot', // ป้องกันการลากเมื่อกดโดนปุ่มหรือ Dropdown
-                preventOnFilter: false
+                animation: 150, handle: '.court-header', ghostClass: 'sortable-ghost',
+                filter: 'select, button, .slot', preventOnFilter: false
             });
         };
 
         window.addNewCourt = () => {
             const id = `court-${Date.now()}`;
-            const courtNum = nextCourtNumber++; // Auto-increment เลขสนาม
-            
+            const courtNum = nextCourtNumber++;
             document.getElementById('main-grid').insertAdjacentHTML('beforeend', `
                 <div class="court-card" id="${id}">
                     <div class="court-header">
-                        <select>${generateOptions(courtNum)}</select>
+                        <span style="font-size:0.6em; color:#bbb; margin-left:5px;">⠿ ลากเพื่อสลับ</span>
+                        <select style="border:none; background:none; color:#2196f3;">${generateOptions(courtNum)}</select>
                         <button onclick="this.closest('.court-card').remove()" style="color:red; background:none; font-size:0.7em;">ลบ</button>
                     </div>
-                    <span id="status-${id}" style="font-size:0.7em; color:#999;">🟢 ว่าง</span>
+                    <span id="status-${id}" style="font-size:0.7em; color:#999;">🟢 พร้อมใช้งาน</span>
                     <div style="display:flex; gap:10px; margin-top:5px;">
                         <div class="team-box" style="background:var(--team-a)"><div class="slot" onclick="assignSlot(this, '${id}')">ว่าง</div><div class="slot" onclick="assignSlot(this, '${id}')">ว่าง</div></div>
                         <div class="team-box" style="background:var(--team-b)"><div class="slot" onclick="assignSlot(this, '${id}')">ว่าง</div><div class="slot" onclick="assignSlot(this, '${id}')">ว่าง</div></div>
@@ -145,15 +120,25 @@
         };
 
         function generateOptions(selectedNum) {
-            let opt = ""; 
-            for(let i=1; i<=20; i++) {
-                const selected = (i === selectedNum) ? "selected" : "";
-                opt += `<option value="${i}" ${selected}>สนาม ${i}</option>`;
-            }
-            return opt;
+            let opt = ""; for(let i=1; i<=20; i++) {
+                const sel = (i === selectedNum) ? "selected" : "";
+                opt += `<option value="${i}" ${sel}>สนาม ${i}</option>`;
+            } return opt;
         }
 
-        // --- Logic อื่นๆ (Auto Fill, Middle Queue, Match Start/End) ใส่ต่อจากนี้เหมือนเดิม ---
+        // --- Mock Data: สุ่ม 20 คน ---
+        document.getElementById('mockBtn').onclick = async () => {
+            if(!currentSessionId) return alert("กรุณากด 'เปิดก๊วนใหม่' ก่อน!");
+            const batch = writeBatch(db);
+            for (let i = 1; i <= 20; i++) {
+                const userRef = doc(db, `sessions/${currentSessionId}/attendance`, "mockuser_"+i);
+                batch.set(userRef, { display_name: "Player " + i, is_playing: false, last_match_end: Date.now() + (i * 1000) });
+            }
+            await batch.commit();
+            alert("สุ่มรายชื่อ 20 คนเรียบร้อย!");
+        };
+
+        // --- ระบบ Auto Fill & Logic อื่นๆ (เหมือนเดิม) ---
         async function checkAndFillEmptyCourts() {
             if (middleQueue.length === 0) return;
             const emptyCourts = Array.from(document.querySelectorAll('.court-card')).filter(c => 
@@ -176,16 +161,13 @@
         }
 
         function renderFIFO() {
-            const list = document.getElementById('checkin-list');
-            list.innerHTML = "";
+            const list = document.getElementById('checkin-list'); list.innerHTML = "";
             lastSnapshotData.forEach(player => {
                 const { id, data } = player;
                 const isSelected = selectedSlots.some(p => p?.id === id);
                 if (!data.is_playing && (!queuedPlayerIds.has(id) || isSelected)) {
-                    const div = document.createElement('div');
-                    div.className = "player-item";
-                    div.innerText = data.display_name;
-                    div.onclick = () => toggleSelect(id, data.display_name);
+                    const div = document.createElement('div'); div.className = "player-item";
+                    div.innerText = data.display_name; div.onclick = () => toggleSelect(id, data.display_name);
                     list.appendChild(div);
                 }
             });
@@ -195,20 +177,16 @@
         window.toggleSelect = (id, name) => {
             const idx = selectedSlots.findIndex(p => p?.id === id);
             if (idx > -1) selectedSlots[idx] = null;
-            else {
-                const empty = selectedSlots.findIndex(p => p === null);
-                if (empty > -1) selectedSlots[empty] = { id, name };
-            }
+            else { const empty = selectedSlots.findIndex(p => p === null); if (empty > -1) selectedSlots[empty] = { id, name }; }
             renderFIFO();
         };
 
         function updateSelectionUI() {
             const count = selectedSlots.filter(p => p !== null).length;
             const btn = document.getElementById('confirmBtn');
-            btn.innerText = (btn.dataset.editIndex !== undefined) ? `💾 บันทึกที่เดิม (คิว ${parseInt(btn.dataset.editIndex)+1})` : `ยืนยันลงสนาม/คิว (${count})`;
+            btn.innerText = (btn.dataset.editIndex !== undefined) ? `💾 บันทึกแก้ไขที่เดิม` : `ยืนยันลงสนาม (${count})`;
             document.querySelectorAll('.player-item').forEach(el => {
-                const name = el.innerText;
-                const sIdx = selectedSlots.findIndex(p => p?.name === name);
+                const sIdx = selectedSlots.findIndex(p => p?.name === el.innerText);
                 el.classList.remove('sel-a', 'sel-b');
                 if (sIdx === 0 || sIdx === 1) el.classList.add('sel-a');
                 if (sIdx === 2 || sIdx === 3) el.classList.add('sel-b');
@@ -216,74 +194,55 @@
         }
 
         function renderMiddleQueue() {
-            const list = document.getElementById('queue-list');
-            list.innerHTML = "";
+            const list = document.getElementById('queue-list'); list.innerHTML = "";
             middleQueue.forEach((q, index) => {
-                const div = document.createElement('div');
-                div.className = "queue-group";
+                const div = document.createElement('div'); div.className = "queue-group";
                 const names = q.slots.map(p => p ? p.name : "-");
-                div.innerHTML = `
-                    <div style="font-size:0.75em; color:#999; text-align:center;">คิวที่ ${index+1}</div>
-                    <div class="q-split">
-                        <div class="q-tag" style="background:var(--team-a)">${names[0]}<br>${names[1]}</div>
-                        <div class="q-tag" style="background:var(--team-b)">${names[2]}<br>${names[3]}</div>
-                    </div>
-                `;
+                div.innerHTML = `<div style="text-align:center; font-size:0.7em; color:#999;">คิวที่ ${index+1}</div>
+                    <div class="q-split"><div class="q-tag" style="background:var(--team-a)">${names[0]}<br>${names[1]}</div>
+                    <div class="q-tag" style="background:var(--team-b)">${names[2]}<br>${names[3]}</div></div>`;
                 div.onclick = () => {
-                    const btn = document.getElementById('confirmBtn');
-                    if (btn.dataset.editIndex) return;
+                    if (document.getElementById('confirmBtn').dataset.editIndex) return;
                     q.slots.forEach(p => p && queuedPlayerIds.delete(p.id));
                     selectedSlots = [...q.slots];
-                    btn.dataset.editIndex = index;
-                    middleQueue.splice(index, 1);
-                    renderMiddleQueue();
-                    renderFIFO();
+                    document.getElementById('confirmBtn').dataset.editIndex = index;
+                    middleQueue.splice(index, 1); renderMiddleQueue(); renderFIFO();
                 };
                 list.appendChild(div);
             });
         }
 
         document.getElementById('confirmBtn').onclick = async () => {
-            const players = selectedSlots.filter(p => p !== null);
-            if (players.length === 0) return;
-            const btn = document.getElementById('confirmBtn');
-            const editIdx = btn.dataset.editIndex;
-            const emptyCourt = Array.from(document.querySelectorAll('.court-card')).find(c => 
-                !c.classList.contains('playing') && c.querySelectorAll('.occupied').length === 0);
+            const players = selectedSlots.filter(p => p !== null); if (players.length === 0) return;
+            const btn = document.getElementById('confirmBtn'); const editIdx = btn.dataset.editIndex;
+            const emptyCourt = Array.from(document.querySelectorAll('.court-card')).find(c => !c.classList.contains('playing') && c.querySelectorAll('.occupied').length === 0);
+            
             if (emptyCourt && players.length === 4 && editIdx === undefined) {
                 const batch = writeBatch(db);
                 players.forEach(p => batch.update(doc(db, `sessions/${currentSessionId}/attendance`, p.id), { is_playing: true }));
-                await batch.commit();
-                fillCourtUI(emptyCourt, players);
+                await batch.commit(); fillCourtUI(emptyCourt, players);
             } else {
                 players.forEach(p => queuedPlayerIds.add(p.id));
                 if (editIdx !== undefined) { middleQueue.splice(parseInt(editIdx), 0, { slots: [...selectedSlots] }); delete btn.dataset.editIndex; }
-                else { middleQueue.push({ slots: [...selectedSlots] }); }
-                renderMiddleQueue();
-                checkAndFillEmptyCourts();
+                else middleQueue.push({ slots: [...selectedSlots] });
+                renderMiddleQueue(); checkAndFillEmptyCourts();
             }
-            selectedSlots = [null, null, null, null];
-            renderFIFO();
+            selectedSlots = [null, null, null, null]; renderFIFO();
         };
 
         window.assignSlot = async (el, courtId) => {
-            const oldId = el.dataset.uid;
-            const sIdx = selectedSlots.findIndex(p => p !== null);
+            const oldId = el.dataset.uid; const sIdx = selectedSlots.findIndex(p => p !== null);
             if (sIdx === -1) {
                 if (oldId && confirm("เอาออก?")) {
                     await updateDoc(doc(db, `sessions/${currentSessionId}/attendance`, oldId), { is_playing: false, last_match_end: Date.now() });
                     el.innerText = "ว่าง"; el.classList.remove('occupied'); delete el.dataset.uid;
-                }
-                return;
+                } return;
             }
-            const p = selectedSlots[sIdx];
-            const batch = writeBatch(db);
+            const p = selectedSlots[sIdx]; const batch = writeBatch(db);
             if (oldId) batch.update(doc(db, `sessions/${currentSessionId}/attendance`, oldId), { is_playing: false, last_match_end: Date.now() });
             batch.update(doc(db, `sessions/${currentSessionId}/attendance`, p.id), { is_playing: true });
-            await batch.commit();
-            el.innerText = p.name; el.dataset.uid = p.id; el.classList.add('occupied');
-            selectedSlots[sIdx] = null;
-            renderFIFO();
+            await batch.commit(); el.innerText = p.name; el.dataset.uid = p.id; el.classList.add('occupied');
+            selectedSlots[sIdx] = null; renderFIFO();
         };
 
         window.startMatch = (id) => {
@@ -299,20 +258,17 @@
             const batch = writeBatch(db);
             uids.forEach(u => batch.update(doc(db, `sessions/${currentSessionId}/attendance`, u), { is_playing: false, last_match_end: Date.now() }));
             await batch.commit();
-            c.classList.remove('playing');
-            document.getElementById(`status-${id}`).innerText = "🟢 ว่าง";
+            c.classList.remove('playing'); document.getElementById(`status-${id}`).innerText = "🟢 พร้อมใช้งาน";
             c.querySelectorAll('.slot').forEach(s => { s.innerText="ว่าง"; s.classList.remove('occupied'); delete s.dataset.uid; });
             document.getElementById(`shuttle-${id}`).innerText = "1";
             document.getElementById(`btn-start-${id}`).style.display = "block";
             document.getElementById(`btn-end-${id}`).style.display = "none";
-            renderFIFO();
-            setTimeout(checkAndFillEmptyCourts, 500);
+            renderFIFO(); setTimeout(checkAndFillEmptyCourts, 500);
         };
 
         window.changeShuttle = (id, v) => {
             const el = document.getElementById(`shuttle-${id}`);
-            let cur = parseInt(el.innerText);
-            if (cur + v >= 0) el.innerText = cur + v;
+            let cur = parseInt(el.innerText); if (cur + v >= 0) el.innerText = cur + v;
         };
 
         function listenToAttendance() {
