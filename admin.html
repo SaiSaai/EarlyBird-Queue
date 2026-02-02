@@ -126,6 +126,17 @@
         button { border: none; padding: 12px; border-radius: 10px; cursor: pointer; font-family: 'Kanit'; font-weight: bold; transition: 0.3s; }
         button:hover { opacity: 0.8; }
         .btn-confirm { background: #007bff; color: white; margin-top: 10px; font-size: 1.1em; }
+
+        /* ปุ่มเริ่ม/จบ และตัวนับลูก */
+        .match-controls { 
+            display: flex; flex-direction: column; gap: 8px; margin-top: 12px; border-top: 1px dashed #ddd; padding-top: 12px;
+        }
+        .shuttle-counter { 
+            display: flex; align-items: center; justify-content: center; gap: 15px; background: #f8f9fa; padding: 5px; border-radius: 10px;
+        }
+        .btn-shuttle { width: 30px; height: 30px; border-radius: 50%; background: #eee; font-size: 1.2em; display: flex; align-items: center; justify-content: center; }
+        .btn-start { background: #4caf50; color: white; width: 100%; }
+        .btn-end { background: var(--accent-red); color: #d00; width: 100%; display: none; } /* ซ่อนไว้จนกว่าจะเริ่มเกม */
     </style>
 </head>
 <body>
@@ -364,15 +375,12 @@
 
         window.addNewCourt = () => {
             const grid = document.getElementById('main-grid');
-            let max = 0;
-            document.querySelectorAll('.court-select').forEach(s => max = Math.max(max, parseInt(s.value)));
-            const next = (max + 1).toString().padStart(2, '0');
             const id = `court-${Date.now()}`;
             
             grid.insertAdjacentHTML('beforeend', `
                 <div class="court-card" id="${id}">
                     <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
-                        <select class="court-select">${generateOptions(next)}</select>
+                        <select class="court-select">${generateOptions()}</select>
                         <button onclick="this.closest('.court-card').remove()" style="color:red; background:none; padding:0;">ลบสนาม</button>
                     </div>
                     <div style="display:flex; gap:10px;">
@@ -385,7 +393,17 @@
                             <div class="slot" onclick="assignOrSwapPlayer(this, '${id}')">ว่าง</div>
                         </div>
                     </div>
-                    <button onclick="endMatch('${id}')" style="width:100%; background:var(--accent-red); margin-top:10px;">จบเกม / เคลียร์</button>
+                    
+                    <div class="match-controls">
+                        <div class="shuttle-counter">
+                            <span>🏸 ลูกแบด:</span>
+                            <button class="btn-shuttle" onclick="changeShuttle('${id}', -1)">-</button>
+                            <b class="shuttle-val">1</b>
+                            <button class="btn-shuttle" onclick="changeShuttle('${id}', 1)">+</button>
+                        </div>
+                        <button id="btn-start-${id}" class="btn-start" onclick="startMatch('${id}')">▶️ เริ่มเกม</button>
+                        <button id="btn-end-${id}" class="btn-end" onclick="endMatch('${id}')">⏹️ จบเกม / เคลียร์</button>
+                    </div>
                 </div>`);
         };
 
@@ -408,6 +426,60 @@
                     last_match_end: Date.now() + (i * 100)
                 });
             }
+        };
+
+        // เปลี่ยนจำนวนลูกแบด
+        window.changeShuttle = (courtId, val) => {
+            const el = document.querySelector(`#${courtId} .shuttle-val`);
+            let current = parseInt(el.innerText);
+            if (current + val >= 0) el.innerText = current + val;
+        };
+
+        // เริ่มเกม (Update UI & Status)
+        window.startMatch = (courtId) => {
+            const courtEl = document.getElementById(courtId);
+            const players = courtEl.querySelectorAll('.occupied');
+            
+            if (players.length < 4) {
+                alert("ต้องมีผู้เล่นครบ 4 คนก่อนเริ่มเกมครับ");
+                return;
+            }
+
+            courtEl.classList.add('playing');
+            document.getElementById(`btn-start-${courtId}`).style.display = "none";
+            document.getElementById(`btn-end-${courtId}`).style.display = "block";
+            
+            // ตรงนี้ถ้าจะเก็บลงตาราง Matches ตาม Schema สามารถใส่ addDoc ได้เลยครับ
+            console.log(`Match started at ${courtId}`);
+        };
+
+        // จบเกม (เหมือนเดิมแต่เพิ่มการอ่านค่าลูกแบด)
+        window.endMatch = async (courtId) => {
+            const courtEl = document.getElementById(courtId);
+            const shuttleUsed = parseInt(courtEl.querySelector('.shuttle-val').innerText);
+            const playerIds = Array.from(courtEl.querySelectorAll('.occupied')).map(s => s.dataset.uid);
+            
+            if (playerIds.length > 0) {
+                const batch = writeBatch(db);
+                const now = Date.now();
+                playerIds.forEach(uid => {
+                    const ref = doc(db, `sessions/${currentSessionId}/attendance`, uid);
+                    batch.update(ref, { is_playing: false, last_match_end: now });
+                });
+                await batch.commit();
+                // 💡 หมายเหตุ: ข้อมูล shuttleUsed และเวลาจบ สามารถนำไปบันทึกลง Matches Collection ได้ที่นี่
+            }
+
+            // Reset UI
+            courtEl.classList.remove('playing');
+            courtEl.querySelector('.shuttle-val').innerText = "1";
+            document.getElementById(`btn-start-${courtId}`).style.display = "block";
+            document.getElementById(`btn-end-${courtId}`).style.display = "none";
+            courtEl.querySelectorAll('.slot').forEach(s => { 
+                s.innerText = "ว่าง"; 
+                s.classList.remove('occupied'); 
+                delete s.dataset.uid; 
+            });
         };
     </script>
 </body>
