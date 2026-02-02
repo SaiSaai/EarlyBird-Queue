@@ -349,15 +349,45 @@
         function addToQueueUI(players) {
             const div = document.createElement('div');
             div.className = "queue-group";
-            div.innerHTML = `<div style="font-size:0.7em; color:#999; text-align:center; margin-bottom:4px;">ก๊วน 4 คน (จิ้มลงสนาม)</div>
-            <div class="q-split">
-                <div class="q-tag" style="background:var(--team-a)">${players[0].name}<br>${players[1].name}</div>
-                <div class="q-tag" style="background:var(--team-b)">${players[2].name}<br>${players[3].name}</div>
-            </div>`;
-            div.onclick = () => {
-                const court = Array.from(document.querySelectorAll('.court-card')).find(c => !c.classList.contains('playing'));
-                if(court) { fillCourtUI(court, players); div.remove(); }
-                else alert("สนามยังไม่ว่าง!");
+            div.innerHTML = `
+                <div style="font-size:0.7em; color:#999; text-align:center; margin-bottom:4px;">คิวกลุ่ม 4 คน</div>
+                <div class="q-split">
+                    <div class="q-tag" style="background:var(--team-a)">${players[0].name}<br>${players[1].name}</div>
+                    <div class="q-tag" style="background:var(--team-b)">${players[2].name}<br>${players[3].name}</div>
+                </div>
+                <div style="text-align:center; margin-top:5px; font-size:0.7em; color:#007bff;">[ จิ้มเพื่อจัดการ ]</div>
+            `;
+
+            div.onclick = async () => {
+                // สร้างทางเลือกให้ Admin
+                const action = confirm(`กลุ่มนี้: ${players.map(p => p.name).join(", ")}\n\nกด OK เพื่อ "ลงสนามที่ว่าง"\nกด Cancel เพื่อ "ยกเลิกกลุ่มนี้และคืนรายชื่อ"`);
+                
+                if (action) {
+                    // ค้นหาสนามที่ว่างจริงๆ (ไม่มีคน และ ไม่ได้แข่ง)
+                    const emptyCourt = Array.from(document.querySelectorAll('.court-card')).find(c => {
+                        const isPlaying = c.classList.contains('playing');
+                        const hasPeople = c.querySelectorAll('.occupied').length > 0;
+                        return !isPlaying && !hasPeople;
+                    });
+
+                    if (emptyCourt) {
+                        fillCourtUI(emptyCourt, players);
+                        div.remove();
+                    } else {
+                        alert("❌ ยังไม่มีสนามว่างจริงๆ (ต้องไม่มีคนใน Slot เลย) กรุณาเคลียร์สนามก่อนส่งคิวลงครับ");
+                    }
+                } else {
+                    // ถ้ายกเลิกกลุ่ม ให้คืนสถานะ is_playing เป็น false ใน Firebase เพื่อให้รายชื่อกลับไปที่ FIFO
+                    const batch = writeBatch(db);
+                    players.forEach(p => {
+                        batch.update(doc(db, `sessions/${currentSessionId}/attendance`, p.id), { 
+                            is_playing: false,
+                            last_match_end: Date.now() // ให้ไปต่อท้าย FIFO ใหม่
+                        });
+                    });
+                    await batch.commit();
+                    div.remove();
+                }
             };
             document.getElementById('queue-list').appendChild(div);
         }
