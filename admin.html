@@ -6,6 +6,7 @@
     <title>Badminton Admin Pro - Full System</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <style>
         :root { 
             --primary-bg: #fdfcf0; 
@@ -63,6 +64,11 @@
         .side-panel.collapsed * { display: none !important; }
         .side-panel.collapsed::after { content: attr(data-label); writing-mode: vertical-rl; text-orientation: mixed; font-weight: bold; margin: 20px auto; display: block; }
         .toggle-btn { float: right; background: #ddd; padding: 2px 8px; border-radius: 5px; font-size: 0.7em; }
+
+        .court-card { cursor: grab; }
+        .court-card:active { cursor: grabbing; }
+        /* สีตอนที่กำลังลาก */
+        .sortable-ghost { opacity: 0.4; background: #e2e2e2; }
     </style>
 </head>
 <body>
@@ -346,6 +352,17 @@
                 await setDoc(doc(db, `sessions/${currentSessionId}/attendance`, "u"+i), { display_name: n, is_playing: false, last_match_end: Date.now()+(i*10) });
             }
         };
+
+        // เปิดใช้งาน Drag & Drop สำหรับสนาม
+        const grid = document.getElementById('main-grid');
+        new Sortable(grid, {
+            animation: 150, // ความเร็วตอนสลับที่ (ms)
+            ghostClass: 'sortable-ghost', // คลาสตอนตัวที่ถูกลากจางลง
+            onEnd: function (evt) {
+                console.log('เปลี่ยนลำดับสนามเรียบร้อย');
+                // ตรงนี้ถ้าอยากเซฟลำดับลง Database ก็ทำเพิ่มได้ครับ
+            },
+        });
     </script>
 </body>
 </html>
