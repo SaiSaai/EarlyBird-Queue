@@ -181,27 +181,29 @@
         };
 
         function listenToAttendance(sessionId) {
-    const q = query(collection(db, `sessions/${sessionId}/attendance`), orderBy("last_match_end", "asc"));
-    onSnapshot(q, (snapshot) => {
-        const list = document.getElementById('checkin-list');
-        list.innerHTML = "";
-        
-        snapshot.forEach(docSnap => {
-            const data = docSnap.data();
-            // เงื่อนไข: แสดงถ้าไม่ได้เล่นอยู่ OR เป็นคนที่อยู่ในกลุ่มที่เรากำลังเลือกแก้ไข
-            const isBeingEdited = selectedPlayers.some(p => p.id === docSnap.id);
-            
-            if (!data.is_playing || isBeingEdited) {
-                const div = document.createElement('div');
-                div.className = "player-item";
-                div.innerText = data.display_name;
-                div.onclick = () => toggleSelect(docSnap.id, data.display_name, div);
-                list.appendChild(div);
-            }
-        });
-        updateSelectionUI();
-    });
-}
+            const q = query(collection(db, `sessions/${sessionId}/attendance`), orderBy("last_match_end", "asc"));
+            onSnapshot(q, (snapshot) => {
+                const list = document.getElementById('checkin-list');
+                list.innerHTML = "";
+                
+                snapshot.forEach(docSnap => {
+                    const data = docSnap.data();
+                    
+                    // เช็คว่าคนนี้อยู่ในก๊วนที่กำลังกด 'แก้ไข' จากคิวกลางหรือไม่
+                    const isBeingEdited = selectedPlayers.some(p => p.id === docSnap.id);
+                    
+                    // แสดงชื่อเมื่อ: (ยังไม่เล่น) OR (กำลังอยู่ในโหมดแก้ไขก๊วน)
+                    if (!data.is_playing || isBeingEdited) {
+                        const div = document.createElement('div');
+                        div.className = "player-item";
+                        div.innerText = data.display_name;
+                        div.onclick = () => toggleSelect(docSnap.id, data.display_name, div);
+                        list.appendChild(div);
+                    }
+                });
+                updateSelectionUI();
+            });
+        }
 
         window.toggleSelect = (id, name, el) => {
             const index = selectedPlayers.findIndex(p => p.id === id);
