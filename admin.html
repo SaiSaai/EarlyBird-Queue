@@ -215,16 +215,40 @@
             document.getElementById('confirmBtn').innerText = `ยืนยันลงสนาม (${selectedPlayers.length})`;
         }
 
+        // --- แก้ไขฟังก์ชันยืนยันลงสนาม (confirmBtn) ---
         document.getElementById('confirmBtn').onclick = async () => {
             if (selectedPlayers.length === 0) return;
-            const emptyCourt = Array.from(document.querySelectorAll('.court-card')).find(c => !c.classList.contains('playing'));
+
+            // ค้นหาสนามที่ "ว่างจริงๆ" (ไม่มีคลาส playing และ ไม่มีคนใน Slot)
+            const emptyCourt = Array.from(document.querySelectorAll('.court-card')).find(c => {
+                const isPlaying = c.classList.contains('playing');
+                const hasPeople = c.querySelectorAll('.occupied').length > 0;
+                return !isPlaying && !hasPeople; // ต้องไม่เล่นอยู่ และ ไม่มีคนจอง
+            });
+
             const playersCopy = [...selectedPlayers];
             const batch = writeBatch(db);
-            playersCopy.forEach(p => batch.update(doc(db, `sessions/${currentSessionId}/attendance`, p.id), { is_playing: true }));
+
+            // อัปเดตสถานะใน Firebase ว่ากำลังใช้งานอยู่
+            playersCopy.forEach(p => {
+                batch.update(doc(db, `sessions/${currentSessionId}/attendance`, p.id), { 
+                    is_playing: true 
+                });
+            });
+
             await batch.commit();
-            if (emptyCourt) fillCourtUI(emptyCourt, playersCopy);
-            else addToQueueUI(playersCopy);
-            selectedPlayers = []; updateSelectionUI();
+
+            if (emptyCourt) {
+                // หากสนามว่างจริง ให้เอาคนเข้าไปใส่ใน Slot
+                fillCourtUI(emptyCourt, playersCopy);
+            } else {
+                // หากสนามไม่ว่าง (มีคนจองอยู่ หรือกำลังแข่ง) ให้ส่งไปที่ "คิวกลาง (ก๊วน)"
+                addToQueueUI(playersCopy);
+            }
+
+            // เคลียร์รายชื่อที่เลือกไว้
+            selectedPlayers = []; 
+            updateSelectionUI();
         };
 
         window.assignOrSwapPlayer = async (slotEl, courtId) => {
