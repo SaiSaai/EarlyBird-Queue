@@ -137,20 +137,54 @@
         .btn-shuttle { width: 30px; height: 30px; border-radius: 50%; background: #eee; font-size: 1.2em; display: flex; align-items: center; justify-content: center; }
         .btn-start { background: #4caf50; color: white; width: 100%; }
         .btn-end { background: var(--accent-red); color: #d00; width: 100%; display: none; } /* ซ่อนไว้จนกว่าจะเริ่มเกม */
+
+        /* ปุ่ม Toggle ซ่อน/แสดง */
+        .toggle-btn {
+            float: right;
+            background: #eee;
+            padding: 2px 8px;
+            border-radius: 5px;
+            font-size: 0.7em;
+            cursor: pointer;
+        }
+
+        /* คลาสสำหรับซ่อน Panel */
+        .collapsed {
+            width: 50px !important; /* ย่อให้เหลือแคบๆ */
+            padding: 15px 5px !important;
+            overflow: hidden;
+        }
+
+        .collapsed h3, 
+        .collapsed p, 
+        .collapsed .list-box, 
+        .collapsed button {
+            display: none; /* ซ่อนเนื้อหาข้างใน */
+        }
+
+        /* แสดงตัวอักษรแนวตั้งเมื่อซ่อน */
+        .collapsed::before {
+            content: "MENU";
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+            font-weight: bold;
+            color: #ccc;
+            margin-top: 10px;
+        }
     </style>
 </head>
 <body>
 
     <div class="panel-left">
-        <h3>👥 1. รอจัดคิว (FIFO)</h3>
+        <h3>👥 คิวรอ <span class="toggle-btn" onclick="togglePanel('panel-fifo')">❌ ซ่อน</span></h3>
         <p style="font-size: 0.75em; color: #888; margin-top: -10px;">รอนานที่สุดอยู่บนสุด</p>
         <div id="checkin-list" class="list-box"></div>
         <button id="confirmBtn" class="btn-confirm">ยืนยันลงสนาม (0)</button>
-        <button id="mockUserBtn" style="margin-top:8px; background:#eee; font-size:0.8em;">🤖 จำลองคนเช็คอิน</button>
+        <button id="mockUserBtn" style="margin-top:8px; background:#eee; font-size:0.8em;">🤖 สุ่มคน</button>
     </div>
 
-    <div class="panel-center" style="background: #fffdf5;">
-        <h3>⏳ 2. คิวกลาง (ก๊วน)</h3>
+    <div class="panel-center" id="panel-queue" style="background: #fffdf5;">
+        <h3>⏳ คิวกลาง <span class="toggle-btn" onclick="togglePanel('panel-queue')">❌ ซ่อน</span></h3>
         <div id="queue-list" class="list-box"></div>
     </div>
 
@@ -480,6 +514,19 @@
                 s.classList.remove('occupied'); 
                 delete s.dataset.uid; 
             });
+        };
+
+        window.togglePanel = (id) => {
+            const panel = document.getElementById(id);
+            const btn = panel.querySelector('.toggle-btn');
+            
+            panel.classList.toggle('collapsed');
+            
+            if (panel.classList.contains('collapsed')) {
+                btn.innerText = "➕ แสดง";
+            } else {
+                btn.innerText = "❌ ซ่อน";
+            }
         };
     </script>
 </body>
