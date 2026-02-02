@@ -244,14 +244,15 @@
             playersCopy.forEach(p => batch.update(doc(db, `sessions/${currentSessionId}/attendance`, p.id), { is_playing: true }));
             await batch.commit();
 
+            // ✅ ล้างชื่อออกจากตัวเลือกก่อนเช็คสนาม
+            selectedPlayers = []; 
+            updateSelectionUI();
+
             if (emptyCourt) {
                 fillCourtUI(emptyCourt, playersCopy);
             } else {
                 addToQueueUI(playersCopy);
             }
-
-            selectedPlayers = []; 
-            updateSelectionUI();
         };
 
         window.assignOrSwapPlayer = async (slotEl, courtId) => {
@@ -346,7 +347,9 @@
                 slots[i].dataset.uid = p.id; 
                 slots[i].classList.add('occupied'); 
             });
-            // Auto start? หรือให้กดเอง? ตอนนี้คือให้ลงชื่อไว้ก่อน
+            // ✅ เพิ่ม 2 บรรทัดนี้ เพื่อให้ชื่อหายไปจากคิวรอฝั่งซ้าย
+            selectedPlayers = []; 
+            updateSelectionUI();
         }
 
         function addToQueueUI(players) {
@@ -413,4 +416,4 @@
         };
     </script>
 </body>
-</html>
+</html>>
