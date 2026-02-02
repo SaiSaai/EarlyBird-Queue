@@ -181,23 +181,27 @@
         };
 
         function listenToAttendance(sessionId) {
-            const q = query(collection(db, `sessions/${sessionId}/attendance`), orderBy("last_match_end", "asc"));
-            onSnapshot(q, (snapshot) => {
-                const list = document.getElementById('checkin-list');
-                list.innerHTML = "";
-                snapshot.forEach(docSnap => {
-                    const data = docSnap.data();
-                    if (!data.is_playing) {
-                        const div = document.createElement('div');
-                        div.className = "player-item";
-                        div.innerText = data.display_name;
-                        div.onclick = () => toggleSelect(docSnap.id, data.display_name, div);
-                        list.appendChild(div);
-                    }
-                });
-                updateSelectionUI();
-            });
-        }
+    const q = query(collection(db, `sessions/${sessionId}/attendance`), orderBy("last_match_end", "asc"));
+    onSnapshot(q, (snapshot) => {
+        const list = document.getElementById('checkin-list');
+        list.innerHTML = "";
+        
+        snapshot.forEach(docSnap => {
+            const data = docSnap.data();
+            // เงื่อนไข: แสดงถ้าไม่ได้เล่นอยู่ OR เป็นคนที่อยู่ในกลุ่มที่เรากำลังเลือกแก้ไข
+            const isBeingEdited = selectedPlayers.some(p => p.id === docSnap.id);
+            
+            if (!data.is_playing || isBeingEdited) {
+                const div = document.createElement('div');
+                div.className = "player-item";
+                div.innerText = data.display_name;
+                div.onclick = () => toggleSelect(docSnap.id, data.display_name, div);
+                list.appendChild(div);
+            }
+        });
+        updateSelectionUI();
+    });
+}
 
         window.toggleSelect = (id, name, el) => {
             const index = selectedPlayers.findIndex(p => p.id === id);
@@ -360,7 +364,7 @@
     div.onclick = async () => {
         // 1. เช็คสนามว่างก่อน (ไม่มีคน และ ไม่ได้แข่ง)
         const emptyCourt = Array.from(document.querySelectorAll('.court-card')).find(c => {
-            return !c.classList.contains('playing') && c.querySelectorAll('.occupied').length === 0;
+        return !c.classList.contains('playing') && c.querySelectorAll('.occupied').length === 0;
         });
 
         if (emptyCourt) {
@@ -372,14 +376,19 @@
         } else {
             // 2. ถ้าไม่ว่าง -> เข้าโหมดแก้ไข (ไฮไลต์คนใน FIFO)
             selectedPlayers = [...players]; 
-            updateSelectionUI();
+
+            // 2. สั่งวาดลิสต์ฝั่งซ้ายใหม่ (เพื่อให้ชื่อที่เคยหายไปโผล่กลับมาให้เลือก)
+            listenToAttendance(currentSessionId);
+
+            //updateSelectionUI();
             
             // เพิ่มเอฟเฟกต์ให้รู้ว่ากลุ่มนี้ถูกเลือกแก้ไข
-            document.querySelectorAll('.queue-group').forEach(g => g.style.borderColor = "#ffeeba");
-            div.style.borderColor = "#007bff";
+            document.querySelectorAll('.queue-group').forEach(g => g.style.border = "2px solid #ffeeba");
+            div.style.border = "2px solid #007bff";
+            div.style.background = "#eef7ff";
             
             // แจ้งเตือนเล็กน้อย (Optionally: เปลี่ยนปุ่มยืนยันเป็น "บันทึกการแก้ไข")
-            console.log("Editing queue group...");
+            //console.log("Editing queue group...");
         }
     };
     document.getElementById('queue-list').appendChild(div);
