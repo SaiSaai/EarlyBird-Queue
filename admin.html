@@ -306,7 +306,7 @@
         }
 
         document.getElementById('mockBtn').onclick = async () => {
-            const names = ["พี่เอ็ม", "บีบี", "ดา", "เก่ง", "ตั้ม", "ฟ้า", "ปอนด์", "นัท"];
+            const names = ["พี่เอ็ม", "บีบี", "ดา", "เก่ง", "ตั้ม", "ฟ้า", "ปอนด์", "นัท", "ต้อม", "ฟ้าฝน", "ปังปอนด์", "นัทคุง"];
             for (const [i, n] of names.entries()) await setDoc(doc(db, `sessions/${currentSessionId}/attendance`, "u"+i), { display_name: n, is_playing: false, last_match_end: Date.now()+(i*10) });
         };
 
