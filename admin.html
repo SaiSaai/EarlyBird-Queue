@@ -120,7 +120,7 @@
                     <div class="court-header">
                         <span style="font-size:0.6em; color:#bbb; margin-left:5px;">⠿ ลากสลับ</span>
                         <select style="border:none; background:none; color:#2196f3;">${generateOptions(courtNum)}</select>
-                        <button onclick="this.closest('.court-card').remove()" style="color:red; background:none; font-size:0.7em;">ลบ</button>
+                        <button onclick="confirmDeleteCourt(this)" style="color:red; background:none; font-size:0.7em;">ลบ</button>
                     </div>
                     <span id="status-${id}" style="font-size:0.7em; color:#999;">🟢 พร้อมใช้งาน</span>
                     <div style="display:flex; gap:10px; margin-top:5px;">
@@ -309,6 +309,20 @@
             const slots = courtEl.querySelectorAll('.slot');
             players.forEach((p, i) => { slots[i].innerText = p.name; slots[i].dataset.uid = p.id; slots[i].classList.add('occupied'); });
         }
+
+        window.confirmDeleteCourt = (btn) => {
+            const courtCard = btn.closest('.court-card');
+            // เช็คว่ามีช่องที่มีคนอยู่ (คลาส occupied) หรือไม่
+            const hasPlayers = courtCard.querySelectorAll('.occupied').length > 0;
+            
+            if (hasPlayers) {
+                alert("❌ ไม่สามารถลบสนามได้เนื่องจากมีคนใช้งานอยู่! กรุณาเคลียร์สนามก่อนลบ");
+            } else {
+                if (confirm("ยืนยันที่จะลบสนามนี้ใช่หรือไม่?")) {
+                    courtCard.remove();
+                }
+            }
+        };
     </script>
 </body>
 </html>
