@@ -323,6 +323,19 @@
             const slots = courtEl.querySelectorAll('.slot');
             players.forEach((p, i) => { slots[i].innerText = p.name; slots[i].dataset.uid = p.id; slots[i].classList.add('occupied'); });
         }
+        // ฟังก์ชันสำหรับหุบ/อ้า
+        window.togglePanel = (id) => {
+            const el = document.getElementById(id);
+            el.classList.toggle('collapsed');
+        };
+
+        // ฟังก์ชันสำหรับเปิดเมื่อคลิกที่แถบที่หุบอยู่
+        window.checkAndOpen = (id) => {
+            const el = document.getElementById(id);
+            if (el.classList.contains('collapsed')) {
+                el.classList.remove('collapsed');
+            }
+        };
     </script>
 </body>
 </html>
