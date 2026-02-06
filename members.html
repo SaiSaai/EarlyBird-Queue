@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Members - Badminton Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root { 
+            --v-yellow: #FFD700; --v-green: #00C853; --v-blue: #2962FF; --v-red: #D50000; --v-black: #000000;
+        }
+        * { box-sizing: border-box; font-family: 'Kanit', sans-serif; }
+        body { background: #f4f7f6; margin: 0; padding: 20px; }
+        
+        .header { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
+        .btn-back { background: #666; color: white; border: none; padding: 10px 15px; border-radius: 10px; cursor: pointer; text-decoration: none; font-size: 0.9em; }
+        
+        .member-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; }
+        .member-card { background: white; padding: 15px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); display: flex; flex-direction: column; gap: 10px; }
+        
+        .member-info { display: flex; align-items: center; gap: 10px; }
+        .name-input { flex: 1; border: 1px solid #ddd; padding: 8px; border-radius: 8px; font-size: 1em; font-weight: bold; }
+        
+        .skill-selector { display: flex; gap: 5px; justify-content: space-between; background: #f9f9f9; padding: 8px; border-radius: 10px; }
+        .skill-btn { width: 35px; height: 35px; border-radius: 50%; border: 3px solid transparent; cursor: pointer; transition: 0.2s; }
+        .skill-btn.active { border-color: #333; transform: scale(1.1); }
+        
+        .lvl-yellow { background: var(--v-yellow); } .lvl-green { background: var(--v-green); }
+        .lvl-blue { background: var(--v-blue); } .lvl-red { background: var(--v-red); } .lvl-black { background: var(--v-black); }
+
+        .btn-delete { background: #fff1f0; color: #ff4d4f; border: 1px solid #ffccc7; padding: 8px; border-radius: 8px; cursor: pointer; font-size: 0.85em; margin-top: 5px; }
+        .btn-delete:hover { background: #ff4d4f; color: white; }
+
+        .status-badge { font-size: 0.75em; padding: 2px 8px; border-radius: 10px; background: #eee; color: #666; }
+        .status-playing { background: #e6f7ff; color: #1890ff; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <a href="javascript:history.back()" class="btn-back">⬅️ กลับหน้าคิว</a>
+        <h2 style="margin:0;">👥 จัดการสมาชิกในก๊วน</h2>
+    </div>
+
+    <div id="loading" style="text-align:center; padding:50px; color:#999;">กำลังโหลดรายชื่อ...</div>
+    <div class="member-grid" id="member-list"></div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, doc, onSnapshot, query, orderBy, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = { apiKey: "AIzaSyDQbnx83sbs1sO4xsuLUV50uxbBinr2VtY", authDomain: "earlybird-queue.firebaseapp.com", projectId: "earlybird-queue", storageBucket: "earlybird-queue.firebasestorage.app", messagingSenderId: "310694006567", appId: "1:310694006567:web:f56fc19ed03b81bf8c2302" };
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // ดึง Session ID จาก URL (เช่น members.html?session=ID)
+        const urlParams = new URLSearchParams(window.location.search);
+        const sessionId = urlParams.get('session');
+
+        if (!sessionId) {
+            document.body.innerHTML = "<h2>❌ ไม่พบรหัส Session กรุณาเข้าผ่านหน้า Admin</h2>";
+        } else {
+            listenToMembers();
+        }
+
+        function listenToMembers() {
+            const q = query(collection(db, `sessions/${sessionId}/attendance`), orderBy("display_name", "asc"));
+            onSnapshot(q, (snap) => {
+                document.getElementById('loading').style.display = 'none';
+                const list = document.getElementById('member-list');
+                list.innerHTML = "";
+                
+                snap.forEach((playerDoc) => {
+                    const p = playerDoc.data();
+                    const pid = playerDoc.id;
+                    
+                    const card = document.createElement('div');
+                    card.className = "member-card";
+                    card.innerHTML = `
+                        <div class="member-info">
+                            <input type="text" class="name-input" value="${p.display_name}" 
+                                onchange="updateName('${pid}', this.value)">
+                            <span class="status-badge ${p.is_playing ? 'status-playing' : ''}">
+                                ${p.is_playing ? 'ในสนาม' : 'ข้างสนาม'}
+                            </span>
+                        </div>
+                        <div style="font-size:0.8em; color:#888;">จำนวนเกม: ${p.games_played || 0} เกม</div>
+                        <div class="skill-selector">
+                            ${['yellow','green','blue','red','black'].map(color => `
+                                <div class="skill-btn lvl-${color} ${p.skill_level === color ? 'active' : ''}" 
+                                     onclick="updateSkill('${pid}', '${color}')"></div>
+                            `).join('')}
+                        </div>
+                        <button class="btn-delete" onclick="deleteMember('${pid}', '${p.display_name}')">🗑️ ลบชื่อออกจากก๊วน</button>
+                    `;
+                    list.appendChild(card);
+                });
+            });
+        }
+
+        window.updateSkill = async (pid, color) => {
+            await updateDoc(doc(db, `sessions/${sessionId}/attendance`, pid), { skill_level: color });
+        };
+
+        window.updateName = async (pid, newName) => {
+            if(!newName.trim()) return;
+            await updateDoc(doc(db, `sessions/${sessionId}/attendance`, pid), { display_name: newName });
+        };
+
+        window.deleteMember = async (pid, name) => {
+            if(confirm(`ยืนยันการลบ "${name}" ออกจากก๊วน? (ข้อมูลจำนวนเกมจะหายไปด้วย)`)) {
+                await deleteDoc(doc(db, `sessions/${sessionId}/attendance`, pid));
+            }
+        };
+    </script>
+</body>
+</html>
