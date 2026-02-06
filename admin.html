@@ -81,6 +81,7 @@
         <div style="display:flex; gap:12px; margin-bottom:20px; align-items: center; flex-wrap: wrap;">
             <button onclick="createSession()" style="background: #4caf50; color: white; padding: 12px 25px;">🚀 เปิดก๊วนใหม่</button>
             <button onclick="addNewCourt()" style="background: #2196f3; color: white; padding: 12px 25px;">➕ เพิ่มสนาม</button>
+            <button onclick="goToMembers()" style="background: #673ab7; color: white; padding: 12px 25px;">👥 จัดการสมาชิก</button>
             <div id="qrcode" onclick="expandQR()" style="margin-left: auto; cursor: zoom-in; background: white; padding: 5px; border-radius: 8px; border: 1px solid #ddd;"></div>
         </div>
         <div id="empty-msg" style="text-align:center; color:#999; margin-top:100px;">ยังไม่มีสนาม กด "เพิ่มสนาม"</div>
@@ -327,6 +328,12 @@
                 batch.set(doc(db, `sessions/${currentSessionId}/attendance`, uid), { display_name: "Player " + i, is_playing: false, last_match_end: Date.now() + (i * 100), skill_level: lvls[Math.floor(Math.random()*5)], games_played: 0 });
             }
             await batch.commit();
+        };
+
+        // เพิ่มฟังก์ชันนี้ใน <script> ของหน้า Admin
+        window.goToMembers = () => {
+            if(!currentSessionId) return alert("กรุณาเปิดก๊วนก่อน");
+            window.location.href = `members.html?session=${currentSessionId}`;
         };
     </script>
 </body>
