@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Badminton Admin - Custom Court Mode</title>
+    <title>Badminton Admin - Unified Sidebar</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
@@ -15,62 +15,56 @@
         * { box-sizing: border-box; font-family: 'Kanit', sans-serif; }
         body { background-color: var(--primary-bg); margin: 0; display: flex; height: 100vh; overflow: hidden; }
         
-        /* Layout Panels */
-        .side-panel { width: 280px; transition: 0.3s; flex-shrink: 0; display: flex; flex-direction: column; background: #fff; border-right: 2px solid #eee; padding: 15px; z-index: 100; }
-        .side-panel.collapsed { width: 45px !important; padding: 10px 5px !important; cursor: pointer; background: #eee !important; border-right: 1px solid #ccc; }
-        .side-panel.collapsed * { display: none !important; }
-        .side-panel.collapsed::after { content: attr(data-label); writing-mode: vertical-rl; text-orientation: mixed; font-weight: bold; color: #888; margin: 20px auto; display: block; }
-
-        .panel-main { flex: 1; padding: 15px; overflow-y: auto; position: relative; }
-        .list-box { flex: 1; border: 1px solid #ddd; border-radius: 12px; overflow-y: auto; padding: 10px; background: #fafafa; min-height: 0; }
+        /* Main Layout */
+        .panel-main { flex: 1; padding: 20px; overflow-y: auto; position: relative; }
         
-        .courts-wrapper { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
+        /* Unified Right Sidebar */
+        .sidebar-right { width: 320px; display: flex; flex-direction: column; background: #fff; border-left: 2px solid #eee; transition: 0.3s; z-index: 100; flex-shrink: 0; }
+        .sidebar-right.collapsed { width: 45px; }
+        .sidebar-right.collapsed .queue-container { display: none; }
+        .sidebar-right.collapsed::after { content: "👥 คิวทั้งหมด"; writing-mode: vertical-rl; text-orientation: mixed; font-weight: bold; color: #888; margin: 20px auto; display: block; cursor: pointer; }
 
-        /* Skill & Player */
-        .skill-dot { display: inline-block; width: 14px; height: 14px; border-radius: 50%; border: 1px solid rgba(0,0,0,0.2); flex-shrink: 0; }
-        .lvl-yellow { background: var(--v-yellow); } .lvl-green { background: var(--v-green); } .lvl-blue { background: var(--v-blue); } .lvl-red { background: var(--v-red); } .lvl-black { background: var(--v-black); }
+        .queue-container { display: flex; flex-direction: column; height: 100%; padding: 15px; gap: 15px; }
+        .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+        .section-header h3 { margin: 0; font-size: 1.1em; }
 
-        .player-item { padding: 10px; margin-bottom: 8px; border-radius: 10px; border: 2px solid #eee; background: white; cursor: pointer; font-weight: bold; display: flex; align-items: center; }
-        .sel-a { border-color: var(--team-a); background: #e7f3ff; }
-        .sel-b { border-color: var(--team-b); background: #f0fff4; }
+        /* Shared List Box */
+        .list-box { flex: 1; border: 1px solid #ddd; border-radius: 12px; overflow-y: auto; padding: 10px; background: #fafafa; min-height: 0; }
+        #queue-list { flex: 0.4; background: #fffdf5; border-color: #ffeeba; } /* คิวกลางสั้นกว่าคิวรอ */
+        #checkin-list { flex: 1; }
 
         /* Court UI */
-        .court-card { background: white; border-radius: 20px; padding: 15px; box-shadow: 0 8px 15px rgba(0,0,0,0.05); border-top: 10px solid #ccc; position: relative; }
+        .courts-wrapper { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
+        .court-card { background: white; border-radius: 20px; padding: 15px; box-shadow: 0 8px 15px rgba(0,0,0,0.05); border-top: 10px solid #ccc; }
         .court-card.playing { border-top-color: #4caf50; background: var(--playing-bg); }
         .court-header { cursor: grab; background: #f8f9fa; margin: -15px -15px 10px -15px; padding: 10px 15px; display: flex; justify-content: space-between; border-radius: 15px 15px 0 0; border-bottom: 1px solid #eee; }
         
-        .slot { background: white; padding: 10px; border-radius: 8px; font-size: 0.85em; font-weight: bold; border: 1px dashed #ccc; cursor: pointer; display: flex; align-items: center; gap: 8px; min-height: 42px; margin-bottom: 5px; }
+        .slot { background: white; padding: 10px; border-radius: 8px; font-size: 0.85em; font-weight: bold; border: 1px dashed #ccc; cursor: pointer; display: flex; align-items: center; gap: 8px; min-height: 42px; margin-bottom: 5px; overflow: hidden; }
         .slot.occupied { border-style: solid; border-color: rgba(0,0,0,0.1); }
+
+        /* Player & Skill */
+        .skill-dot { width: 12px; height: 12px; border-radius: 50%; border: 1px solid rgba(0,0,0,0.2); flex-shrink: 0; }
+        .lvl-yellow { background: var(--v-yellow); } .lvl-green { background: var(--v-green); } .lvl-blue { background: var(--v-blue); } .lvl-red { background: var(--v-red); } .lvl-black { background: var(--v-black); }
+        .player-item { padding: 10px; margin-bottom: 8px; border-radius: 10px; border: 2px solid #eee; background: white; cursor: pointer; font-weight: bold; display: flex; align-items: center; font-size: 0.9em; }
+        .sel-a { border-color: var(--team-a); background: #e7f3ff; }
+        .sel-b { border-color: var(--team-b); background: #f0fff4; }
+
+        /* Counter & Buttons */
+        .shuttle-counter { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 10px 0; background: #f9f9f9; padding: 8px; border-radius: 12px; }
+        button { cursor: pointer; border: none; font-family: 'Kanit'; font-weight: 600; border-radius: 10px; transition: 0.2s; }
+        .btn-start { background: #4caf50; color: white; width: 100%; padding: 12px; margin-top: 8px; }
+        .btn-end { background: var(--accent-red); color: #d00; width: 100%; padding: 12px; margin-top: 8px; display: none; }
 
         /* Modals */
         #qr-overlay, #shuttle-confirm { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); z-index: 9999; justify-content: center; align-items: center; }
         .modal-content { background: white; padding: 25px; border-radius: 25px; text-align: center; width: 90%; max-width: 400px; }
 
-        .shuttle-counter { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 10px 0; background: #f9f9f9; padding: 8px; border-radius: 12px; }
-
         @media (max-width: 1024px) {
-            .side-panel { position: absolute; height: 100%; box-shadow: 5px 0 15px rgba(0,0,0,0.1); }
-            #panel-queue { right: 0; }
+            .sidebar-right { position: absolute; right: 0; height: 100%; box-shadow: -5px 0 15px rgba(0,0,0,0.1); }
         }
-
-        button { cursor: pointer; border: none; font-family: 'Kanit'; font-weight: 600; border-radius: 10px; transition: 0.2s; }
-        .btn-start { background: #4caf50; color: white; width: 100%; padding: 12px; margin-top: 8px; font-size: 1em; }
-        .btn-end { background: var(--accent-red); color: #d00; width: 100%; padding: 12px; margin-top: 8px; display: none; font-size: 1em; }
     </style>
 </head>
 <body onload="checkMobile()">
-
-    <div class="side-panel" id="panel-fifo" data-label="👥 คิวรอ" onclick="checkAndOpen('panel-fifo')">
-        <h3>👥 คิวรอ <span style="float:right; font-size:0.7em; cursor:pointer;" onclick="event.stopPropagation(); togglePanel('panel-fifo')">❌</span></h3>
-        <div id="checkin-list" class="list-box"></div>
-        <button id="confirmBtn" style="background:#007bff; color:white; width:100%; padding:14px; margin-top:10px; font-size:1.1em;">ยืนยันลงสนาม (0)</button>
-        <button id="mockBtn" style="margin-top:8px; background:#f0f0f0; color:#666; width:100%; padding:8px; font-size:0.8em; border:1px dashed #ccc;">🤖 สุ่มคนทดสอบ 20 คน</button>
-    </div>
-
-    <div class="side-panel" id="panel-queue" data-label="⏳ คิวกลาง" onclick="checkAndOpen('panel-queue')" style="background: #fffdf5;">
-        <h3>⏳ คิวกลาง <span style="float:right; font-size:0.7em; cursor:pointer;" onclick="event.stopPropagation(); togglePanel('panel-queue')">❌</span></h3>
-        <div id="queue-list" class="list-box"></div>
-    </div>
 
     <div class="panel-main">
         <div style="display:flex; gap:12px; margin-bottom:20px; align-items: center; flex-wrap: wrap;">
@@ -78,29 +72,30 @@
             <button onclick="addNewCourt()" style="background: #2196f3; color: white; padding: 12px 20px;">➕ เพิ่มสนาม</button>
             <div id="qrcode" onclick="expandQR()" style="margin-left: auto; cursor: zoom-in; background: white; padding: 5px; border-radius: 8px; border: 1px solid #ddd;"></div>
         </div>
-        <div id="empty-msg" style="text-align:center; color:#999; margin-top:100px;">ยังไม่มีสนาม กด "เพิ่มสนาม" เพื่อเริ่มจัดการ</div>
+        <div id="empty-msg" style="text-align:center; color:#999; margin-top:100px;">ยังไม่มีสนาม กด "เพิ่มสนาม" เพื่อเริ่ม</div>
         <div class="courts-wrapper" id="main-grid"></div>
     </div>
 
-    <div id="qr-overlay" onclick="this.style.display='none'">
-        <div class="modal-content">
-            <h2 style="margin-top:0">Scan to Join! 🏸</h2>
-            <div id="qr-big" style="display:flex; justify-content:center; margin:20px 0;"></div>
-            <p style="color:#666;">แตะเพื่อปิด</p>
-        </div>
-    </div>
-
-    <div id="shuttle-confirm">
-        <div class="modal-content">
-            <h2 style="color:red; margin-top:0;">⚠️ ลืมใส่ลูกแบด?</h2>
-            <p>ต้องการจบเกมแบบบันทึก <b>0 ลูก</b> ใช่หรือไม่?</p>
-            <div style="display:flex; gap:10px; margin-top:20px;">
-                <button id="confirm-zero-btn" style="flex:1; background:#eee; padding:15px;">ใช่ (จบเกมเลย)</button>
-                <button onclick="document.getElementById('shuttle-confirm').style.display='none'" style="flex:1; background:#007bff; color:white; padding:15px;">ไม่ (กลับไปแก้ไข)</button>
+    <div class="sidebar-right" id="sidebar">
+        <div class="queue-container">
+            <div class="section-header">
+                <h3>⏳ คิวกลาง</h3>
+                <span onclick="toggleSidebar()" style="cursor:pointer; font-size: 0.8em; color: #999;">❌ หุบ</span>
             </div>
+            <div id="queue-list" class="list-box"></div>
+
+            <div class="section-header" style="margin-top:10px;">
+                <h3>👥 คิวรอ</h3>
+            </div>
+            <div id="checkin-list" class="list-box"></div>
+            
+            <button id="confirmBtn" style="background:#007bff; color:white; width:100%; padding:14px; font-size:1.1em; margin-top:5px;">ยืนยันลงสนาม (0)</button>
+            <button id="mockBtn" style="background:#f0f0f0; color:#666; width:100%; padding:8px; font-size:0.8em; border:1px dashed #ccc; margin-top:5px;">🤖 สุ่มคน 20 คน</button>
         </div>
     </div>
 
+    <div id="qr-overlay" onclick="this.style.display='none'"><div class="modal-content"><h2>Scan to Join!</h2><div id="qr-big"></div></div></div>
+    <div id="shuttle-confirm"><div class="modal-content"><h2 style="color:red;">⚠️ ลืมใส่ลูกแบด?</h2><p>บันทึกแบบ 0 ลูกใช่หรือไม่?</p><div style="display:flex; gap:10px; margin-top:20px;"><button id="confirm-zero-btn" style="flex:1; background:#eee; padding:15px;">ใช่</button><button onclick="document.getElementById('shuttle-confirm').style.display='none'" style="flex:1; background:#007bff; color:white; padding:15px;">ไม่</button></div></div></div>
     <div id="skillPicker" style="display:none; position:fixed; background:white; border-radius:15px; box-shadow:0 10px 25px rgba(0,0,0,0.2); z-index:10001; padding:8px; min-width:170px;"></div>
 
     <script type="module">
@@ -113,17 +108,10 @@
 
         let selectedSlots = [null, null, null, null], currentSessionId = "", lastSnapshotData = [], middleQueue = [], nextCourtNumber = 1, currentEditingPlayerId = null;
 
-        window.togglePanel = (id) => document.getElementById(id).classList.toggle('collapsed');
-        window.checkAndOpen = (id) => { const el = document.getElementById(id); if (el.classList.contains('collapsed')) el.classList.remove('collapsed'); };
-        window.checkMobile = () => { if(window.innerWidth < 1024) { togglePanel('panel-fifo'); togglePanel('panel-queue'); } };
+        window.toggleSidebar = () => document.getElementById('sidebar').classList.toggle('collapsed');
+        window.checkMobile = () => { if(window.innerWidth < 1024) toggleSidebar(); };
 
-        window.expandQR = () => {
-            if(!currentSessionId) return;
-            document.getElementById('qr-big').innerHTML = "";
-            new QRCode(document.getElementById('qr-big'), { text: `https://early-bird-queue.vercel.app/index.html?session=${currentSessionId}`, width: 250, height: 250 });
-            document.getElementById('qr-overlay').style.display = 'flex';
-        };
-
+        // ส่วนฟังก์ชันอื่นๆ (Logic เดิมทั้งหมด)
         window.createSession = async () => {
             const ref = await addDoc(collection(db, "sessions"), { created_at: serverTimestamp() });
             currentSessionId = ref.id;
@@ -144,41 +132,21 @@
                         <select style="border:none; background:none; font-weight:bold; color:#2196f3;">${opts}</select>
                         <button onclick="this.closest('.court-card').remove(); checkEmpty();" style="color:red; background:none;">ลบ</button>
                     </div>
-                    <div style="display:flex; justify-content:space-between; font-size:0.85em; margin-bottom:10px; font-weight:bold; color:#666;">
-                        <span id="status-${id}">🟢 ว่าง</span>
-                    </div>
+                    <div style="font-size:0.85em; margin-bottom:10px; font-weight:bold; color:#666;"><span id="status-${id}">🟢 ว่าง</span></div>
                     <div style="display:flex; gap:10px;">
-                        <div style="flex:1; background:var(--team-a); padding:8px; border-radius:15px;">
-                            <div class="slot" onclick="assignSlot(this, '${id}')">ว่าง</div>
-                            <div class="slot" onclick="assignSlot(this, '${id}')">ว่าง</div>
-                        </div>
-                        <div style="flex:1; background:var(--team-b); padding:8px; border-radius:15px;">
-                            <div class="slot" onclick="assignSlot(this, '${id}')">ว่าง</div>
-                            <div class="slot" onclick="assignSlot(this, '${id}')">ว่าง</div>
-                        </div>
+                        <div style="flex:1; background:var(--team-a); padding:8px; border-radius:15px;"><div class="slot" onclick="assignSlot(this, '${id}')">ว่าง</div><div class="slot" onclick="assignSlot(this, '${id}')">ว่าง</div></div>
+                        <div style="flex:1; background:var(--team-b); padding:8px; border-radius:15px;"><div class="slot" onclick="assignSlot(this, '${id}')">ว่าง</div><div class="slot" onclick="assignSlot(this, '${id}')">ว่าง</div></div>
                     </div>
-                    <div class="shuttle-counter">
-                        <span>🏸 ลูกแบด:</span>
-                        <button onclick="changeShuttle('${id}', -1)" style="width:30px; background:#ddd;">-</button>
-                        <b id="shuttle-${id}">1</b>
-                        <button onclick="changeShuttle('${id}', 1)" style="width:30px; background:#ddd;">+</button>
-                    </div>
+                    <div class="shuttle-counter"><span>🏸:</span><button onclick="changeShuttle('${id}', -1)">-</button><b id="shuttle-${id}">1</b><button onclick="changeShuttle('${id}', 1)">+</button></div>
                     <button id="btn-start-${id}" class="btn-start" onclick="startMatch('${id}')">▶️ เริ่มเกม</button>
                     <button id="btn-end-${id}" class="btn-end" onclick="handleEndGame('${id}')">⏹️ จบเกม</button>
                 </div>`);
             checkAndFillEmptyCourts();
         };
 
-        window.checkEmpty = () => {
-            if(document.querySelectorAll('.court-card').length === 0) document.getElementById('empty-msg').style.display = 'block';
-        };
-
-        window.changeShuttle = (id, v) => {
-            const el = document.getElementById(`shuttle-${id}`);
-            let val = parseInt(el.innerText) + v;
-            if(val >= 0) el.innerText = val;
-        };
-
+        window.checkEmpty = () => { if(document.querySelectorAll('.court-card').length === 0) document.getElementById('empty-msg').style.display = 'block'; };
+        window.changeShuttle = (id, v) => { const el = document.getElementById(`shuttle-${id}`); let val = parseInt(el.innerText) + v; if(val >= 0) el.innerText = val; };
+        
         window.startMatch = (id) => {
             const card = document.getElementById(id);
             if(card.querySelectorAll('.slot.occupied').length === 0) return alert("เลือกคนก่อน!");
@@ -192,13 +160,8 @@
             const shuttleCount = parseInt(document.getElementById(`shuttle-${id}`).innerText);
             if (shuttleCount === 0) {
                 document.getElementById('shuttle-confirm').style.display = 'flex';
-                document.getElementById('confirm-zero-btn').onclick = () => {
-                    document.getElementById('shuttle-confirm').style.display = 'none';
-                    finalizeEndMatch(id);
-                };
-            } else {
-                finalizeEndMatch(id);
-            }
+                document.getElementById('confirm-zero-btn').onclick = () => { document.getElementById('shuttle-confirm').style.display = 'none'; finalizeEndMatch(id); };
+            } else finalizeEndMatch(id);
         };
 
         async function finalizeEndMatch(id) {
@@ -225,8 +188,7 @@
                     await updateDoc(doc(db, `sessions/${currentSessionId}/attendance`, el.dataset.uid), { is_playing: false });
                     el.innerText = "ว่าง"; el.classList.remove('occupied'); delete el.dataset.uid;
                     renderFIFO();
-                }
-                return;
+                } return;
             }
             if (sIdx !== -1) {
                 const p = selectedSlots[sIdx];
@@ -276,11 +238,7 @@
                         <div style="flex:1; background:var(--team-a); padding:5px; border-radius:5px; font-size:0.75em; text-align:center;">${q.slots[0]?.name || '-'}<br>${q.slots[1]?.name || '-'}</div>
                         <div style="flex:1; background:var(--team-b); padding:5px; border-radius:5px; font-size:0.75em; text-align:center;">${q.slots[2]?.name || '-'}<br>${q.slots[3]?.name || '-'}</div>
                     </div>`;
-                div.onclick = () => {
-                    selectedSlots = [...q.slots];
-                    document.getElementById('confirmBtn').dataset.editIndex = i;
-                    middleQueue.splice(i, 1); renderMiddleQueue(); renderFIFO();
-                };
+                div.onclick = () => { selectedSlots = [...q.slots]; document.getElementById('confirmBtn').dataset.editIndex = i; middleQueue.splice(i, 1); renderMiddleQueue(); renderFIFO(); };
                 list.appendChild(div);
             });
         }
@@ -331,6 +289,13 @@
                 batch.set(doc(db, `sessions/${currentSessionId}/attendance`, uid), { display_name: "Player " + i, is_playing: false, last_match_end: Date.now() + (i * 100), skill_level: lvls[Math.floor(Math.random()*5)] });
             }
             await batch.commit();
+        };
+
+        window.expandQR = () => {
+            if(!currentSessionId) return;
+            document.getElementById('qr-big').innerHTML = "";
+            new QRCode(document.getElementById('qr-big'), { text: `https://early-bird-queue.vercel.app/index.html?session=${currentSessionId}`, width: 250, height: 250 });
+            document.getElementById('qr-overlay').style.display = 'flex';
         };
     </script>
 </body>
