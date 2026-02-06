@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Badminton Admin - Game Counter Edition</title>
+    <title>Badminton Admin - Scrollable Edition</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
@@ -13,33 +13,52 @@
             --v-yellow: #FFD700; --v-green: #00C853; --v-blue: #2962FF; --v-red: #D50000; --v-black: #000000;
         }
         * { box-sizing: border-box; font-family: 'Kanit', sans-serif; }
-        body { background-color: var(--primary-bg); margin: 0; display: flex; height: 100vh; overflow: hidden; }
         
-        .panel-main { flex: 1; padding: 20px; overflow-y: auto; }
+        /* Fixed Layout */
+        body { 
+            background-color: var(--primary-bg); 
+            margin: 0; 
+            display: flex; 
+            height: 100vh; 
+            width: 100vw;
+            overflow: hidden; /* ห้าม body เลื่อนเอง ให้เลื่อนข้างในแทน */
+        }
         
-        /* Sidebar */
+        /* Main Panel - เพิ่ม Scroll Bar */
+        .panel-main { 
+            flex: 1; 
+            padding: 20px; 
+            overflow-y: auto; 
+            height: 100%;
+            -webkit-overflow-scrolling: touch; /* สำหรับ iOS scroll ลื่นๆ */
+        }
+        
+        /* Sidebar Right - คงเดิม */
         .sidebar-right { width: 320px; display: flex; flex-direction: column; background: #fff; border-left: 2px solid #eee; transition: 0.3s; z-index: 100; flex-shrink: 0; position: relative; }
         .sidebar-right.collapsed { width: 50px; cursor: pointer; background: #eee; }
         .sidebar-right.collapsed .queue-container { display: none; }
         .sidebar-label { display: none; writing-mode: vertical-rl; text-orientation: mixed; font-weight: bold; color: #888; margin: 25px auto; font-size: 1.1em; letter-spacing: 2px; }
         .sidebar-right.collapsed .sidebar-label { display: block; }
 
-        .queue-container { display: flex; flex-direction: column; height: 100%; padding: 15px; gap: 10px; }
+        .queue-container { display: flex; flex-direction: column; height: 100%; padding: 15px; gap: 10px; overflow: hidden; }
         .list-box { flex: 1; border: 1px solid #ddd; border-radius: 12px; overflow-y: auto; padding: 10px; background: #fafafa; }
         #queue-list { flex: 0.4; background: #fffdf5; border-color: #ffeeba; }
 
-        /* Game Count Style */
-        .game-count { color: #888; font-weight: normal; font-size: 0.85em; margin-left: 5px; }
-
-        /* Court UI */
-        .courts-wrapper { display: grid; grid-template-columns: repeat(auto-fill, minmax(310px, 1fr)); gap: 20px; }
-        .court-card { background: white; border-radius: 20px; padding: 15px; box-shadow: 0 8px 15px rgba(0,0,0,0.05); border-top: 10px solid #ccc; }
+        /* Court UI & Grid */
+        .courts-wrapper { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fill, minmax(310px, 1fr)); 
+            gap: 20px; 
+            padding-bottom: 50px; /* เพิ่มพื้นที่ท้ายกันโดนบัง */
+        }
+        .court-card { background: white; border-radius: 20px; padding: 15px; box-shadow: 0 8px 15px rgba(0,0,0,0.05); border-top: 10px solid #ccc; position: relative; }
         .court-card.playing { border-top-color: #4caf50; background: var(--playing-bg); }
         .court-header { cursor: grab; background: #f8f9fa; margin: -15px -15px 10px -15px; padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; border-radius: 15px 15px 0 0; }
         
         .slot { background: white; padding: 10px; border-radius: 8px; font-size: 0.85em; font-weight: bold; border: 1px dashed #ccc; cursor: pointer; display: flex; align-items: center; gap: 8px; min-height: 42px; margin-bottom: 5px; }
         .slot.occupied { border-style: solid; border-color: rgba(0,0,0,0.1); }
 
+        .game-count { color: #888; font-weight: normal; font-size: 0.85em; margin-left: 5px; }
         .skill-dot { width: 12px; height: 12px; border-radius: 50%; border: 1px solid rgba(0,0,0,0.1); flex-shrink: 0; }
         .lvl-yellow { background: var(--v-yellow); } .lvl-green { background: var(--v-green); } .lvl-blue { background: var(--v-blue); } .lvl-red { background: var(--v-red); } .lvl-black { background: var(--v-black); }
         
@@ -58,7 +77,7 @@
 </head>
 <body onload="checkMobile()">
 
-    <div class="panel-main">
+    <div class="panel-main" id="scroll-area">
         <div style="display:flex; gap:12px; margin-bottom:20px; align-items: center; flex-wrap: wrap;">
             <button onclick="createSession()" style="background: #4caf50; color: white; padding: 12px 25px;">🚀 เปิดก๊วนใหม่</button>
             <button onclick="addNewCourt()" style="background: #2196f3; color: white; padding: 12px 25px;">➕ เพิ่มสนาม</button>
@@ -99,10 +118,12 @@
 
         let selectedSlots = [null, null, null, null], currentSessionId = "", lastSnapshotData = [], middleQueue = [], nextCourtNumber = 1, currentEditingPlayerId = null;
 
+        // Sidebar Control
         window.toggleSidebar = () => document.getElementById('sidebar').classList.toggle('collapsed');
         window.expandSidebar = () => { if(document.getElementById('sidebar').classList.contains('collapsed')) document.getElementById('sidebar').classList.remove('collapsed'); };
         window.checkMobile = () => { if(window.innerWidth < 1024) toggleSidebar(); };
 
+        // Court Setup
         window.addNewCourt = () => {
             document.getElementById('empty-msg').style.display = 'none';
             const id = `court-${Date.now()}`;
@@ -132,32 +153,13 @@
             if (confirm("ลบสนาม?")) { card.remove(); if(document.querySelectorAll('.court-card').length === 0) document.getElementById('empty-msg').style.display = 'block'; }
         };
 
-        window.changeShuttle = (id, v) => { const el = document.getElementById(`shuttle-${id}`); let val = parseInt(el.innerText) + v; if(val >= 0) el.innerText = val; };
-        
-        window.startMatch = (id) => {
-            const card = document.getElementById(id);
-            if(card.querySelectorAll('.slot.occupied').length === 0) return alert("เลือกคนก่อน!");
-            card.classList.add('playing');
-            document.getElementById(`status-${id}`).innerText = "🎾 กำลังแข่ง";
-            document.getElementById(`btn-start-${id}`).style.display = "none";
-            document.getElementById(`btn-end-${id}`).style.display = "block";
-        };
-
-        window.handleEndGame = (id) => {
-            const shuttle = parseInt(document.getElementById(`shuttle-${id}`).innerText);
-            if (shuttle === 0) {
-                document.getElementById('shuttle-confirm').style.display = 'flex';
-                document.getElementById('confirm-zero-btn').onclick = () => { document.getElementById('shuttle-confirm').style.display = 'none'; finalizeEndMatch(id); };
-            } else finalizeEndMatch(id);
-        };
-
+        // Logic จบเกม & นับเกม
         async function finalizeEndMatch(id) {
             const card = document.getElementById(id);
             const occupied = card.querySelectorAll('.occupied');
             const batch = writeBatch(db);
             occupied.forEach(s => {
                 const uid = s.dataset.uid;
-                // บวกจำนวนเกมที่เล่นไปแล้ว increment(1)
                 batch.update(doc(db, `sessions/${currentSessionId}/attendance`, uid), { 
                     is_playing: false, 
                     last_match_end: Date.now(),
@@ -172,6 +174,50 @@
             document.getElementById(`btn-start-${id}`).style.display = "block";
             document.getElementById(`btn-end-${id}`).style.display = "none";
             renderFIFO(); checkAndFillEmptyCourts();
+        }
+
+        // Initialize Session & Sortable
+        window.createSession = async () => {
+            const ref = await addDoc(collection(db, "sessions"), { created_at: serverTimestamp() });
+            currentSessionId = ref.id;
+            document.getElementById("qrcode").innerHTML = "";
+            new QRCode(document.getElementById("qrcode"), { text: `https://early-bird-queue.vercel.app/index.html?session=${currentSessionId}`, width: 50, height: 50 });
+            listenToAttendance();
+            
+            // ปรับปรุง Sortable ให้เลื่อนจอได้ง่ายขึ้น
+            new Sortable(document.getElementById('main-grid'), { 
+                animation: 150, 
+                handle: '.court-header',
+                fallbackTolerance: 10, // ป้องกันการขยับนิดเดียวแล้วกลายเป็น Drag
+                scroll: true, // อนุญาตให้ scroll ขณะลาก
+                bubbleScroll: true
+            });
+        };
+
+        // ... (ส่วนที่เหลือของฟังก์ชัน assignSlot, renderFIFO, renderMiddleQueue, ฯลฯ เหมือนเดิม) ...
+
+        function renderFIFO() {
+            const list = document.getElementById('checkin-list'); list.innerHTML = "";
+            const midIds = new Set(middleQueue.flatMap(q => q.slots.filter(s => s).map(s => s.id)));
+            lastSnapshotData.forEach(player => {
+                const { id, data } = player;
+                if (!data.is_playing && !midIds.has(id)) {
+                    const idx = selectedSlots.findIndex(p => p?.id === id);
+                    const games = data.games_played || 0;
+                    const div = document.createElement('div');
+                    div.className = "player-item " + (idx > -1 ? (idx < 2 ? 'sel-a' : 'sel-b') : '');
+                    div.innerHTML = `<span class="skill-dot lvl-${data.skill_level || 'yellow'}"></span> <span style="margin-left:10px">${data.display_name}</span><span class="game-count">(${games})</span>`;
+                    div.onclick = () => {
+                        const sIdx = selectedSlots.findIndex(p => p?.id === id);
+                        if(sIdx > -1) selectedSlots[sIdx] = null;
+                        else { const f = selectedSlots.indexOf(null); if(f > -1) selectedSlots[f] = {id, name: data.display_name}; }
+                        renderFIFO(); updateBtn();
+                    };
+                    div.oncontextmenu = (e) => { e.preventDefault(); showSkillPicker(id, e.pageX, e.pageY); };
+                    list.appendChild(div);
+                }
+            });
+            updateBtn();
         }
 
         window.assignSlot = async (el, courtId) => {
@@ -192,34 +238,6 @@
                 selectedSlots[sIdx] = null; renderFIFO();
             }
         };
-
-        function renderFIFO() {
-            const list = document.getElementById('checkin-list'); list.innerHTML = "";
-            const midIds = new Set(middleQueue.flatMap(q => q.slots.filter(s => s).map(s => s.id)));
-            lastSnapshotData.forEach(player => {
-                const { id, data } = player;
-                if (!data.is_playing && !midIds.has(id)) {
-                    const idx = selectedSlots.findIndex(p => p?.id === id);
-                    const games = data.games_played || 0; // ดึงจำนวนเกม
-                    const div = document.createElement('div');
-                    div.className = "player-item " + (idx > -1 ? (idx < 2 ? 'sel-a' : 'sel-b') : '');
-                    div.innerHTML = `
-                        <span class="skill-dot lvl-${data.skill_level || 'yellow'}"></span> 
-                        <span style="margin-left:10px">${data.display_name}</span>
-                        <span class="game-count">(${games})</span>
-                    `;
-                    div.onclick = () => {
-                        const sIdx = selectedSlots.findIndex(p => p?.id === id);
-                        if(sIdx > -1) selectedSlots[sIdx] = null;
-                        else { const f = selectedSlots.indexOf(null); if(f > -1) selectedSlots[f] = {id, name: data.display_name}; }
-                        renderFIFO(); updateBtn();
-                    };
-                    div.oncontextmenu = (e) => { e.preventDefault(); showSkillPicker(id, e.pageX, e.pageY); };
-                    list.appendChild(div);
-                }
-            });
-            updateBtn();
-        }
 
         function renderMiddleQueue() {
             const list = document.getElementById('queue-list'); list.innerHTML = "";
@@ -259,15 +277,6 @@
             }
         }
 
-        window.createSession = async () => {
-            const ref = await addDoc(collection(db, "sessions"), { created_at: serverTimestamp() });
-            currentSessionId = ref.id;
-            document.getElementById("qrcode").innerHTML = "";
-            new QRCode(document.getElementById("qrcode"), { text: `https://early-bird-queue.vercel.app/index.html?session=${currentSessionId}`, width: 50, height: 50 });
-            listenToAttendance();
-            new Sortable(document.getElementById('main-grid'), { animation: 150, handle: '.court-header' });
-        };
-
         function listenToAttendance() {
             onSnapshot(query(collection(db, `sessions/${currentSessionId}/attendance`), orderBy("last_match_end", "asc")), snap => {
                 lastSnapshotData = snap.docs.map(d => ({ id: d.id, data: d.data() })); renderFIFO();
@@ -286,14 +295,29 @@
             pk.innerHTML = ['yellow','green','blue','red','black'].map(l => `<div style="padding:10px; cursor:pointer; font-weight:bold;" onclick="updateSkill('${l}')"><span class="skill-dot lvl-${l}"></span> ${l.toUpperCase()}</div>`).join('');
         };
         window.updateSkill = async (lvl) => { await updateDoc(doc(db, `sessions/${currentSessionId}/attendance`, currentEditingPlayerId), { skill_level: lvl }); document.getElementById('skillPicker').style.display='none'; };
-
+        
+        window.changeShuttle = (id, v) => { const el = document.getElementById(`shuttle-${id}`); let val = parseInt(el.innerText) + v; if(val >= 0) el.innerText = val; };
+        window.startMatch = (id) => {
+            const card = document.getElementById(id);
+            if(card.querySelectorAll('.slot.occupied').length === 0) return alert("เลือกคนก่อน!");
+            card.classList.add('playing');
+            document.getElementById(`status-${id}`).innerText = "🎾 กำลังแข่ง";
+            document.getElementById(`btn-start-${id}`).style.display = "none";
+            document.getElementById(`btn-end-${id}`).style.display = "block";
+        };
+        window.handleEndGame = (id) => {
+            const shuttle = parseInt(document.getElementById(`shuttle-${id}`).innerText);
+            if (shuttle === 0) {
+                document.getElementById('shuttle-confirm').style.display = 'flex';
+                document.getElementById('confirm-zero-btn').onclick = () => { document.getElementById('shuttle-confirm').style.display = 'none'; finalizeEndMatch(id); };
+            } else finalizeEndMatch(id);
+        };
         window.expandQR = () => {
             if(!currentSessionId) return;
             document.getElementById('qr-big').innerHTML = "";
             new QRCode(document.getElementById('qr-big'), { text: `https://early-bird-queue.vercel.app/index.html?session=${currentSessionId}`, width: 250, height: 250 });
             document.getElementById('qr-overlay').style.display = 'flex';
         };
-
         document.getElementById('mockBtn').onclick = async () => {
             if(!currentSessionId) return alert("เปิดก๊วนก่อน!");
             const batch = writeBatch(db);
