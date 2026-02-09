@@ -213,18 +213,41 @@
         window.handleEndGame = async (id) => {
             const card = document.getElementById(id);
             const occupied = card.querySelectorAll('.occupied');
+            
+            // --- ส่วนที่เพิ่ม/แก้ไขใหม่ ---
+            // ดึงจำนวนลูกแบดที่ใช้จากหน้าจอสนามนั้นๆ
+            const shuttleCount = parseInt(document.getElementById(`shuttle-${id}`).innerText) || 0;
+            // หาร 4 เพื่อแบ่งกันจ่าย (ถ้าจะเก็บเศษทศนิยมให้ใช้ shuttleCount / 4)
+            const shuttlePerPerson = shuttleCount / 4; 
+            // -------------------------
+
             const batch = writeBatch(db);
+            
             occupied.forEach(s => {
-                batch.update(doc(db, `sessions/${currentSessionId}/attendance`, s.dataset.uid), { is_playing: false, last_match_end: Date.now(), games_played: increment(1) });
-                s.innerText="ว่าง"; s.classList.remove('occupied'); delete s.dataset.uid;
+                batch.update(doc(db, `sessions/${currentSessionId}/attendance`, s.dataset.uid), { 
+                    is_playing: false, 
+                    last_match_end: Date.now(), 
+                    games_played: increment(1),
+                    // บันทึกจำนวนลูกแบดสะสมเข้าไปในตัวผู้เล่น
+                    shuttle_used: increment(shuttlePerPerson) 
+                });
+                
+                s.innerText = "ว่าง"; 
+                s.classList.remove('occupied'); 
+                delete s.dataset.uid;
             });
+
             await batch.commit();
+            
             card.classList.remove('playing');
             document.getElementById(`status-${id}`).innerText = "🟢 ว่าง";
-            document.getElementById(`shuttle-${id}`).innerText = "1";
+            document.getElementById(`shuttle-${id}`).innerText = "1"; // รีเซ็ตค่าลูกแบดเป็น 1 สำหรับเกมถัดไป
             document.getElementById(`btn-start-${id}`).style.display = "block";
             document.getElementById(`btn-end-${id}`).style.display = "none";
-            saveCourtsToLocal(); renderFIFO(); checkAndFillEmptyCourts();
+            
+            saveCourtsToLocal(); 
+            renderFIFO(); 
+            checkAndFillEmptyCourts();
         };
 
         // --- Queue Rendering ---
