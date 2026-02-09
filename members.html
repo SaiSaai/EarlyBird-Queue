@@ -3,115 +3,171 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Manage Members - Badminton Admin</title>
+    <title>Member Management & Billing</title>
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
-        :root { 
-            --v-yellow: #FFD700; --v-green: #00C853; --v-blue: #2962FF; --v-red: #D50000; --v-black: #000000;
-        }
-        * { box-sizing: border-box; font-family: 'Kanit', sans-serif; }
-        body { background: #f4f7f6; margin: 0; padding: 20px; }
+        :root { --v-yellow: #FFD700; --v-green: #00C853; --v-blue: #2962FF; --v-red: #D50000; --v-black: #000000; }
+        body { font-family: 'Kanit', sans-serif; background: #f4f7f6; margin: 0; padding: 20px; }
+        .container { max-width: 1000px; margin: auto; background: white; padding: 20px; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        h2 { color: #333; display: flex; justify-content: space-between; align-items: center; }
         
-        .header { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
-        .btn-back { background: #666; color: white; border: none; padding: 10px 15px; border-radius: 10px; cursor: pointer; text-decoration: none; font-size: 0.9em; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th { background: #f8f9fa; padding: 12px; text-align: left; border-bottom: 2px solid #eee; }
+        td { padding: 12px; border-bottom: 1px solid #eee; }
         
-        .member-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; }
-        .member-card { background: white; padding: 15px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); display: flex; flex-direction: column; gap: 10px; }
-        
-        .member-info { display: flex; align-items: center; gap: 10px; }
-        .name-input { flex: 1; border: 1px solid #ddd; padding: 8px; border-radius: 8px; font-size: 1em; font-weight: bold; }
-        
-        .skill-selector { display: flex; gap: 5px; justify-content: space-between; background: #f9f9f9; padding: 8px; border-radius: 10px; }
-        .skill-btn { width: 35px; height: 35px; border-radius: 50%; border: 3px solid transparent; cursor: pointer; transition: 0.2s; }
-        .skill-btn.active { border-color: #333; transform: scale(1.1); }
-        
+        .skill-dot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: 8px; }
         .lvl-yellow { background: var(--v-yellow); } .lvl-green { background: var(--v-green); }
         .lvl-blue { background: var(--v-blue); } .lvl-red { background: var(--v-red); } .lvl-black { background: var(--v-black); }
-
-        .btn-delete { background: #fff1f0; color: #ff4d4f; border: 1px solid #ffccc7; padding: 8px; border-radius: 8px; cursor: pointer; font-size: 0.85em; margin-top: 5px; }
-        .btn-delete:hover { background: #ff4d4f; color: white; }
-
-        .status-badge { font-size: 0.75em; padding: 2px 8px; border-radius: 10px; background: #eee; color: #666; }
-        .status-playing { background: #e6f7ff; color: #1890ff; }
+        
+        .input-small { width: 60px; padding: 5px; border: 1px solid #ccc; border-radius: 5px; text-align: center; }
+        .total-row { background: #e7f3ff; font-weight: bold; }
+        .btn-save { background: #4caf50; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; }
+        
+        .edit-zone { display: flex; align-items: center; gap: 5px; }
+        select { padding: 4px; border-radius: 5px; }
     </style>
 </head>
 <body>
 
-    <div class="header">
-        <a href="javascript:history.back()" class="btn-back">⬅️ กลับหน้าคิว</a>
-        <h2 style="margin:0;">👥 จัดการสมาชิกในก๊วน</h2>
+<div class="container">
+    <h2>👥 จัดการสมาชิกและค่าใช้จ่าย 
+        <button onclick="location.reload()" style="font-size: 0.6em; padding: 8px;">🔄 อัปเดตข้อมูล</button>
+    </h2>
+
+    <div style="background: #fff8e1; padding: 15px; border-radius: 10px; margin-bottom: 20px; display: flex; gap: 20px; flex-wrap: wrap;">
+        <div>💰 ค่าคอร์ททั้งหมด: <input type="number" id="global-court-fee" value="0" oninput="calculateAll()" class="input-small" style="width: 80px;"> บาท</div>
+        <div>🏸 ราคาลูกแบด/ลูก: <input type="number" id="shuttle-price" value="30" oninput="calculateAll()" class="input-small"> บาท</div>
     </div>
 
-    <div id="loading" style="text-align:center; padding:50px; color:#999;">กำลังโหลดรายชื่อ...</div>
-    <div class="member-grid" id="member-list"></div>
+    <table id="memberTable">
+        <thead>
+            <tr>
+                <th>ชื่อ / ระดับ</th>
+                <th>เกมที่เล่น</th>
+                <th>ลูกแบด (แชร์)</th>
+                <th>ซื้อของ/น้ำ (+)</th>
+                <th>ส่วนลด (-)</th>
+                <th>ยอดสุทธิ</th>
+                <th>จัดการ</th>
+            </tr>
+        </thead>
+        <tbody id="member-list">
+            </tbody>
+        <tfoot>
+            <tr class="total-row">
+                <td colspan="5" style="text-align: right;">รวมยอดทั้งหมด:</td>
+                <td id="grand-total">0</td>
+                <td>บาท</td>
+            </tr>
+        </tfoot>
+    </table>
+</div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, doc, onSnapshot, query, orderBy, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getFirestore, collection, onSnapshot, doc, updateDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        const firebaseConfig = { apiKey: "AIzaSyDQbnx83sbs1sO4xsuLUV50uxbBinr2VtY", authDomain: "earlybird-queue.firebaseapp.com", projectId: "earlybird-queue", storageBucket: "earlybird-queue.firebasestorage.app", messagingSenderId: "310694006567", appId: "1:310694006567:web:f56fc19ed03b81bf8c2302" };
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
+    const firebaseConfig = { apiKey: "AIzaSyDQbnx83sbs1sO4xsuLUV50uxbBinr2VtY", authDomain: "earlybird-queue.firebaseapp.com", projectId: "earlybird-queue", storageBucket: "earlybird-queue.firebasestorage.app", messagingSenderId: "310694006567", appId: "1:310694006567:web:f56fc19ed03b81bf8c2302" };
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
 
-        // ดึง Session ID จาก URL (เช่น members.html?session=ID)
-        const urlParams = new URLSearchParams(window.location.search);
-        const sessionId = urlParams.get('session');
+    const sessionId = localStorage.getItem('last_session_id');
+    let members = [];
 
-        if (!sessionId) {
-            document.body.innerHTML = "<h2>❌ ไม่พบรหัส Session กรุณาเข้าผ่านหน้า Admin</h2>";
-        } else {
-            listenToMembers();
+    if (!sessionId) {
+        alert("กรุณาเปิดก๊วนในหน้า Admin ก่อน!");
+    } else {
+        listenToMembers();
+    }
+
+    function listenToMembers() {
+        onSnapshot(query(collection(db, `sessions/${sessionId}/attendance`), orderBy("display_name")), (snap) => {
+            members = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            renderTable();
+        });
+    }
+
+    window.calculateAll = () => {
+        const courtTotal = parseFloat(document.getElementById('global-court-fee').value) || 0;
+        const shuttlePrice = parseFloat(document.getElementById('shuttle-price').value) || 0;
+        const memberCount = members.length;
+        const courtPerHead = memberCount > 0 ? courtTotal / memberCount : 0;
+
+        let grandTotal = 0;
+
+        members.forEach(m => {
+            const extra = parseFloat(document.getElementById(`extra-${m.id}`)?.value) || m.extra_cost || 0;
+            const discount = parseFloat(document.getElementById(`discount-${m.id}`)?.value) || m.discount || 0;
+            
+            // สูตร: (ค่าคอร์ทหารเฉลี่ย) + (จำนวนลูกแบดที่คนนี้ใช้จริง * ราคา) + ซื้อของ - ส่วนลด
+            // หมายเหตุ: ในโค้ดจบเกม Admin ควรบันทึก shuttle_used ลงใน Profile ของสมาชิกด้วย
+            const shuttleCost = (m.shuttle_used || 0) * shuttlePrice;
+            const total = courtPerHead + shuttleCost + extra - discount;
+
+            const rowTotalEl = document.getElementById(`total-${m.id}`);
+            if (rowTotalEl) rowTotalEl.innerText = Math.round(total);
+            grandTotal += total;
+        });
+
+        document.getElementById('grand-total').innerText = Math.round(grandTotal).toLocaleString();
+    };
+
+    function renderTable() {
+        const list = document.getElementById('member-list');
+        list.innerHTML = "";
+        
+        members.forEach(m => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>
+                    <div class="edit-zone">
+                        <span class="skill-dot lvl-${m.skill_level || 'yellow'}"></span>
+                        <input type="text" value="${m.display_name}" onchange="updateMember('${m.id}', {display_name: this.value})" style="border:none; background:none; font-weight:bold; width:80px;">
+                        <select onchange="updateMember('${m.id}', {skill_level: this.value})">
+                            <option value="yellow" ${m.skill_level=='yellow'?'selected':''}>Y</option>
+                            <option value="green" ${m.skill_level=='green'?'selected':''}>G</option>
+                            <option value="blue" ${m.skill_level=='blue'?'selected':''}>B</option>
+                            <option value="red" ${m.skill_level=='red'?'selected':''}>R</option>
+                            <option value="black" ${m.skill_level=='black'?'selected':''}>BK</option>
+                        </select>
+                    </div>
+                </td>
+                <td style="text-align:center;">${m.games_played || 0}</td>
+                <td style="text-align:center;">${m.shuttle_used || 0}</td>
+                <td><input type="number" id="extra-${m.id}" value="${m.extra_cost || 0}" class="input-small" oninput="updateDebounced('${m.id}', 'extra_cost', this.value)"></td>
+                <td><input type="number" id="discount-${m.id}" value="${m.discount || 0}" class="input-small" oninput="updateDebounced('${m.id}', 'discount', this.value)"></td>
+                <td id="total-${m.id}" style="font-weight:bold; color: #2c3e50;">0</td>
+                <td><button onclick="deleteMember('${m.id}')" style="color:red; background:none; border:none; cursor:pointer;">🗑️</button></td>
+            `;
+            list.appendChild(tr);
+        });
+        calculateAll();
+    }
+
+    // ฟังก์ชันอัปเดตข้อมูลลง Firebase
+    window.updateMember = async (id, data) => {
+        await updateDoc(doc(db, `sessions/${sessionId}/attendance`, id), data);
+    };
+
+    // ฟังก์ชันหน่วงเวลาอัปเดต (ป้องกันการเขียน Firebase รัวเกินไปขณะพิมพ์ตัวเลข)
+    let timer;
+    window.updateDebounced = (id, field, val) => {
+        clearTimeout(timer);
+        timer = setTimeout(() => {
+            const data = {};
+            data[field] = parseFloat(val) || 0;
+            updateMember(id, data);
+        }, 800);
+        calculateAll();
+    };
+
+    window.deleteMember = async (id) => {
+        if(confirm("ลบสมาชิกรายนี้ออกจากก๊วน?")) {
+            // ในงานจริงควรใช้ deleteDoc แต่เพื่อความปลอดภัยอาจจะแค่ mark ว่าเลิกเล่น
+            await updateMember(id, { is_hidden: true }); 
         }
+    };
 
-        function listenToMembers() {
-            const q = query(collection(db, `sessions/${sessionId}/attendance`), orderBy("display_name", "asc"));
-            onSnapshot(q, (snap) => {
-                document.getElementById('loading').style.display = 'none';
-                const list = document.getElementById('member-list');
-                list.innerHTML = "";
-                
-                snap.forEach((playerDoc) => {
-                    const p = playerDoc.data();
-                    const pid = playerDoc.id;
-                    
-                    const card = document.createElement('div');
-                    card.className = "member-card";
-                    card.innerHTML = `
-                        <div class="member-info">
-                            <input type="text" class="name-input" value="${p.display_name}" 
-                                onchange="updateName('${pid}', this.value)">
-                            <span class="status-badge ${p.is_playing ? 'status-playing' : ''}">
-                                ${p.is_playing ? 'ในสนาม' : 'ข้างสนาม'}
-                            </span>
-                        </div>
-                        <div style="font-size:0.8em; color:#888;">จำนวนเกม: ${p.games_played || 0} เกม</div>
-                        <div class="skill-selector">
-                            ${['yellow','green','blue','red','black'].map(color => `
-                                <div class="skill-btn lvl-${color} ${p.skill_level === color ? 'active' : ''}" 
-                                     onclick="updateSkill('${pid}', '${color}')"></div>
-                            `).join('')}
-                        </div>
-                        <button class="btn-delete" onclick="deleteMember('${pid}', '${p.display_name}')">🗑️ ลบชื่อออกจากก๊วน</button>
-                    `;
-                    list.appendChild(card);
-                });
-            });
-        }
-
-        window.updateSkill = async (pid, color) => {
-            await updateDoc(doc(db, `sessions/${sessionId}/attendance`, pid), { skill_level: color });
-        };
-
-        window.updateName = async (pid, newName) => {
-            if(!newName.trim()) return;
-            await updateDoc(doc(db, `sessions/${sessionId}/attendance`, pid), { display_name: newName });
-        };
-
-        window.deleteMember = async (pid, name) => {
-            if(confirm(`ยืนยันการลบ "${name}" ออกจากก๊วน? (ข้อมูลจำนวนเกมจะหายไปด้วย)`)) {
-                await deleteDoc(doc(db, `sessions/${sessionId}/attendance`, pid));
-            }
-        };
-    </script>
+</script>
 </body>
 </html>
