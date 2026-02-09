@@ -77,6 +77,8 @@
             <h3 style="margin:10px 0 5px 0">👥 คิวรอ</h3>
             <div id="checkin-list" class="list-box"></div>
             <button id="confirmBtn" style="background:#007bff; color:white; width:100%; padding:15px; font-size:1.1em; margin-top:10px;">ยืนยันลงสนาม (0)</button>
+
+<button id="mockBtn" style="background:#f0f0f0; color:#666; width:100%; padding:8px; font-size:0.8em; border:1px dashed #ccc; margin-top:10px; cursor:pointer;">🤖 Test: สุ่มสมาชิก 20 คน</button>
         </div>
     </div>
 
@@ -279,6 +281,39 @@
         window.goToMembers = () => { if(!currentSessionId) return; window.location.href = `members.html?session=${currentSessionId}`; };
         window.updateBtn = () => { document.getElementById('confirmBtn').innerText = `ยืนยันลงสนาม (${selectedSlots.filter(p=>p).length})`; };
         window.expandQR = () => { if(!currentSessionId) return; document.getElementById('qr-big').innerHTML = ""; new QRCode(document.getElementById('qr-big'), { text: `https://early-bird-queue.vercel.app/index.html?session=${currentSessionId}`, width: 250, height: 250 }); document.getElementById('qr-overlay').style.display = 'flex'; };
+    
+        // เพิ่มฟังก์ชันนี้ไว้ใน <script type="module"> ของคุณ
+document.getElementById('mockBtn').onclick = async () => {
+    if(!currentSessionId) return alert("กรุณาเปิดก๊วนก่อนสุ่มสมาชิก!");
+    
+    if(!confirm("ต้องการสุ่มรายชื่อสมาชิก 20 คนเพื่อทดสอบใช่หรือไม่?")) return;
+
+    const batch = writeBatch(db);
+    const lvls = ['yellow','green','blue','red','black'];
+    const names = ["สมชาย", "วิภา", "มานะ", "ก้อง", "ฟ้า", "ต้น", "เปิ้ล", "นัท", "บอย", "แอน", "ขวัญ", "เจมส์", "ตั้ม", "นุช", "เก่ง", "ปลา", "เอก", "หมี", "โอ๋", "ต่าย"];
+
+    for (let i = 0; i < 20; i++) {
+        // สร้าง ID แบบสุ่มเพื่อให้ไม่ซ้ำกัน
+        const uid = "mock_" + Date.now() + "_" + i;
+        const randomLvl = lvls[Math.floor(Math.random() * lvls.length)];
+        
+        batch.set(doc(db, `sessions/${currentSessionId}/attendance`, uid), {
+            display_name: names[i] || `Player ${i+1}`,
+            is_playing: false,
+            last_match_end: Date.now() + (i * 100), // เรียงคิวตามเวลาที่แสกน
+            skill_level: randomLvl,
+            games_played: 0
+        });
+    }
+
+    try {
+        await batch.commit();
+        alert("สุ่มสมาชิก 20 คนสำเร็จ!");
+    } catch (e) {
+        console.error("Error adding mock data: ", e);
+        alert("เกิดข้อผิดพลาดในการสุ่มข้อมูล");
+    }
+};
     </script>
 </body>
 </html>
