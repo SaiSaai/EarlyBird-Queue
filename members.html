@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Member Billing - Badminton Admin</title>
+    <title>Member Billing - Per Person Rate</title>
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
         :root { 
@@ -12,11 +12,10 @@
         }
         body { font-family: 'Kanit', sans-serif; background: #f0f2f5; margin: 0; padding: 20px; color: #333; }
         .container { max-width: 1100px; margin: auto; background: white; padding: 25px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
-        
         h2 { margin-top: 0; display: flex; justify-content: space-between; align-items: center; color: #1a1a1a; }
         
         /* Setup Box */
-        .setup-bar { background: #fff8e1; padding: 20px; border-radius: 15px; margin-bottom: 25px; display: flex; gap: 25px; flex-wrap: wrap; border: 1px solid #ffe082; }
+        .setup-bar { background: #e8f5e9; padding: 20px; border-radius: 15px; margin-bottom: 25px; display: flex; gap: 25px; flex-wrap: wrap; border: 1px solid #c8e6c9; }
         .setup-item { display: flex; align-items: center; gap: 10px; font-weight: 600; }
         
         /* Table Styling */
@@ -25,48 +24,38 @@
         td { padding: 12px 15px; border-bottom: 1px solid #eee; transition: 0.3s; }
         
         .paid-row { opacity: 0.5; background-color: #fafafa !important; }
-        .paid-row input { pointer-events: none; background: #eee; border-color: transparent; }
-
         .skill-dot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; border: 1px solid rgba(0,0,0,0.1); }
         .lvl-yellow { background: var(--v-yellow); } .lvl-green { background: var(--v-green); }
         .lvl-blue { background: var(--v-blue); } .lvl-red { background: var(--v-red); } .lvl-black { background: var(--v-black); }
         
-        .input-small { width: 70px; padding: 8px; border: 1px solid #ddd; border-radius: 8px; text-align: center; font-family: 'Kanit'; }
-        .total-row { background: #e3f2fd; font-weight: bold; font-size: 1.1em; }
+        .input-small { width: 80px; padding: 8px; border: 1px solid #ddd; border-radius: 8px; text-align: center; font-family: 'Kanit'; }
+        .total-row { background: #fff3e0; font-weight: bold; font-size: 1.1em; }
         
         .btn-paid { background: #4caf50; color: white; border: none; padding: 8px 15px; border-radius: 10px; cursor: pointer; font-weight: 600; transition: 0.2s; }
         .btn-paid.is-paid { background: #bdbdbd; }
-        .btn-paid:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
 
         .edit-zone { display: flex; align-items: center; gap: 8px; }
-        select { padding: 5px; border-radius: 6px; border: 1px solid #ddd; cursor: pointer; }
-        input[type="text"] { border: 1px solid transparent; padding: 5px; border-radius: 6px; transition: 0.2s; }
-        input[type="text"]:focus { border-color: #2196f3; background: #fff; outline: none; }
-
-        @media (max-width: 768px) {
-            .container { padding: 10px; }
-            th, td { padding: 8px; font-size: 0.85em; }
-            .input-small { width: 50px; }
-        }
+        select { padding: 5px; border-radius: 6px; border: 1px solid #ddd; }
+        input[type="text"] { border: 1px solid transparent; padding: 5px; border-radius: 6px; width: 100px; font-weight: 600; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>👥 สรุปยอดสมาชิกและค่าใช้จ่าย 
-        <button onclick="window.history.back()" style="font-size: 0.6em; cursor: pointer; padding: 8px 15px; border-radius: 10px; border: 1px solid #ddd;">⬅️ กลับหน้าแอดมิน</button>
+    <h2>👥 สรุปยอดสมาชิก (ราคาต่อคน)
+        <button onclick="window.history.back()" style="font-size: 0.6em; cursor: pointer; padding: 8px 15px; border-radius: 10px; border: 1px solid #ddd; background: #fff;">⬅️ กลับ</button>
     </h2>
 
     <div class="setup-bar">
         <div class="setup-item">
-            💰 ค่าคอร์ททั้งหมด: 
-            <input type="number" id="global-court-fee" value="0" oninput="calculateAll()" class="input-small" style="width: 100px;"> บาท
+            💰 ค่าคอร์ท / คน: 
+            <input type="number" id="court-per-person" value="60" oninput="calculateAll()" class="input-small"> บาท
         </div>
         <div class="setup-item">
-            🏸 ราคาลูกแบด/ลูก: 
+            🏸 ราคาลูกแบด / ลูก: 
             <input type="number" id="shuttle-price" value="30" oninput="calculateAll()" class="input-small"> บาท
         </div>
-        <div style="margin-left: auto; color: #666; font-size: 0.9em;">*ระบบบันทึกส่วนลดและค่าน้ำอัตโนมัติ</div>
+        <div style="margin-left: auto; color: #2e7d32; font-size: 0.9em;">*ยอดรวม = ค่าคอร์ทคงที่ + (ลูกสะสม x ราคาลูก)</div>
     </div>
 
     <table>
@@ -75,18 +64,17 @@
                 <th>สมาชิก / ระดับ</th>
                 <th style="text-align:center;">เกม</th>
                 <th style="text-align:center;">ลูก (x)</th>
-                <th>ซื้อของ (+)</th>
-                <th>ส่วนลด (-)</th>
+                <th>น้ำ/ของ (+)</th>
+                <th>ลด (-)</th>
                 <th>ยอดสุทธิ</th>
                 <th>สถานะ</th>
             </tr>
         </thead>
-        <tbody id="member-list">
-            </tbody>
+        <tbody id="member-list"></tbody>
         <tfoot>
             <tr class="total-row">
-                <td colspan="5" style="text-align: right; padding-right: 20px;">ยอดรวมทั้งหมดของก๊วน:</td>
-                <td id="grand-total" style="color: #1976d2;">0</td>
+                <td colspan="5" style="text-align: right; padding-right: 20px;">ยอดรวมที่เก็บได้ทั้งหมด:</td>
+                <td id="grand-total" style="color: #e65100;">0</td>
                 <td>บาท</td>
             </tr>
         </tfoot>
@@ -104,11 +92,7 @@
     const sessionId = localStorage.getItem('last_session_id');
     let members = [];
 
-    if (!sessionId) {
-        alert("ไม่พบ Session ID กรุณากลับไปเปิดก๊วนที่หน้า Admin ก่อน");
-    } else {
-        listenToMembers();
-    }
+    if (sessionId) listenToMembers();
 
     function listenToMembers() {
         onSnapshot(query(collection(db, `sessions/${sessionId}/attendance`), orderBy("display_name")), (snap) => {
@@ -118,20 +102,17 @@
     }
 
     window.calculateAll = () => {
-        const courtTotal = parseFloat(document.getElementById('global-court-fee').value) || 0;
+        const courtRate = parseFloat(document.getElementById('court-per-person').value) || 0;
         const shuttlePrice = parseFloat(document.getElementById('shuttle-price').value) || 0;
-        const memberCount = members.length;
-        const courtPerHead = memberCount > 0 ? courtTotal / memberCount : 0;
-
         let grandTotal = 0;
 
         members.forEach(m => {
             const extra = parseFloat(document.getElementById(`extra-${m.id}`)?.value) || m.extra_cost || 0;
             const discount = parseFloat(document.getElementById(`discount-${m.id}`)?.value) || m.discount || 0;
             
-            // สูตร: (ค่าคอร์ทหารเฉลี่ย) + (จำนวนลูกแบดคนละ x ลูก * ราคา) + ซื้อของ - ส่วนลด
+            // สูตร: (ค่าคอร์ทต่อคน) + (ลูกสะสม * ราคาลูก) + ค่าน้ำ - ส่วนลด
             const shuttleCost = (m.shuttle_used || 0) * shuttlePrice;
-            const total = courtPerHead + shuttleCost + extra - discount;
+            const total = courtRate + shuttleCost + extra - discount;
 
             const rowTotalEl = document.getElementById(`total-${m.id}`);
             if (rowTotalEl) rowTotalEl.innerText = Math.round(total).toLocaleString();
@@ -144,8 +125,6 @@
     function renderTable() {
         const list = document.getElementById('member-list');
         list.innerHTML = "";
-        
-        // เรียงลำดับ: ใครยังไม่จ่ายไว้บน (false), ใครจ่ายแล้วไว้ล่าง (true)
         const sortedMembers = [...members].sort((a, b) => (a.is_paid === b.is_paid) ? 0 : a.is_paid ? 1 : -1);
 
         sortedMembers.forEach(m => {
@@ -156,7 +135,7 @@
                 <td>
                     <div class="edit-zone">
                         <span class="skill-dot lvl-${m.skill_level || 'yellow'}"></span>
-                        <input type="text" value="${m.display_name}" onchange="updateMember('${m.id}', {display_name: this.value})" style="font-weight:600; width:100px;">
+                        <input type="text" value="${m.display_name}" onchange="updateMember('${m.id}', {display_name: this.value})">
                         <select onchange="updateMember('${m.id}', {skill_level: this.value})">
                             <option value="yellow" ${m.skill_level=='yellow'?'selected':''}>Y</option>
                             <option value="green" ${m.skill_level=='green'?'selected':''}>G</option>
@@ -166,11 +145,11 @@
                         </select>
                     </div>
                 </td>
-                <td style="text-align:center; font-weight:bold;">${m.games_played || 0}</td>
-                <td style="text-align:center; color: #e91e63; font-weight:bold;">${m.shuttle_used || 0}</td>
+                <td style="text-align:center;">${m.games_played || 0}</td>
+                <td style="text-align:center; color:#d32f2f; font-weight:bold;">${m.shuttle_used || 0}</td>
                 <td><input type="number" id="extra-${m.id}" value="${m.extra_cost || 0}" class="input-small" oninput="updateDebounced('${m.id}', 'extra_cost', this.value)"></td>
                 <td><input type="number" id="discount-${m.id}" value="${m.discount || 0}" class="input-small" oninput="updateDebounced('${m.id}', 'discount', this.value)"></td>
-                <td id="total-${m.id}" style="font-weight:bold; color: #2c3e50;">0</td>
+                <td id="total-${m.id}" style="font-weight:bold;">0</td>
                 <td>
                     <button onclick="togglePaid('${m.id}', ${!m.is_paid})" class="btn-paid ${m.is_paid ? 'is-paid' : ''}">
                         ${m.is_paid ? 'ยกเลิก' : 'จ่ายแล้ว?'}
@@ -200,7 +179,6 @@
     window.togglePaid = async (id, status) => {
         await updateMember(id, { is_paid: status });
     };
-
 </script>
 </body>
 </html>
