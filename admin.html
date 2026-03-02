@@ -217,8 +217,8 @@
             // --- ส่วนที่เพิ่ม/แก้ไขใหม่ ---
             // ดึงจำนวนลูกแบดที่ใช้จากหน้าจอสนามนั้นๆ
             const shuttleCount = parseInt(document.getElementById(`shuttle-${id}`).innerText) || 0;
-            // หาร 4 เพื่อแบ่งกันจ่าย (ถ้าจะเก็บเศษทศนิยมให้ใช้ shuttleCount / 4)
-            const shuttlePerPerson = shuttleCount / 4; 
+            // เราใช้ shuttleCount ตรงๆ เลย (คนละ x ลูก)
+            const shuttlePerPerson = shuttleCount; 
             // -------------------------
 
             const batch = writeBatch(db);
@@ -228,7 +228,7 @@
                     is_playing: false, 
                     last_match_end: Date.now(), 
                     games_played: increment(1),
-                    // บันทึกจำนวนลูกแบดสะสมเข้าไปในตัวผู้เล่น
+                    // บันทึกคนละ x ลูก ตามที่ระบุในสนามนั้นๆ
                     shuttle_used: increment(shuttlePerPerson) 
                 });
                 
