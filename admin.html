@@ -337,7 +337,7 @@
         window.expandQR = () => {
             if(!currentSessionId) return;
             document.getElementById('qr-big').innerHTML = "";
-            const liffUrl = `https://liff.line.me/YOUR_LIFF_ID?session=${currentSessionId}`;
+            const liffUrl = `https://liff.line.me/2009012689-o7UBlAd7?session=${currentSessionId}`;
             new QRCode(document.getElementById('qr-big'), { text: liffUrl, width: 250, height: 250 });
             document.getElementById('qr-overlay').style.display = 'flex';
         };
