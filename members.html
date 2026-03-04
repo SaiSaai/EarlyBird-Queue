@@ -177,7 +177,32 @@
     };
 
     window.togglePaid = async (id, status) => {
-        await updateMember(id, { is_paid: status });
+        // ถ้ากำลังจะเปลี่ยนสถานะเป็น "จ่ายแล้ว" (status = true)
+        if (status === true) {
+            const player = members.find(m => m.id === id);
+            
+            // 1. ตรวจสอบว่ากำลังแข่งอยู่หรือไม่
+            if (player.is_playing) {
+                alert(`⚠️ ไม่สามารถเก็บเงิน ${player.display_name} ได้\nเนื่องจากกำลังแข่งอยู่ในสนาม กรุณารอให้จบเกมก่อน`);
+                return;
+            }
+
+            // 2. ตรวจสอบว่าอยู่ในคิวกลาง (Queue) หรือไม่
+            // ดึงข้อมูลคิวกลางจาก LocalStorage มาเช็ก
+            const savedQueue = localStorage.getItem(`queue_${sessionId}`);
+            if (savedQueue) {
+                const queueData = JSON.parse(savedQueue);
+                const isInQueue = queueData.some(q => q.slots.some(s => s && s.id === id));
+                
+                if (isInQueue) {
+                    alert(`⚠️ ไม่สามารถเก็บเงิน ${player.display_name} ได้\nเนื่องจากมีชื่ออยู่ใน "คิวกลาง" กรุณาเอาชื่อออกจากคิวก่อน`);
+                    return;
+                }
+            }
+        }
+
+        // ถ้าผ่านเงื่อนไขทั้งหมด หรือเป็นการกด "ยกเลิกจ่าย" ให้บันทึกข้อมูล
+        await updateDoc(doc(db, `sessions/${sessionId}/attendance`, id), { is_paid: status });
     };
 </script>
 </body>

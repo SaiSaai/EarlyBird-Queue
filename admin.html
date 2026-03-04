@@ -252,11 +252,14 @@
 
         // --- Queue Rendering ---
         function renderFIFO() {
-            const list = document.getElementById('checkin-list'); list.innerHTML = "";
+            const list = document.getElementById('checkin-list'); 
+            list.innerHTML = "";
             const midIds = new Set(middleQueue.flatMap(q => q.slots.filter(s => s).map(s => s.id)));
+
             lastSnapshotData.forEach(player => {
                 const { id, data } = player;
-                if (!data.is_playing && !midIds.has(id)) {
+                // เพิ่มเงื่อนไข !data.is_paid เพื่อไม่ให้คนจ่ายแล้วปรากฏในคิวรอ
+                if (!data.is_playing && !midIds.has(id) && !data.is_paid) {
                     const idx = selectedSlots.findIndex(p => p?.id === id);
                     const div = document.createElement('div');
                     div.className = "player-item " + (idx > -1 ? (idx < 2 ? 'sel-a' : 'sel-b') : '');
@@ -271,8 +274,7 @@
                 }
             });
             updateBtn();
-        }
-
+        }   
         function renderMiddleQueue() {
             const list = document.getElementById('queue-list'); list.innerHTML = "";
             middleQueue.forEach((q, i) => {
