@@ -317,12 +317,30 @@
 
         // --- Helpers ---
         function listenToAttendance() { onSnapshot(query(collection(db, `sessions/${currentSessionId}/attendance`), orderBy("last_match_end", "asc")), snap => { lastSnapshotData = snap.docs.map(d => ({ id: d.id, data: d.data() })); renderFIFO(); }); }
-        function generateQR(id) { document.getElementById("qrcode").innerHTML = ""; new QRCode(document.getElementById("qrcode"), { text: `https://early-bird-queue.vercel.app/index.html?session=${id}`, width: 50, height: 50 }); }
+        // แก้ไขฟังก์ชัน generateQR ในไฟล์ admin.html
+        function generateQR(id) {
+            document.getElementById("qrcode").innerHTML = "";
+            // แทนที่ YOUR_LIFF_ID ด้วย ID ที่ได้จาก LINE Developers
+            const liffUrl = `https://liff.line.me/YOUR_LIFF_ID?session=${id}`; 
+            
+            new QRCode(document.getElementById("qrcode"), {
+                text: liffUrl,
+                width: 50,
+                height: 50
+            });
+        }
         window.changeShuttle = (id, v) => { const el = document.getElementById(`shuttle-${id}`); let val = parseInt(el.innerText) + v; if(val >= 0) { el.innerText = val; saveCourtsToLocal(); } };
         window.togglePanel = (id) => document.getElementById(id).classList.toggle('collapsed');
         window.checkAndOpen = (id) => document.getElementById(id).classList.remove('collapsed');
         window.updateBtn = () => { document.getElementById('confirmBtn').innerText = `ยืนยันลงสนาม (${selectedSlots.filter(p=>p).length})`; };
-        window.expandQR = () => { if(!currentSessionId) return; document.getElementById('qr-big').innerHTML = ""; new QRCode(document.getElementById('qr-big'), { text: `https://early-bird-queue.vercel.app/index.html?session=${currentSessionId}`, width: 250, height: 250 }); document.getElementById('qr-overlay').style.display = 'flex'; };
+        // และแก้ฟังก์ชัน expandQR (ตอนขยายใหญ่) ให้เป็น URL เดียวกันด้วย
+        window.expandQR = () => {
+            if(!currentSessionId) return;
+            document.getElementById('qr-big').innerHTML = "";
+            const liffUrl = `https://liff.line.me/YOUR_LIFF_ID?session=${currentSessionId}`;
+            new QRCode(document.getElementById('qr-big'), { text: liffUrl, width: 250, height: 250 });
+            document.getElementById('qr-overlay').style.display = 'flex';
+        };
         window.checkEmpty = () => { if(document.querySelectorAll('.court-card').length === 0) document.getElementById('empty-msg').style.display = 'block'; };
 
         // --- Mock Data ---

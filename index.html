@@ -1,25 +1,39 @@
 <!DOCTYPE html>
-<html>
+<html lang="th">
 <head>
-    <title>คิวแบดมินตัน</title>
-    <link rel="stylesheet" href="style.css">
-    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Check-in Badminton</title>
+    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <style>
+        body { font-family: 'Kanit', sans-serif; text-align: center; padding: 50px 20px; background: #fdfcf0; }
+        .profile-img { width: 100px; height: 100px; border-radius: 50%; border: 3px solid #4caf50; margin-bottom: 20px; }
+        .btn-checkin { background: #00b900; color: white; border: none; padding: 15px 30px; border-radius: 30px; font-size: 1.2em; cursor: pointer; font-weight: bold; width: 100%; max-width: 300px; }
+        .loading { display: block; margin: 20px auto; }
+    </style>
 </head>
 <body>
-    <h1>คิวแข่งวันนี้</h1>
-    
-    <div id="app" style="margin-bottom: 20px;"></div>
-
-    <hr>
-    <h3>รายการคิว</h3>
-    <div id="queue-list"></div>
+    <div id="app" style="display:none;">
+        <img id="pictureUrl" class="profile-img">
+        <h2 id="displayName">กำลังโหลด...</h2>
+        <p>ระดับฝีมือของคุณ:</p>
+        <select id="skill_level" style="padding:10px; border-radius:10px; margin-bottom:20px; width:200px;">
+            <option value="yellow">Yellow (เริ่มต้น)</option>
+            <option value="green">Green (ทั่วไป)</option>
+            <option value="blue">Blue (กลาง)</option>
+            <option value="red">Red (สูง)</option>
+            <option value="black">Black (มืออาชีพ)</option>
+        </select>
+        <br>
+        <button id="btnCheckin" class="btn-checkin">ลงชื่อเข้าก๊วน 🏸</button>
+    </div>
+    <div id="loader">กำลังเชื่อมต่อ LINE...</div>
 
     <script type="module">
-        // 1. เพิ่มฟังก์ชัน doc, setDoc, getDoc ในการ import
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
-        import { getFirestore, collection, onSnapshot, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-firestore.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        const firebaseConfig = { 
+         const firebaseConfig = { 
             apiKey: "AIzaSyDQbnx83sbs1sO4xsuLUV50uxbBinr2VtY",
             authDomain: "earlybird-queue.firebaseapp.com",
             projectId: "earlybird-queue",
@@ -28,90 +42,49 @@
             appId: "1:310694006567:web:f56fc19ed03b81bf8c2302",
             measurementId: "G-CHJP8C4V5S"
         };
-
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // ดึงค่า Session ID จาก URL (ถ้ามีคนสแกน QR เข้ามา)
+        // ดึง Session ID จาก URL
         const urlParams = new URLSearchParams(window.location.search);
-        const currentSessionId = urlParams.get('session');
+        const sessionId = urlParams.get('session');
 
-        async function initLIFF() {
+        async function initLiff() {
             try {
-                // อย่าลืมใส่ LIFF ID จริงของคุณที่นี่
-                await liff.init({ liffId: "2009012689-o7UBlAd7" });
-                
+                await liff.init({ liffId: "2009012689-o7UBlAd7" }); // ใส่ LIFF ID จริงของคุณ
                 if (!liff.isLoggedIn()) {
                     liff.login();
                 } else {
                     const profile = await liff.getProfile();
-                    await syncUserData(profile);
+                    document.getElementById('loader').style.display = 'none';
+                    document.getElementById('app').style.display = 'block';
+                    document.getElementById('displayName').innerText = profile.displayName;
+                    document.getElementById('pictureUrl').src = profile.pictureUrl;
+
+                    document.getElementById('btnCheckin').onclick = async () => {
+                        if (!sessionId) return alert("ไม่พบ Session ID!");
+                        
+                        // บันทึกข้อมูลเข้า Firebase โดยใช้ UID ของ LINE เป็น ID เอกสาร
+                        await setDoc(doc(db, `sessions/${sessionId}/attendance`, profile.userId), {
+                            display_name: profile.displayName,
+                            picture_url: profile.pictureUrl,
+                            skill_level: document.getElementById('skill_level').value,
+                            is_playing: false,
+                            is_paid: false,
+                            games_played: 0,
+                            shuttle_used: 0,
+                            last_match_end: Date.now()
+                        }, { merge: true });
+
+                        alert("เช็คอินสำเร็จ! รอเรียกชื่อลงสนามนะครับ");
+                        liff.closeWindow(); // ปิดหน้าจออัตโนมัติ
+                    };
                 }
             } catch (err) {
-                console.error("LIFF Init Error:", err);
+                console.error("LIFF Error", err);
             }
         }
-
-        async function syncUserData(profile) {
-            const userRef = doc(db, "users", profile.userId);
-            const userSnap = await getDoc(userRef);
-            let levelColor = "YELLOW"; 
-
-            if (userSnap.exists()) {
-                levelColor = userSnap.data().level_color || "YELLOW";
-            }
-
-            await setDoc(userRef, {
-                display_name: profile.displayName,
-                profile_image_url: profile.pictureUrl,
-                level_color: levelColor,
-                last_login: Date.now()
-            }, { merge: true });
-
-            document.getElementById('app').innerHTML = `
-                <div class="user-card" style="background-color: #fef9e7; padding: 20px; border-radius: 15px; text-align: center;">
-                    <img src="${profile.pictureUrl}" width="80" style="border-radius: 50%; border: 3px solid white;">
-                    <h2>สวัสดีคุณ ${profile.displayName}</h2>
-                    <p>ระดับของคุณ: ${levelColor}</p>
-                    <button id="checkInBtn" style="background-color: #a2d2ff; border: none; padding: 15px 30px; border-radius: 10px; font-weight: bold; cursor: pointer;">
-                        เข้าก๊วนวันนี้
-                    </button>
-                </div>
-            `;
-
-            // เพิ่ม Event ให้ปุ่มเช็คอิน
-            document.getElementById('checkInBtn').onclick = () => checkIn(profile);
-        }
-
-        async function checkIn(profile) {
-            if (!currentSessionId) {
-                alert("กรุณาสแกน QR Code ของก๊วนเพื่อเช็คอิน");
-                return;
-            }
-            
-            // บันทึกการเช็คอินลงใน Attendance
-            const attendanceRef = doc(db, `sessions/${currentSessionId}/attendance`, profile.userId);
-            await setDoc(attendanceRef, {
-                user_id: profile.userId,
-                display_name: profile.displayName,
-                check_in_time: Date.now(),
-                is_paid: false
-            });
-            
-            alert("เช็คอินสำเร็จ! ชื่อของคุณเข้าสู่ระบบแล้ว");
-        }
-
-        // โค้ดสำหรับแสดงคิว (Real-time)
-        onSnapshot(collection(db, "queues"), (snapshot) => {
-            const list = document.getElementById('queue-list');
-            list.innerHTML = "";
-            snapshot.forEach(doc => {
-                const data = doc.data();
-                list.innerHTML += `<p>${data.pairA} vs ${data.pairB} - [${data.status}]</p>`;
-            });
-        });
-
-        initLIFF();
+        initLiff();
     </script>
 </body>
 </html>
