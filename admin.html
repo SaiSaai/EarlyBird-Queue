@@ -103,6 +103,7 @@
         window.createSession = async () => {
             if(currentSessionId && !confirm("เปิดก๊วนใหม่? ข้อมูลเดิมจะถูกล้าง")) return;
             const ref = await addDoc(collection(db, "sessions"), { created_at: serverTimestamp() });
+            generateQR(currentSessionId);
             localStorage.clear();
             localStorage.setItem('last_session_id', ref.id);
             location.reload(); 
@@ -322,7 +323,7 @@
         window.checkAndOpen = (id) => document.getElementById(id).classList.remove('collapsed');
         window.updateBtn = () => { document.getElementById('confirmBtn').innerText = `ยืนยันลงสนาม (${selectedSlots.filter(p=>p).length})`; };
         // และแก้ฟังก์ชัน expandQR (ตอนขยายใหญ่) ให้เป็น URL เดียวกันด้วย
-       window.expandQR = () => {
+        window.expandQR = () => {
             if(!currentSessionId) return;
             document.getElementById('qr-big').innerHTML = "";
             const liffUrl = `https://liff.line.me/2009012689-o7UBlAd7?session=${currentSessionId}`;
