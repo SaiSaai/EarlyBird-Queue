@@ -3,203 +3,185 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Queue Dashboard - Pastel Mode</title>
-    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <title>Badminton Queue - Member</title>
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --bg-color: #fdfcf0; --card-playing: #e7f3ff; --card-queue: #fff4e1;
-            --text-main: #5d5d5d; --accent-pink: #ffcfd2; --accent-blue: #a2d2ff;
-        }
-        body { font-family: 'Kanit', sans-serif; background: var(--bg-color); color: var(--text-main); margin: 0; padding: 20px; }
-        h3 { border-bottom: 2px solid #eee; padding-bottom: 10px; color: #888; font-weight: 400; display: flex; align-items: center; gap: 10px; }
+        :root { --primary: #00C853; --team-a: #a2d2ff; --team-b: #b9fbc0; }
+        * { box-sizing: border-box; font-family: 'Kanit', sans-serif; }
+        body { background: #fdfcf0; margin: 0; padding: 15px; }
+        .card { background: white; border-radius: 15px; padding: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); margin-bottom: 15px; }
+        .hidden { display: none; }
+        input, select { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 10px; font-size: 16px; }
+        button { width: 100%; padding: 12px; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; }
+        .btn-join { background: var(--primary); color: white; font-size: 1.1em; }
         
-        /* Grid Layout */
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 15px; margin-bottom: 30px; }
+        /* Queue Style */
+        .player-tag { display: inline-flex; align-items: center; background: #eee; padding: 5px 12px; border-radius: 20px; margin: 3px; font-size: 0.9em; }
+        .skill-dot { width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; }
+        .lvl-yellow { background: #FFD700; } .lvl-green { background: #00C853; } .lvl-blue { background: #2962FF; } .lvl-red { background: #D50000; } .lvl-black { background: #000; }
         
-        /* Court Card */
-        .court-card { background: white; border-radius: 18px; padding: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.03); border-left: 6px solid var(--accent-blue); }
-        .p-item { margin: 5px 0; font-size: 0.95em; }
-        
-        /* Queue Item */
-        .queue-item { background: var(--card-queue); border-radius: 18px; padding: 15px; margin-bottom: 12px; display: flex; flex-direction: column; border: 1px solid #ffe8cc; }
-        .queue-tag { font-size: 0.7em; color: #ffa726; font-weight: 600; margin-bottom: 5px; }
-        .names-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-        
-        /* Highlights */
-        .me { background: var(--accent-pink); padding: 2px 8px; border-radius: 8px; font-weight: 600; color: #d63384; border: 1px solid #f8bbd0; }
-        .vs { font-size: 0.8em; color: #ccc; }
-        
-        #loader { text-align: center; margin-top: 50px; color: #aaa; }
+        .court-item { border-left: 5px solid var(--primary); padding-left: 10px; margin-bottom: 15px; background: #fff; padding: 10px; border-radius: 10px; }
+        .queue-item { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid #eee; }
+        .my-status { background: #fff3e0; border: 1px solid #ffb74d; padding: 10px; border-radius: 10px; margin-bottom: 15px; text-align: center; }
     </style>
 </head>
 <body>
-
-    <div id="loader">🍭 กำลังจัดคิวพาสเทล...</div>
-
-    <div id="main-ui" style="display:none;">
-        <h3 id="my-status-header">🏸 กำลังลงสนาม</h3>
-        <div id="playing-list" class="grid"></div>
-
-        <h3>⏳ คิวถัดไป (Queue)</h3>
-        <div id="queue-list"></div>
+    <button onclick="window.location.href='profile.html'" style="position:fixed; top:10px; right:10px; width:auto; padding:8px 15px; background:#fff; border:1px solid #ddd; font-size:0.8em;">👤 โปรไฟล์ของฉัน</button>
+    <div id="loading" style="text-align:center; margin-top:100px;">
+        <p>กำลังตรวจสอบข้อมูล...</p>
     </div>
 
-<script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getFirestore, collection, onSnapshot, doc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    <div id="register-zone" class="hidden">
+        <div class="card">
+            <h2 style="margin-top:0">ยินดีต้อนรับ! 👋</h2>
+            <p style="color:#666">กรุณาลงชื่อเพื่อเช็คอินเข้าสนาม</p>
+            <input type="text" id="user-name" placeholder="ใส่ชื่อเล่นของคุณ">
+            <select id="user-skill">
+                <option value="yellow">Level: มือใหม่ (Yellow)</option>
+                <option value="green" selected>Level: พื้นฐาน (Green)</option>
+                <option value="blue">Level: ทั่วไป (Blue)</option>
+                <option value="red">Level: แข็งแกร่ง (Red)</option>
+                <option value="black">Level: นักกีฬา (Black)</option>
+            </select>
+            <button class="btn-join" onclick="handleCheckIn()">ลงชื่อเข้าก๊วน</button>
+        </div>
+    </div>
 
-    const firebaseConfig = { apiKey: "AIzaSyDQbnx83sbs1sO4xsuLUV50uxbBinr2VtY", authDomain: "earlybird-queue.firebaseapp.com", projectId: "earlybird-queue", storageBucket: "earlybird-queue.firebasestorage.app", messagingSenderId: "310694006567", appId: "1:310694006567:web:f56fc19ed03b81bf8c2302" };
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
+    <div id="main-zone" class="hidden">
+        <div class="my-status" id="my-info"></div>
+        
+        <h3>🎾 ในสนามตอนนี้</h3>
+        <div id="courts-list"></div>
 
-    const urlParams = new URLSearchParams(window.location.search);
-    const sessionId = urlParams.get('session');
-    let myId = "";
+        <h3>⏳ คิวรอถัดไป</h3>
+        <div id="middle-queue-list" class="card"></div>
+        
+        <div style="text-align:center; color:#999; font-size:0.8em; margin-top:20px;">
+            <p id="session-display"></p>
+            <button onclick="changeSession()" style="background:none; color:#999; text-decoration:underline;">เปลี่ยนก๊วน</button>
+        </div>
+    </div>
 
-    // --- ส่วนเริ่มต้นของ Script ในหน้าดูคิว ---
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-    let currentSessionId = "";
+        const firebaseConfig = { apiKey: "AIzaSyDQbnx83sbs1sO4xsuLUV50uxbBinr2VtY", authDomain: "earlybird-queue.firebaseapp.com", projectId: "earlybird-queue", storageBucket: "earlybird-queue.firebasestorage.app", messagingSenderId: "310694006567", appId: "1:310694006567:web:f56fc19ed03b81bf8c2302" };
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
 
-    window.onload = async () => {
-        // 1. ดึงค่าจาก URL Parameter (?session=xxx)
-        const urlParams = new URLSearchParams(window.location.search);
-        const sessionFromUrl = urlParams.get('session');
+        let lineUserId = "";
+        let currentSessionId = "";
 
-        if (sessionFromUrl) {
-            // ถ้ามีใน URL ให้ใช้ตัวนี้ และบันทึกลง LocalStorage เผื่อวันหลังเข้าตรงๆ
-            currentSessionId = sessionFromUrl;
-            localStorage.setItem('user_last_session', sessionFromUrl);
-            console.log("ใช้งานจาก URL:", currentSessionId);
-        } else {
-            // 2. ถ้าไม่มีใน URL ให้ลองดึงจาก LocalStorage ที่เคยเซฟไว้
-            const savedSession = localStorage.getItem('user_last_session');
-            if (savedSession) {
-                currentSessionId = savedSession;
-                console.log("ใช้งานจากความจำในเครื่อง:", currentSessionId);
-            }
-        }
+        // --- เริ่มต้นระบบ ---
+        window.onload = async () => {
+            try {
+                // 1. เริ่ม LIFF
+                await liff.init({ liffId: "2009012689-o7UBlAd7" }); 
+                if (!liff.isLoggedIn()) { liff.login(); return; }
 
-        // 3. ตรวจสอบว่าสุดท้ายแล้วมี ID ไหม
-        if (currentSessionId) {
-            // เรียกฟังก์ชันเริ่มดึงข้อมูลคิว (เช่น listenToQueue(currentSessionId))
-            startApp(); 
-        } else {
-            // ถ้าไม่มีจริงๆ ให้แสดงหน้าจอแจ้งเตือนว่า "กรุณาสแกน QR Code อีกครั้ง"
-            document.body.innerHTML = `
-                <div style="text-align:center; padding:50px; font-family:Kanit;">
-                    <h2>ไม่พบข้อมูลก๊วน</h2>
-                    <p>กรุณาสแกน QR Code จากหน้าจอแอดมินเพื่อเข้าสู่ระบบ</p>
-                </div>
-            `;
-        }
-    };
-    async function init() {
-        // ลองดึง LIFF เพื่อหาว่าใครกำลังดูอยู่
-        try {
-            await liff.init({ liffId: "2009012689-o7UBlAd7" });
-            if (liff.isLoggedIn()) {
                 const profile = await liff.getProfile();
-                myId = profile.userId;
+                lineUserId = profile.userId;
+
+                // 2. หา Session ID
+                const urlParams = new URLSearchParams(window.location.search);
+                const sessionFromUrl = urlParams.get('session');
+
+                if (sessionFromUrl) {
+                    currentSessionId = sessionFromUrl;
+                    localStorage.setItem('last_session_id', sessionFromUrl);
+                } else {
+                    currentSessionId = localStorage.getItem('last_session_id');
+                }
+
+                if (!currentSessionId) {
+                    document.getElementById('loading').innerHTML = "<h2>❌ ไม่พบก๊วน</h2><p>กรุณาสแกน QR Code เพื่อเข้าก๊วน</p>";
+                    return;
+                }
+
+                // 3. ตรวจสอบสถานะว่าเคยเช็คอินหรือยัง
+                checkIdentity();
+
+            } catch (err) {
+                console.error("LIFF Init Error", err);
             }
-        } catch(e) { console.log("Running without LIFF highlight"); }
-        
-        if (sessionId) startSync();
-        else document.getElementById('loader').innerText = "❌ ไม่พบรหัสก๊วน";
-    }
-
-    function startSync() {
-        document.getElementById('loader').style.display = 'none';
-        document.getElementById('main-ui').style.display = 'block';
-
-        // 1. ดึงคนในสนาม (จากคอลเลกชัน Attendance)
-        onSnapshot(collection(db, `sessions/${sessionId}/attendance`), (snap) => {
-            const players = snap.docs.map(d => ({id: d.id, ...d.data()})).filter(p => p.is_playing);
-            renderPlaying(players);
-        });
-
-        // 2. ดึงคิวกลาง (จาก Session Document)
-        onSnapshot(doc(db, "sessions", sessionId), (snap) => {
-            const data = snap.data();
-            renderQueue(data?.middle_queue || []);
-        });
-    }
-
-    function renderPlaying(list) {
-        const container = document.getElementById('playing-list');
-        container.innerHTML = list.length ? "" : "<p style='color:#ccc'>สนามว่างจ้า...</p>";
-        list.forEach(p => {
-            const div = document.createElement('div');
-            div.className = "court-card";
-            div.innerHTML = `<div class="p-item ${p.id === myId ? 'me' : ''}">${p.display_name}</div>`;
-            container.appendChild(div);
-        });
-    }
-
-    function renderQueue(queue) {
-        const container = document.getElementById('queue-list');
-        container.innerHTML = queue.length ? "" : "<p style='color:#ccc'>ยังไม่มีคิวจ้า...</p>";
-        queue.forEach((q, i) => {
-            const div = document.createElement('div');
-            div.className = "queue-item";
-            const names = q.slots.map(s => {
-                if(!s) return "";
-                return `<span class="${s.id === myId ? 'me' : ''}">${s.name}</span>`;
-            }).filter(n => n !== "").join('<span class="vs"> & </span>');
-            
-            div.innerHTML = `
-                <div class="queue-tag">NEXT ${i+1}</div>
-                <div class="names-row">${names}</div>
-            `;
-            container.appendChild(div);
-        });
-    }
-
-    init();
-
-    // --- ระบบจดจำตัวตนสมาชิก ---
-
-    let currentUser = null;
-
-    function checkExistingUser() {
-        const savedUser = localStorage.getItem('badminton_user_profile');
-        const lastSession = localStorage.getItem('user_last_session');
-
-        if (savedUser) {
-            currentUser = JSON.parse(savedUser);
-            console.log("ยินดีต้อนรับกลับ:", currentUser.display_name);
-            // ถ้ามีข้อมูลเดิมอยู่แล้ว ให้ข้ามหน้า Login ไปที่หน้าดูคิวได้เลย
-            showDashboard(); 
-        }
-    }
-
-    // ฟังก์ชันตอนที่ User กดตกลงชื่อตัวเองครั้งแรก (ตอน Login/ลงชื่อ)
-    function saveUserProfile(uid, name, skill) {
-        const profile = {
-            uid: uid,
-            display_name: name,
-            skill_level: skill,
-            timestamp: Date.now()
         };
-        localStorage.setItem('badminton_user_profile', JSON.stringify(profile));
-        currentUser = profile;
-    }
 
-    // เรียกใช้งานตอนโหลดหน้าเว็บ
-    window.onload = () => {
-        // 1. เช็คก่อนว่าใน URL มี Session ก๊วนส่งมาไหม (ถ้ามีให้จำก๊วนใหม่)
-        const urlParams = new URLSearchParams(window.location.search);
-        const sessionFromUrl = urlParams.get('session');
-        if (sessionFromUrl) {
-            localStorage.setItem('user_last_session', sessionFromUrl);
+        // --- ตรวจสอบตัวตนอัตโนมัติ ---
+        async function checkIdentity() {
+            const docRef = doc(db, `sessions/${currentSessionId}/attendance`, lineUserId);
+            const docSnap = await getDoc(docRef);
+
+            if (docSnap.exists()) {
+                // ถ้าเคยเช็คอินแล้ว -> ไปหน้าคิวเลย
+                showMain(docSnap.data());
+            } else {
+                // ถ้ายังไม่เคย -> ให้ลงทะเบียน
+                document.getElementById('loading').classList.add('hidden');
+                document.getElementById('register-zone').classList.remove('hidden');
+            }
         }
 
-        // 2. เช็คว่าเคยลงชื่อไว้หรือยัง
-        checkExistingUser();
-        
-        // 3. เริ่มโหลดข้อมูลจาก Firebase ตาม Session ที่จำไว้
-        startApp(); 
-    };
-</script>
+        // --- กดเช็คอินครั้งแรก ---
+        window.handleCheckIn = async () => {
+            const name = document.getElementById('user-name').value.trim();
+            const skill = document.getElementById('user-skill').value;
+            if (!name) return alert("กรุณาใส่ชื่อ");
+
+            const userData = {
+                display_name: name,
+                skill_level: skill,
+                is_playing: false,
+                is_paid: false,
+                games_played: 0,
+                shuttle_used: 0,
+                last_match_end: Date.now()
+            };
+
+            await setDoc(doc(db, `sessions/${currentSessionId}/attendance`, lineUserId), userData);
+            showMain(userData);
+        };
+
+        // --- แสดงหน้าหลักและ Sync ข้อมูล Real-time ---
+        function showMain(userData) {
+            document.getElementById('loading').classList.add('hidden');
+            document.getElementById('register-zone').classList.add('hidden');
+            document.getElementById('main-zone').classList.remove('hidden');
+            document.getElementById('session-display').innerText = "Session: " + currentSessionId;
+
+            // ติดตามข้อมูลตัวเอง
+            onSnapshot(doc(db, `sessions/${currentSessionId}/attendance`, lineUserId), (doc) => {
+                const d = doc.data();
+                if(d) document.getElementById('my-info').innerHTML = `สวัสดีคุณ <b>${d.display_name}</b> | เล่นไปแล้ว <b>${d.games_played}</b> เกม`;
+            });
+
+            // ติดตามคิวกลาง
+            onSnapshot(doc(db, "sessions", currentSessionId), (doc) => {
+                const data = doc.data();
+                const list = document.getElementById('middle-queue-list');
+                list.innerHTML = "";
+                if(data?.middle_queue?.length > 0) {
+                    data.middle_queue.forEach((q, i) => {
+                        const players = q.slots.filter(s => s).map(s => s.name).join(", ");
+                        list.innerHTML += `<div class="queue-item"><span>คิวที่ ${i+1}</span> <b>${players}</b></div>`;
+                    });
+                } else {
+                    list.innerHTML = "<p style='color:#999; text-align:center;'>ยังไม่มีคิวรอ</p>";
+                }
+            });
+
+            // ติดตามสนาม (Mock up - ในระบบจริงจะดึงจาก localStorage หรือ Firebase ที่แอดมินอัปเดต)
+            // หมายเหตุ: โค้ดนี้จะดึงสถานะสนามจากความจำที่แอดมินแชร์ผ่าน Firebase (ถ้ามี)
+            // เพื่อความง่ายในที่นี้ จะเน้นที่คิวกลางก่อน
+        }
+
+        window.changeSession = () => {
+            if(confirm("ต้องการออกจากก๊วนนี้?")) {
+                localStorage.removeItem('last_session_id');
+                location.reload();
+            }
+        }
+    </script>
 </body>
 </html>
