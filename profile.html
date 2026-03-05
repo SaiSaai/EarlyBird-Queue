@@ -112,6 +112,50 @@
     };
 
     init();
+
+    // --- ระบบจดจำตัวตนสมาชิก ---
+
+    let currentUser = null;
+
+    function checkExistingUser() {
+        const savedUser = localStorage.getItem('badminton_user_profile');
+        const lastSession = localStorage.getItem('user_last_session');
+
+        if (savedUser) {
+            currentUser = JSON.parse(savedUser);
+            console.log("ยินดีต้อนรับกลับ:", currentUser.display_name);
+            // ถ้ามีข้อมูลเดิมอยู่แล้ว ให้ข้ามหน้า Login ไปที่หน้าดูคิวได้เลย
+            showDashboard(); 
+        }
+    }
+
+    // ฟังก์ชันตอนที่ User กดตกลงชื่อตัวเองครั้งแรก (ตอน Login/ลงชื่อ)
+    function saveUserProfile(uid, name, skill) {
+        const profile = {
+            uid: uid,
+            display_name: name,
+            skill_level: skill,
+            timestamp: Date.now()
+        };
+        localStorage.setItem('badminton_user_profile', JSON.stringify(profile));
+        currentUser = profile;
+    }
+
+    // เรียกใช้งานตอนโหลดหน้าเว็บ
+    window.onload = () => {
+        // 1. เช็คก่อนว่าใน URL มี Session ก๊วนส่งมาไหม (ถ้ามีให้จำก๊วนใหม่)
+        const urlParams = new URLSearchParams(window.location.search);
+        const sessionFromUrl = urlParams.get('session');
+        if (sessionFromUrl) {
+            localStorage.setItem('user_last_session', sessionFromUrl);
+        }
+
+        // 2. เช็คว่าเคยลงชื่อไว้หรือยัง
+        checkExistingUser();
+        
+        // 3. เริ่มโหลดข้อมูลจาก Firebase ตาม Session ที่จำไว้
+        startApp(); 
+    };
 </script>
 </body>
 </html>
