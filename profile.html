@@ -7,44 +7,43 @@
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Kanit', sans-serif; background: #fdfcf0; padding: 20px; text-align: center; }
-        .card { background: white; padding: 25px; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); max-width: 400px; margin: auto; }
-        .profile-img { width: 90px; height: 90px; border-radius: 50%; border: 3px solid #4caf50; margin-bottom: 15px; }
-        .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 20px 0; }
-        .stat-box { background: #f8f9fa; padding: 15px; border-radius: 15px; }
-        .btn { border: none; padding: 12px; border-radius: 12px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 10px; }
+        body { font-family: 'Kanit', sans-serif; background: #fdfcf0; padding: 20px; text-align: center; color: #333; }
+        .card { background: white; padding: 25px; border-radius: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); max-width: 400px; margin: auto; }
+        .profile-img { width: 100px; height: 100px; border-radius: 50%; border: 4px solid #4caf50; margin-bottom: 15px; object-fit: cover; }
+        .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 20px 0; }
+        .stat-box { background: #f8f9fa; padding: 15px; border-radius: 15px; border: 1px solid #eee; }
+        .stat-box small { color: #888; display: block; margin-bottom: 5px; }
+        .stat-box b { font-size: 1.4em; color: #2c3e50; }
+        .btn { border: none; padding: 15px; border-radius: 15px; font-weight: 600; cursor: pointer; width: 100%; margin-top: 10px; font-size: 1em; }
         .btn-green { background: #00b900; color: white; }
         .btn-blue { background: #2196f3; color: white; }
-        input { width: 100%; padding: 10px; border-radius: 10px; border: 1px solid #ddd; margin-bottom: 10px; box-sizing: border-box; text-align: center; }
+        input { width: 100%; padding: 12px; border-radius: 12px; border: 1px solid #ddd; margin-bottom: 10px; text-align: center; font-size: 1em; }
     </style>
 </head>
 <body>
-    <div class="card" id="app">
-        <div id="loader">กำลังโหลด...</div>
+    <div class="card">
+        <div id="loader">กำลังเชื่อมต่อ LINE...</div>
         <div id="content" style="display:none;">
-            <img id="user-img" class="profile-img">
-            <h2 id="user-name"></h2>
-            
+            <img id="user-img" class="profile-img" src="">
+            <h2 id="user-name" style="margin:0 0 20px 0;"></h2>
+
             <div id="reg-section" style="display:none;">
-                <p>เลือกระดับฝีมือเพื่อเช็คอิน</p>
-                <select id="skill-level" style="width:100%; padding:10px; border-radius:10px; margin-bottom:15px;">
-                    <option value="yellow">มือใหม่หัดตี</option>
-                    <option value="green">ตีได้ซักพักแล้วยังไม่เก่ง</option>
-                    <option value="blue">ตีได้</option>
-                    <option value="red">ตีเก่ง</option>
-                    <option value="black">ระดับเทพ</option>
+                <p>ยินดีต้อนรับ! กรุณาเลือกระดับฝีมือ</p>
+                <select id="skill-level" style="width:100%; padding:12px; border-radius:12px; margin-bottom:20px;">
+                    <option value="yellow">Yellow</option><option value="green">Green</option>
+                    <option value="blue">Blue</option><option value="red">Red</option><option value="black">Black</option>
                 </select>
-                <button class="btn btn-green" onclick="handleCheckin()">ยืนยันเช็คอิน</button>
+                <button class="btn btn-green" onclick="handleCheckin()">เช็คอินเข้าก๊วน 🏸</button>
             </div>
 
             <div id="info-section" style="display:none;">
                 <div class="stat-grid">
-                    <div class="stat-box">🏸 ลูกแบด<br><b id="stat-shuttle">0</b> ลูก</div>
-                    <div class="stat-box">💰 ยอดเงิน<br><b id="stat-money">0</b> บ.</div>
+                    <div class="stat-box"><small>ลูกแบดใช้ไป</small><b id="stat-shuttle">0</b> ลูก</div>
+                    <div class="stat-box"><small>ค่าใช้จ่ายวันนี้</small><b id="stat-money">0</b> ฿</div>
                 </div>
-                <input type="text" id="edit-name" placeholder="เปลี่ยนชื่อเล่น">
-                <button class="btn btn-blue" onclick="handleUpdate()">อัปเดตชื่อ</button>
-                <button class="btn btn-outline" style="background:#eee;" onclick="goToDashboard()">ดูคิวรวมทั้งหมด 📊</button>
+                <input type="text" id="edit-name" placeholder="ระบุชื่อเล่นใหม่">
+                <button class="btn btn-blue" onclick="handleUpdate()">อัปเดตข้อมูล</button>
+                <button class="btn" style="background:#eee; color:#666;" onclick="window.location.href='index.html'+window.location.search">ดูคิวรวมทั้งหมด 📊</button>
             </div>
         </div>
     </div>
@@ -53,7 +52,7 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getFirestore, doc, getDoc, setDoc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-    const firebaseConfig = { /* คัดลอก config ของคุณมาวาง */ };
+    const firebaseConfig = { apiKey: "AIzaSyDQbnx83sbs1sO4xsuLUV50uxbBinr2VtY", authDomain: "earlybird-queue.firebaseapp.com", projectId: "earlybird-queue", storageBucket: "earlybird-queue.firebasestorage.app", messagingSenderId: "310694006567", appId: "1:310694006567:web:f56fc19ed03b81bf8c2302" };
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
@@ -62,14 +61,16 @@
     let userProfile = null;
 
     async function init() {
-        await liff.init({ liffId: "YOUR_LIFF_ID" });
+        await liff.init({ liffId: "2009012689-o7UBlAd7" });
         if (!liff.isLoggedIn()) { liff.login(); return; }
         userProfile = await liff.getProfile();
         checkUser();
     }
 
     async function checkUser() {
+        if (!sessionId) return alert("Session Expired");
         const docRef = doc(db, `sessions/${sessionId}/attendance`, userProfile.userId);
+        
         onSnapshot(docRef, (snap) => {
             document.getElementById('loader').style.display = 'none';
             document.getElementById('content').style.display = 'block';
@@ -81,9 +82,8 @@
                 document.getElementById('user-img').src = data.picture_url;
                 document.getElementById('stat-shuttle').innerText = data.shuttle_used || 0;
                 
-                // คำนวณเงินเบื้องต้น (ดึงราคาลูกแบดจากที่ตกลงกัน เช่น 30 บาท)
-                // ในอนาคตสามารถดึงค่ากลางจาก Firebase มาคำนวณได้
-                const money = (data.shuttle_used || 0) * 30 + 60; // 60 คือค่าคอร์ทสมมติ
+                // คำนวณเงินเบื้องต้น (สมมติค่าคอร์ท 60 + ลูกละ 30)
+                const money = (data.shuttle_used * 30) + 60;
                 document.getElementById('stat-money').innerText = money;
             } else {
                 document.getElementById('reg-section').style.display = 'block';
@@ -103,12 +103,13 @@
     };
 
     window.handleUpdate = async () => {
-        const newName = document.getElementById('edit-name').value;
-        if(newName) await updateDoc(doc(db, `sessions/${sessionId}/attendance`, userProfile.userId), { display_name: newName });
-        alert("อัปเดตแล้ว");
+        const name = document.getElementById('edit-name').value;
+        if(name) await updateDoc(doc(db, `sessions/${sessionId}/attendance`, userProfile.userId), { 
+            display_name: name,
+            picture_url: userProfile.pictureUrl // อัปเดตรูปตาม LINE ล่าสุด
+        });
+        alert("บันทึกสำเร็จ");
     };
-
-    window.goToDashboard = () => { location.href = `index.html?session=${sessionId}`; };
 
     init();
 </script>

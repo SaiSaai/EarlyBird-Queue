@@ -5,35 +5,30 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Live Queue - Badminton</title>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Kanit', sans-serif; background: #1a1a1a; color: white; padding: 15px; }
-        .court-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 30px; }
-        .court-card { background: #333; padding: 10px; border-radius: 15px; border-top: 4px solid #4caf50; }
-        .queue-item { background: #444; padding: 10px; margin-bottom: 10px; border-radius: 10px; display: flex; justify-content: space-between; }
-        .highlight { background: #ffd700 !important; color: black !important; font-weight: bold; border: 2px solid white; }
-        h3 { color: #ffd700; border-bottom: 1px solid #444; padding-bottom: 5px; }
+        body { font-family: 'Kanit', sans-serif; background: #1a1a1a; color: white; padding: 15px; margin:0; }
+        h3 { color: #ffd700; border-left: 4px solid #ffd700; padding-left: 10px; margin: 20px 0 10px 0; }
+        .court-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
+        .court-card { background: #333; padding: 10px; border-radius: 12px; border-top: 4px solid #4caf50; }
+        .p-name { font-size: 0.9em; margin: 3px 0; display: flex; align-items: center; gap: 5px; }
+        .queue-item { background: #2a2a2a; padding: 12px; margin-bottom: 8px; border-radius: 12px; border: 1px solid #444; }
+        .highlight { background: #ffd700 !important; color: #000 !important; font-weight: 600; border-radius: 4px; padding: 0 5px; }
+        .skill-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
     </style>
 </head>
 <body>
-    <h3>🎾 กำลังแข่งขัน</h3>
-    <div id="live-courts" class="court-grid"></div>
+    <h3>🎾 กำลังแข่งขัน (Live)</h3>
+    <div id="court-list" class="court-grid"></div>
 
-    <h3>⏳ คิวถัดไป (Queue)</h3>
-    <div id="middle-queue"></div>
+    <h3>⏳ คิวกลาง (Next)</h3>
+    <div id="queue-list"></div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getFirestore, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getFirestore, collection, onSnapshot, doc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-    const firebaseConfig = { 
-            apiKey: "AIzaSyDQbnx83sbs1sO4xsuLUV50uxbBinr2VtY",
-            authDomain: "earlybird-queue.firebaseapp.com",
-            projectId: "earlybird-queue",
-            storageBucket: "earlybird-queue.firebasestorage.app",
-            messagingSenderId: "310694006567",
-            appId: "1:310694006567:web:f56fc19ed03b81bf8c2302",
-            measurementId: "G-CHJP8C4V5S"
-        };
+    const firebaseConfig = { apiKey: "AIzaSyDQbnx83sbs1sO4xsuLUV50uxbBinr2VtY", authDomain: "earlybird-queue.firebaseapp.com", projectId: "earlybird-queue", storageBucket: "earlybird-queue.firebasestorage.app", messagingSenderId: "310694006567", appId: "1:310694006567:web:f56fc19ed03b81bf8c2302" };
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
@@ -51,27 +46,43 @@
     }
 
     function listenData() {
-        // ดึงสถานะคิวกลางจาก LocalStorage (ในเคสนี้ถ้าดูคนละเครื่อง คิวกลางต้องบันทึกใน Firestore ด้วยจะดีกว่า)
-        // เพื่อความง่าย ผมจะแสดงเฉพาะคนที่มีสถานะ is_playing ในหน้า Dashboard นี้ครับ
+        // 1. ติดตามรายชื่อคนที่กำลังเล่น
         onSnapshot(collection(db, `sessions/${sessionId}/attendance`), (snap) => {
-            const players = snap.docs.map(d => ({id: d.id, ...d.data()}));
+            const players = snap.docs.map(d => ({id: d.id, ...d.data()})).filter(p => p.is_playing);
             renderPlaying(players);
+        });
+
+        // 2. ติดตามคิวกลางจาก Session หลัก
+        onSnapshot(doc(db, "sessions", sessionId), (doc) => {
+            const data = doc.data();
+            renderQueue(data?.middle_queue || []);
         });
     }
 
     function renderPlaying(players) {
-        const container = document.getElementById('live-courts');
-        container.innerHTML = "";
-        const playing = players.filter(p => p.is_playing);
-        
-        playing.forEach(p => {
+        const list = document.getElementById('court-list');
+        list.innerHTML = players.length ? "" : "<p style='color:#666'>ไม่มีใครแข่งขันขณะนี้</p>";
+        players.forEach(p => {
             const div = document.createElement('div');
-            div.className = `court-card ${p.id === myId ? 'highlight' : ''}`;
-            div.innerText = p.display_name;
-            container.appendChild(div);
+            div.className = "court-card";
+            div.innerHTML = `<div class="p-name ${p.id === myId ? 'highlight' : ''}">${p.display_name}</div>`;
+            list.appendChild(div);
         });
     }
-    // หมายเหตุ: สำหรับการโชว์คิวกลาง (Middle Queue) ข้อมูลต้องถูกแชร์จาก Admin ขึ้น Firestore ก่อนครับ
+
+    function renderQueue(queue) {
+        const list = document.getElementById('queue-list');
+        list.innerHTML = queue.length ? "" : "<p style='color:#666'>ไม่มีคิวรอ</p>";
+        queue.forEach((q, i) => {
+            const div = document.createElement('div');
+            div.className = "queue-item";
+            const names = q.slots.filter(s => s).map(s => 
+                `<span class="${s.id === myId ? 'highlight' : ''}">${s.name}</span>`
+            ).join(" vs ");
+            div.innerHTML = `<small style="color:#888">คิวที่ ${i+1}</small><div style="margin-top:5px">${names}</div>`;
+            list.appendChild(div);
+        });
+    }
 
     init();
 </script>

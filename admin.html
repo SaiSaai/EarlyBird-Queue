@@ -356,6 +356,41 @@
             }
             await batch.commit();
         };
+
+        // 1. เพิ่มฟังก์ชันบันทึกคิวกลางลง Firebase
+        async function syncMiddleQueueToFirebase() {
+            if (!currentSessionId) return;
+            await updateDoc(doc(db, "sessions", currentSessionId), {
+                middle_queue: middleQueue // บันทึกอาเรย์คิวกลางลง session หลัก
+            });
+        }
+
+        // 2. แก้ไขปุ่มยืนยันลงสนาม (confirmBtn) ให้เรียกใช้ sync
+        document.getElementById('confirmBtn').onclick = async () => {
+            const ps = selectedSlots.filter(p => p); if(!ps.length) return;
+            middleQueue.push({slots: [...selectedSlots]});
+            selectedSlots = [null,null,null,null]; 
+            localStorage.setItem(`queue_${currentSessionId}`, JSON.stringify(middleQueue));
+            await syncMiddleQueueToFirebase(); // <--- เพิ่มบรรทัดนี้
+            renderFIFO(); renderMiddleQueue(); checkAndFillEmptyCourts();
+        };
+
+        // 3. แก้ไขฟังก์ชันจัดการคิวกลาง (ตอนดึงจากคิวกลางลงสนาม)
+        window.assignFromQueue = async (index) => {
+            selectedSlots = [...middleQueue[index].slots];
+            middleQueue.splice(index, 1);
+            localStorage.setItem(`queue_${currentSessionId}`, JSON.stringify(middleQueue));
+            await syncMiddleQueueToFirebase(); // <--- เพิ่มบรรทัดนี้
+            renderMiddleQueue(); renderFIFO();
+        };
+
+        // 4. แก้ไขลิงก์ QR Code (Endpoint ของ LIFF ต้องตั้งเป็นหน้า profile.html)
+        function generateQR(id) {
+            document.getElementById("qrcode").innerHTML = "";
+            // สำคัญ: ต้องเป็น URL ที่ชี้ไปหน้า profile.html ของคุณ
+            const liffUrl = `https://liff.line.me/2009012689-o7UBlAd7?session=${id}`; 
+            new QRCode(document.getElementById("qrcode"), { text: liffUrl, width: 50, height: 50 });
+        }
     </script>
 </body>
 </html>
