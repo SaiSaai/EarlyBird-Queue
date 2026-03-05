@@ -7,65 +7,49 @@
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
-        :root { --primary: #00C853; --team-a: #a2d2ff; --team-b: #b9fbc0; }
+        :root { --primary: #00C853; }
         * { box-sizing: border-box; font-family: 'Kanit', sans-serif; }
         body { background: #fdfcf0; margin: 0; padding: 15px; }
+        .hidden { display: none !important; }
         .card { background: white; border-radius: 15px; padding: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); margin-bottom: 15px; }
-        .hidden { display: none; }
-        input, select { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 10px; font-size: 16px; }
-        button { width: 100%; padding: 12px; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; }
-        .btn-join { background: var(--primary); color: white; font-size: 1.1em; }
-        
-        /* Queue Style */
-        .player-tag { display: inline-flex; align-items: center; background: #eee; padding: 5px 12px; border-radius: 20px; margin: 3px; font-size: 0.9em; }
-        .skill-dot { width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; }
-        .lvl-yellow { background: #FFD700; } .lvl-green { background: #00C853; } .lvl-blue { background: #2962FF; } .lvl-red { background: #D50000; } .lvl-black { background: #000; }
-        
-        .court-item { border-left: 5px solid var(--primary); padding-left: 10px; margin-bottom: 15px; background: #fff; padding: 10px; border-radius: 10px; }
-        .queue-item { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid #eee; }
-        .my-status { background: #fff3e0; border: 1px solid #ffb74d; padding: 10px; border-radius: 10px; margin-bottom: 15px; text-align: center; }
+        .btn-join { width:100%; padding: 12px; border: none; border-radius: 10px; font-weight: bold; background: var(--primary); color: white; font-size: 1.1em; cursor: pointer; }
+        input, select { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 10px; }
+        #debug-log { font-size: 10px; color: #999; margin-top: 20px; }
     </style>
 </head>
 <body>
-    <button onclick="window.location.href='profile.html'" style="position:fixed; top:10px; right:10px; width:auto; padding:8px 15px; background:#fff; border:1px solid #ddd; font-size:0.8em;">👤 โปรไฟล์ของฉัน</button>
-    <div id="loading" style="text-align:center; margin-top:100px;">
-        <p>กำลังตรวจสอบข้อมูล...</p>
+
+    <div id="loading-zone">
+        <div style="text-align:center; margin-top:100px;">
+            <div class="spinner">🌀</div>
+            <p id="status-text">กำลังเริ่มต้นระบบ LINE...</p>
+        </div>
     </div>
 
     <div id="register-zone" class="hidden">
         <div class="card">
-            <h2 style="margin-top:0">ยินดีต้อนรับ! 👋</h2>
-            <p style="color:#666">กรุณาลงชื่อเพื่อเช็คอินเข้าสนาม</p>
+            <h2>ลงชื่อเข้าก๊วน 👋</h2>
             <input type="text" id="user-name" placeholder="ใส่ชื่อเล่นของคุณ">
             <select id="user-skill">
-                <option value="yellow">Level: มือใหม่ (Yellow)</option>
-                <option value="green" selected>Level: พื้นฐาน (Green)</option>
-                <option value="blue">Level: ทั่วไป (Blue)</option>
-                <option value="red">Level: แข็งแกร่ง (Red)</option>
-                <option value="black">Level: นักกีฬา (Black)</option>
+                <option value="yellow">Level: มือใหม่</option>
+                <option value="green" selected>Level: พื้นฐาน</option>
+                <option value="blue">Level: ทั่วไป</option>
             </select>
-            <button class="btn-join" onclick="handleCheckIn()">ลงชื่อเข้าก๊วน</button>
+            <button class="btn-join" onclick="handleCheckIn()">ลงชื่อเลย</button>
         </div>
     </div>
 
     <div id="main-zone" class="hidden">
-        <div class="my-status" id="my-info"></div>
-        
-        <h3>🎾 ในสนามตอนนี้</h3>
-        <div id="courts-list"></div>
-
-        <h3>⏳ คิวรอถัดไป</h3>
-        <div id="middle-queue-list" class="card"></div>
-        
-        <div style="text-align:center; color:#999; font-size:0.8em; margin-top:20px;">
-            <p id="session-display"></p>
-            <button onclick="changeSession()" style="background:none; color:#999; text-decoration:underline;">เปลี่ยนก๊วน</button>
-        </div>
+        <div class="card" id="my-info" style="background: #e8f5e9;"></div>
+        <h3>⏳ คิวรอในก๊วน</h3>
+        <div id="middle-queue-list"></div>
     </div>
+
+    <div id="debug-log"></div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = { apiKey: "AIzaSyDQbnx83sbs1sO4xsuLUV50uxbBinr2VtY", authDomain: "earlybird-queue.firebaseapp.com", projectId: "earlybird-queue", storageBucket: "earlybird-queue.firebasestorage.app", messagingSenderId: "310694006567", appId: "1:310694006567:web:f56fc19ed03b81bf8c2302" };
         const app = initializeApp(firebaseConfig);
@@ -74,113 +58,107 @@
         let lineUserId = "";
         let currentSessionId = "";
 
-        // --- เริ่มต้นระบบ ---
+        const log = (msg) => {
+            console.log(msg);
+            document.getElementById('status-text').innerText = msg;
+            document.getElementById('debug-log').innerHTML += `<br>> ${msg}`;
+        };
+
         window.onload = async () => {
             try {
-                // 1. เริ่ม LIFF
-                await liff.init({ liffId: "2009012689-o7UBlAd7" }); 
-                if (!liff.isLoggedIn()) { liff.login(); return; }
+                log("กำลังติดต่อ LINE...");
+                await liff.init({ liffId: "2009012689-o7UBlAd7" });
+                
+                if (!liff.isLoggedIn()) {
+                    log("กรุณาเข้าสู่ระบบ LINE...");
+                    liff.login();
+                    return;
+                }
 
                 const profile = await liff.getProfile();
                 lineUserId = profile.userId;
+                log("พบ LINE ID: " + lineUserId.substring(0,5) + "...");
 
-                // 2. หา Session ID
+                // ดึง Session จาก URL
                 const urlParams = new URLSearchParams(window.location.search);
-                const sessionFromUrl = urlParams.get('session');
+                let session = urlParams.get('session');
 
-                if (sessionFromUrl) {
-                    currentSessionId = sessionFromUrl;
-                    localStorage.setItem('last_session_id', sessionFromUrl);
+                if (session) {
+                    log("พบก๊วนใหม่จาก QR...");
+                    currentSessionId = session;
+                    localStorage.setItem('last_session_id', session);
                 } else {
+                    log("ดึงก๊วนเดิมจากความจำ...");
                     currentSessionId = localStorage.getItem('last_session_id');
                 }
 
                 if (!currentSessionId) {
-                    document.getElementById('loading').innerHTML = "<h2>❌ ไม่พบก๊วน</h2><p>กรุณาสแกน QR Code เพื่อเข้าก๊วน</p>";
+                    log("❌ ไม่พบ ID ก๊วน กรุณาสแกน QR ใหม่");
                     return;
                 }
 
-                // 3. ตรวจสอบสถานะว่าเคยเช็คอินหรือยัง
-                checkIdentity();
+                checkUserStatus();
 
             } catch (err) {
-                console.error("LIFF Init Error", err);
+                log("💥 เกิดข้อผิดพลาด: " + err.message);
             }
         };
 
-        // --- ตรวจสอบตัวตนอัตโนมัติ ---
-        async function checkIdentity() {
-            const docRef = doc(db, `sessions/${currentSessionId}/attendance`, lineUserId);
-            const docSnap = await getDoc(docRef);
+        async function checkUserStatus() {
+            log("กำลังเช็คสถานะสมาชิก...");
+            try {
+                const docRef = doc(db, `sessions/${currentSessionId}/attendance`, lineUserId);
+                const docSnap = await getDoc(docRef);
 
-            if (docSnap.exists()) {
-                // ถ้าเคยเช็คอินแล้ว -> ไปหน้าคิวเลย
-                showMain(docSnap.data());
-            } else {
-                // ถ้ายังไม่เคย -> ให้ลงทะเบียน
-                document.getElementById('loading').classList.add('hidden');
-                document.getElementById('register-zone').classList.remove('hidden');
+                document.getElementById('loading-zone').classList.add('hidden');
+
+                if (docSnap.exists()) {
+                    log("พบข้อมูล! ยินดีต้อนรับกลับ");
+                    showMain(docSnap.data());
+                } else {
+                    log("ยังไม่เคยลงชื่อ...");
+                    document.getElementById('register-zone').classList.remove('hidden');
+                }
+            } catch (e) {
+                log("🔥 Firebase Error: " + e.message);
             }
         }
 
-        // --- กดเช็คอินครั้งแรก ---
         window.handleCheckIn = async () => {
             const name = document.getElementById('user-name').value.trim();
             const skill = document.getElementById('user-skill').value;
-            if (!name) return alert("กรุณาใส่ชื่อ");
+            if(!name) return alert("ใส่ชื่อด้วยจ้า");
 
-            const userData = {
-                display_name: name,
-                skill_level: skill,
-                is_playing: false,
-                is_paid: false,
-                games_played: 0,
-                shuttle_used: 0,
-                last_match_end: Date.now()
-            };
-
-            await setDoc(doc(db, `sessions/${currentSessionId}/attendance`, lineUserId), userData);
-            showMain(userData);
+            log("กำลังบันทึกข้อมูล...");
+            const userData = { display_name: name, skill_level: skill, is_playing: false, games_played: 0, shuttle_used: 0, last_match_end: Date.now() };
+            
+            try {
+                await setDoc(doc(db, `sessions/${currentSessionId}/attendance`, lineUserId), userData);
+                showMain(userData);
+            } catch (e) {
+                alert("บันทึกไม่สำเร็จ: " + e.message);
+            }
         };
 
-        // --- แสดงหน้าหลักและ Sync ข้อมูล Real-time ---
         function showMain(userData) {
-            document.getElementById('loading').classList.add('hidden');
             document.getElementById('register-zone').classList.add('hidden');
             document.getElementById('main-zone').classList.remove('hidden');
-            document.getElementById('session-display').innerText = "Session: " + currentSessionId;
-
-            // ติดตามข้อมูลตัวเอง
-            onSnapshot(doc(db, `sessions/${currentSessionId}/attendance`, lineUserId), (doc) => {
-                const d = doc.data();
-                if(d) document.getElementById('my-info').innerHTML = `สวัสดีคุณ <b>${d.display_name}</b> | เล่นไปแล้ว <b>${d.games_played}</b> เกม`;
-            });
-
-            // ติดตามคิวกลาง
+            document.getElementById('my-info').innerHTML = `คุณ: <b>${userData.display_name}</b> | ระดับ: ${userData.skill_level}`;
+            
+            // Sync คิวกลางแบบ Real-time
             onSnapshot(doc(db, "sessions", currentSessionId), (doc) => {
                 const data = doc.data();
                 const list = document.getElementById('middle-queue-list');
                 list.innerHTML = "";
                 if(data?.middle_queue?.length > 0) {
                     data.middle_queue.forEach((q, i) => {
-                        const players = q.slots.filter(s => s).map(s => s.name).join(", ");
-                        list.innerHTML += `<div class="queue-item"><span>คิวที่ ${i+1}</span> <b>${players}</b></div>`;
+                        const pNames = q.slots.filter(s => s).map(s => s.name).join(" vs ");
+                        list.innerHTML += `<div class="card">คิวที่ ${i+1}: ${pNames}</div>`;
                     });
                 } else {
-                    list.innerHTML = "<p style='color:#999; text-align:center;'>ยังไม่มีคิวรอ</p>";
+                    list.innerHTML = "<p>ยังไม่มีคิวจัดไว้</p>";
                 }
             });
-
-            // ติดตามสนาม (Mock up - ในระบบจริงจะดึงจาก localStorage หรือ Firebase ที่แอดมินอัปเดต)
-            // หมายเหตุ: โค้ดนี้จะดึงสถานะสนามจากความจำที่แอดมินแชร์ผ่าน Firebase (ถ้ามี)
-            // เพื่อความง่ายในที่นี้ จะเน้นที่คิวกลางก่อน
-        }
-
-        window.changeSession = () => {
-            if(confirm("ต้องการออกจากก๊วนนี้?")) {
-                localStorage.removeItem('last_session_id');
-                location.reload();
-            }
         }
     </script>
 </body>
