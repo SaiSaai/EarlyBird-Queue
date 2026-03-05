@@ -3,127 +3,125 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Profile - Badminton Queue</title>
+    <title>My Profile - Badminton</title>
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
-        :root { --primary: #00C853; --accent: #FF5722; }
+        :root { --primary: #00C853; --bg: #fdfcf0; }
         * { box-sizing: border-box; font-family: 'Kanit', sans-serif; }
-        body { background: #fdfcf0; margin: 0; padding: 20px; color: #333; }
-        .profile-card { background: white; border-radius: 20px; padding: 30px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.05); position: relative; overflow: hidden; }
-        .profile-card::before { content: ""; position: absolute; top: 0; left: 0; width: 100%; height: 8px; background: var(--primary); }
+        body { background: var(--bg); margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
         
-        .avatar-ring { width: 100px; height: 100px; border-radius: 50%; background: #eee; margin: 0 auto 15px; border: 4px solid #fff; box-shadow: 0 5px 15px rgba(0,0,0,0.1); overflow: hidden; }
-        .avatar-ring img { width: 100%; height: 100%; object-fit: cover; }
+        .profile-card { background: white; width: 100%; max-width: 400px; border-radius: 25px; padding: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); text-align: center; margin-top: 20px; }
+        .avatar { width: 100px; height: 100px; border-radius: 50%; border: 4px solid var(--primary); margin-bottom: 15px; object-fit: cover; }
         
-        .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 25px 0; }
-        .stat-item { background: #f9f9f9; padding: 15px; border-radius: 15px; }
-        .stat-value { display: block; font-size: 1.5em; font-weight: 600; color: var(--primary); }
-        .stat-label { font-size: 0.85em; color: #888; }
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 25px 0; }
+        .stat-box { background: #f9f9f9; padding: 15px; border-radius: 15px; border: 1px solid #eee; }
+        .stat-val { display: block; font-size: 1.5rem; font-weight: 600; color: var(--primary); }
+        .stat-label { font-size: 0.8rem; color: #888; }
 
-        .payment-box { background: #fff8e1; border: 2px dashed #ffb74d; border-radius: 15px; padding: 20px; margin-top: 20px; }
-        .total-price { font-size: 2em; font-weight: bold; color: #e65100; }
+        .btn-action { width: 100%; padding: 12px; border: none; border-radius: 12px; font-weight: 600; cursor: pointer; margin-bottom: 10px; transition: 0.2s; }
+        .btn-home { background: var(--primary); color: white; }
+        .btn-edit { background: #eee; color: #555; }
 
-        .btn-back { display: block; text-align: center; margin-top: 25px; color: #666; text-decoration: none; font-size: 0.9em; }
-        .skill-badge { display: inline-block; padding: 4px 12px; border-radius: 20px; color: white; font-size: 0.8em; margin-top: 5px; }
-        .lvl-yellow { background: #FFD700; color: #333; } .lvl-green { background: #00C853; } 
-        .lvl-blue { background: #2962FF; } .lvl-red { background: #D50000; } .lvl-black { background: #000; }
-        
-        .loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; display: flex; justify-content: center; align-items: center; z-index: 1000; }
+        #debug-log { width: 100%; max-width: 400px; background: #333; color: #0f0; padding: 10px; font-size: 10px; border-radius: 10px; margin-top: 20px; text-align: left; display: none; }
     </style>
 </head>
 <body>
 
-    <div id="loader" class="loading-overlay">กำลังโหลดข้อมูล...</div>
+    <div id="loader">กำลังดึงข้อมูลโปรไฟล์...</div>
 
-    <div class="profile-card">
-        <div class="avatar-ring">
-            <img id="user-img" src="https://via.placeholder.com/100" alt="Profile">
-        </div>
-        <h2 id="display-name" style="margin: 0;">-</h2>
-        <div id="skill-badge" class="skill-badge">Unknown</div>
+    <div id="content" class="profile-card" style="display:none;">
+        <img id="user-img" class="avatar" src="" alt="Profile">
+        <h2 id="user-name" style="margin:0;">-</h2>
+        <p id="user-skill" style="color:#666; margin:5px 0 0 0;">-</p>
 
-        <div class="stat-grid">
-            <div class="stat-item">
-                <span class="stat-value" id="stat-games">0</span>
+        <div class="stats-grid">
+            <div class="stat-box">
+                <span id="stat-games" class="stat-val">0</span>
                 <span class="stat-label">จำนวนเกม</span>
             </div>
-            <div class="stat-item">
-                <span class="stat-value" id="stat-shuttles">0</span>
-                <span class="stat-label">ลูกแบดที่ใช้</span>
+            <div class="stat-box">
+                <span id="stat-shuttles" class="stat-val">0</span>
+                <span class="stat-label">ลูกที่ใช้</span>
             </div>
         </div>
 
-        <div class="payment-box">
-            <div class="stat-label">ประมาณการค่าใช้จ่ายตอนนี้</div>
-            <div class="total-price" id="total-cost">฿ 0</div>
-            <div style="font-size: 0.7em; color: #9a7d0a; margin-top: 5px;">*คำนวณจาก ค่าสนาม(หารเฉลี่ย) + ค่าลูก</div>
-        </div>
-
-        <button onclick="editProfile()" style="margin-top:20px; background:#eee; color:#333; border-radius:8px; padding:8px 15px; font-size:0.8em; border:none;">⚙️ แก้ไขข้อมูลส่วนตัว</button>
+        <button class="btn-action btn-home" onclick="location.href='index.html'">กลับไปดูคิว</button>
+        <button class="btn-action btn-edit" onclick="resetUser()">แก้ไขชื่อ/เปลี่ยนก๊วน</button>
     </div>
 
-    <a href="index.html" class="btn-back">← กลับหน้าคิว</a>
+    <div id="debug-log"></div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, doc, onSnapshot, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = { apiKey: "AIzaSyDQbnx83sbs1sO4xsuLUV50uxbBinr2VtY", authDomain: "earlybird-queue.firebaseapp.com", projectId: "earlybird-queue", storageBucket: "earlybird-queue.firebasestorage.app", messagingSenderId: "310694006567", appId: "1:310694006567:web:f56fc19ed03b81bf8c2302" };
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // ตั้งค่าราคา (สามารถให้แอดมินแก้ภายหลังได้)
-        const COST_PER_SHUTTLE = 30; // ลูกละ 30 บาท
-        const ESTIMATED_COURT_FEE = 120; // ค่าสนามเหมาจ่าย (หรือจะคำนวณแบบอื่นก็ได้)
+        function log(m) {
+            const d = document.getElementById('debug-log');
+            d.style.display = 'block';
+            d.innerHTML += `> ${m}<br>`;
+            console.log(m);
+        }
 
         window.onload = async () => {
-            await liff.init({ liffId: "2009012689-o7UBlAd7" });
-            if (!liff.isLoggedIn()) { liff.login(); return; }
+            try {
+                await liff.init({ liffId: "2009012689-o7UBlAd7" });
+                if (!liff.isLoggedIn()) {
+                    liff.login();
+                    return;
+                }
 
-            const profile = await liff.getProfile();
-            document.getElementById('user-img').src = profile.pictureUrl;
+                const profile = await liff.getProfile();
+                const uid = profile.userId;
+                const sid = localStorage.getItem('last_sid'); // ใช้ชื่อ Key เดียวกับหน้า index
 
-            const sessionId = localStorage.getItem('last_session_id');
-            const lineUserId = profile.userId;
+                document.getElementById('user-img').src = profile.pictureUrl || 'https://via.placeholder.com/100';
 
-            if (sessionId && lineUserId) {
-                // ฟังข้อมูลแบบ Real-time จาก Firebase
-                onSnapshot(doc(db, `sessions/${sessionId}/attendance`, lineUserId), (doc) => {
-                    if (doc.exists()) {
-                        updateUI(doc.data());
+                if (!sid) {
+                    alert("ไม่พบรหัสก๊วน กรุณาสแกน QR ใหม่");
+                    window.location.href = 'index.html';
+                    return;
+                }
+
+                log("Checking: sessions/" + sid + "/attendance/" + uid);
+
+                // ดึงข้อมูลจาก Firebase
+                const userRef = doc(db, "sessions", sid, "attendance", uid);
+                
+                onSnapshot(userRef, (snap) => {
+                    if (snap.exists()) {
+                        const data = snap.data();
+                        document.getElementById('loader').style.display = 'none';
+                        document.getElementById('content').style.display = 'block';
+                        
+                        document.getElementById('user-name').innerText = data.display_name;
+                        document.getElementById('user-skill').innerText = "ระดับ: " + data.skill_level.toUpperCase();
+                        document.getElementById('stat-games').innerText = data.games_played || 0;
+                        document.getElementById('stat-shuttles').innerText = data.shuttle_used || 0;
                     } else {
-                        alert("ไม่พบข้อมูลการเช็คอิน");
-                        window.location.href = "index.html";
+                        log("ยังไม่มีข้อมูลการเช็คอินในก๊วนนี้");
+                        alert("คุณยังไม่ได้ลงชื่อเข้าก๊วนนี้");
+                        window.location.href = 'index.html';
                     }
-                    document.getElementById('loader').style.display = 'none';
+                }, (err) => {
+                    log("Error: " + err.message);
                 });
+
+            } catch (err) {
+                log("Crash: " + err.message);
             }
         };
 
-        function updateUI(data) {
-            document.getElementById('display-name').innerText = data.display_name;
-            document.getElementById('stat-games').innerText = data.games_played || 0;
-            document.getElementById('stat-shuttles').innerText = data.shuttle_used || 0;
-            
-            // อัปเดต Skill Badge
-            const badge = document.getElementById('skill-badge');
-            badge.innerText = "Level: " + data.skill_level.toUpperCase();
-            badge.className = `skill-badge lvl-${data.skill_level}`;
-
-            // คำนวณเงิน (ตัวอย่าง: ค่าสนามเฉลี่ย 100 + (ลูก * 30))
-            const total = ESTIMATED_COURT_FEE + ((data.shuttle_used || 0) * COST_PER_SHUTTLE);
-            document.getElementById('total-cost').innerText = `฿ ${total}`;
-        }
-
-        window.editProfile = () => {
-            // ส่งกลับไปหน้า index โดยลบประวัติในเครื่องเพื่อให้มันขึ้นหน้าลงทะเบียนใหม่
-            if(confirm("ต้องการแก้ไขชื่อหรือระดับฝีมือใช่หรือไม่?")) {
-                // ในระบบที่ใช้ LINE ID เราอาจจะแค่สั่งโชว์หน้ากรอกชื่อทับไป
-                // แต่เพื่อความง่าย ให้กลับไปเริ่มใหม่ในหน้า index
-                window.location.href = "index.html?edit=true";
+        window.resetUser = () => {
+            if(confirm("ต้องการเปลี่ยนก๊วนหรือแก้ไขข้อมูลใช่หรือไม่?")) {
+                localStorage.removeItem('last_sid');
+                window.location.href = 'index.html';
             }
-        }
+        };
     </script>
 </body>
 </html>
