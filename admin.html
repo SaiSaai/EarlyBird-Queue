@@ -289,14 +289,6 @@
             });
         }
 
-        document.getElementById('confirmBtn').onclick = () => {
-            const ps = selectedSlots.filter(p => p); if(!ps.length) return;
-            middleQueue.push({slots: [...selectedSlots]});
-            selectedSlots = [null,null,null,null]; 
-            localStorage.setItem(`queue_${currentSessionId}`, JSON.stringify(middleQueue));
-            renderFIFO(); renderMiddleQueue(); checkAndFillEmptyCourts();
-        };
-
         async function checkAndFillEmptyCourts() {
             const empty = Array.from(document.querySelectorAll('.court-card')).find(c => !c.classList.contains('playing') && c.querySelectorAll('.occupied').length === 0);
             if(empty && middleQueue.length > 0 && middleQueue[0].slots.filter(s=>s).length === 4) {
@@ -318,24 +310,19 @@
         // --- Helpers ---
         function listenToAttendance() { onSnapshot(query(collection(db, `sessions/${currentSessionId}/attendance`), orderBy("last_match_end", "asc")), snap => { lastSnapshotData = snap.docs.map(d => ({ id: d.id, data: d.data() })); renderFIFO(); }); }
         
-        // แก้ไขฟังก์ชัน generateQR ในไฟล์ admin.html
+        // ใน admin.html แก้ไขฟังก์ชัน generateQR และ expandQR
         function generateQR(id) {
             document.getElementById("qrcode").innerHTML = "";
-            // แทนที่ YOUR_LIFF_ID ด้วย ID ที่ได้จาก LINE Developers
+            // เปลี่ยนลิงก์ให้ไปหน้า profile.html
             const liffUrl = `https://liff.line.me/2009012689-o7UBlAd7?session=${id}`; 
-            
-            new QRCode(document.getElementById("qrcode"), {
-                text: liffUrl,
-                width: 50,
-                height: 50
-            });
+            new QRCode(document.getElementById("qrcode"), { text: liffUrl, width: 50, height: 50 });
         }
         window.changeShuttle = (id, v) => { const el = document.getElementById(`shuttle-${id}`); let val = parseInt(el.innerText) + v; if(val >= 0) { el.innerText = val; saveCourtsToLocal(); } };
         window.togglePanel = (id) => document.getElementById(id).classList.toggle('collapsed');
         window.checkAndOpen = (id) => document.getElementById(id).classList.remove('collapsed');
         window.updateBtn = () => { document.getElementById('confirmBtn').innerText = `ยืนยันลงสนาม (${selectedSlots.filter(p=>p).length})`; };
         // และแก้ฟังก์ชัน expandQR (ตอนขยายใหญ่) ให้เป็น URL เดียวกันด้วย
-        window.expandQR = () => {
+       window.expandQR = () => {
             if(!currentSessionId) return;
             document.getElementById('qr-big').innerHTML = "";
             const liffUrl = `https://liff.line.me/2009012689-o7UBlAd7?session=${currentSessionId}`;
@@ -357,48 +344,77 @@
             await batch.commit();
         };
 
-        // 1. เพิ่มฟังก์ชันบันทึกคิวกลางลง Firebase
-        async function syncMiddleQueueToFirebase() {
+        // --- แก้ไขส่วนจัดการคิวกลางเพื่อให้ Sync กับ Firebase ตลอดเวลา ---
+
+        // ฟังก์ชันกลางสำหรับอัปเดตคิวขึ้น Firebase
+        async function syncQueueToFirebase() {
             if (!currentSessionId) return;
             await updateDoc(doc(db, "sessions", currentSessionId), {
-                middle_queue: middleQueue // บันทึกอาเรย์คิวกลางลง session หลัก
+                middle_queue: middleQueue 
             });
+            localStorage.setItem(`queue_${currentSessionId}`, JSON.stringify(middleQueue));
         }
 
-        // 2. แก้ไขปุ่มยืนยันลงสนาม (confirmBtn) ให้เรียกใช้ sync
+        // 1. ปุ่มยืนยันลงสนาม (ย้ายจากคิวรอ -> คิวกลาง)
         document.getElementById('confirmBtn').onclick = async () => {
             const ps = selectedSlots.filter(p => p); 
             if(!ps.length) return;
             
-            // 1. เพิ่มเข้า Local Array
             middleQueue.push({slots: [...selectedSlots]});
-            
-            // 2. ส่งขึ้น Cloud เพื่อให้คนอื่นเห็น (เพิ่มส่วนนี้)
-            await updateDoc(doc(db, "sessions", currentSessionId), {
-                middle_queue: middleQueue 
-            });
-
-            // 3. จัดการ UI เดิม
             selectedSlots = [null,null,null,null]; 
-            localStorage.setItem(`queue_${currentSessionId}`, JSON.stringify(middleQueue));
-            renderFIFO(); renderMiddleQueue(); checkAndFillEmptyCourts();
+            
+            await syncQueueToFirebase(); // Sync ขึ้น Cloud
+            renderFIFO(); 
+            renderMiddleQueue(); 
+            checkAndFillEmptyCourts();
         };
 
-        // 3. แก้ไขฟังก์ชันจัดการคิวกลาง (ตอนดึงจากคิวกลางลงสนาม)
-        window.assignFromQueue = async (index) => {
-            selectedSlots = [...middleQueue[index].slots];
-            middleQueue.splice(index, 1);
-            localStorage.setItem(`queue_${currentSessionId}`, JSON.stringify(middleQueue));
-            await syncMiddleQueueToFirebase(); // <--- เพิ่มบรรทัดนี้
-            renderMiddleQueue(); renderFIFO();
-        };
+        // 2. เมื่อคลิกที่คิวกลางเพื่อดึงกลับมาแก้ไข
+        window.renderMiddleQueue = () => {
+            const list = document.getElementById('queue-list'); 
+            list.innerHTML = "";
+            middleQueue.forEach((q, i) => {
+                const div = document.createElement('div'); 
+                div.className = "player-item"; 
+                div.style.flexDirection = "column";
+                div.innerHTML = `
+                    <div style="font-size:0.7em; color:#999;">คิวที่ ${i+1} (คลิกเพื่อแก้ไข)</div>
+                    <div style="display:flex; gap:5px; width:100%; margin-top:5px;">
+                        <div style="flex:1; background:var(--team-a); padding:5px; border-radius:5px; font-size:0.75em; text-align:center;">${q.slots[0]?.name || '-'}<br>${q.slots[1]?.name || '-'}</div>
+                        <div style="flex:1; background:var(--team-b); padding:5px; border-radius:5px; font-size:0.75em; text-align:center;">${q.slots[2]?.name || '-'}<br>${q.slots[3]?.name || '-'}</div>
+                    </div>`;
+                div.onclick = async () => { 
+                    selectedSlots = [...q.slots]; 
+                    middleQueue.splice(i, 1); 
+                    await syncQueueToFirebase(); // ลบออกจาก Cloud ด้วย
+                    renderMiddleQueue(); 
+                    renderFIFO(); 
+                };
+                list.appendChild(div);
+            });
+        }
 
-        // 4. แก้ไขลิงก์ QR Code (Endpoint ของ LIFF ต้องตั้งเป็นหน้า profile.html)
-        function generateQR(id) {
-            document.getElementById("qrcode").innerHTML = "";
-            // สำคัญ: ต้องเป็น URL ที่ชี้ไปหน้า profile.html ของคุณ
-            const liffUrl = `https://liff.line.me/2009012689-o7UBlAd7?session=${id}`; 
-            new QRCode(document.getElementById("qrcode"), { text: liffUrl, width: 50, height: 50 });
+        // 3. เมื่อคิวถูกดึงลงสนามอัตโนมัติ (Auto-fill)
+        async function checkAndFillEmptyCourts() {
+            const empty = Array.from(document.querySelectorAll('.court-card')).find(c => !c.classList.contains('playing') && c.querySelectorAll('.occupied').length === 0);
+            if(empty && middleQueue.length > 0 && middleQueue[0].slots.filter(s=>s).length === 4) {
+                const group = middleQueue.shift(); // ดึงคิวแรกออก
+                await syncQueueToFirebase(); // อัปเดต Cloud ทันทีว่าคิวนี้ถูกใช้แล้ว
+                
+                const batch = writeBatch(db);
+                const slots = empty.querySelectorAll('.slot');
+                group.slots.forEach((p, i) => {
+                    batch.update(doc(db, `sessions/${currentSessionId}/attendance`, p.id), { is_playing: true });
+                    const pData = lastSnapshotData.find(d => d.id === p.id);
+                    slots[i].innerHTML = `<span class="skill-dot lvl-${pData?.data?.skill_level || 'yellow'}"></span> ${p.name}`;
+                    slots[i].dataset.uid = p.id; 
+                    slots[i].classList.add('occupied');
+                });
+                await batch.commit(); 
+                renderMiddleQueue(); 
+                renderFIFO(); 
+                saveCourtsToLocal();
+            }
         }
     </script>
 </body>
