@@ -317,6 +317,7 @@
 
         // --- Helpers ---
         function listenToAttendance() { onSnapshot(query(collection(db, `sessions/${currentSessionId}/attendance`), orderBy("last_match_end", "asc")), snap => { lastSnapshotData = snap.docs.map(d => ({ id: d.id, data: d.data() })); renderFIFO(); }); }
+        
         // แก้ไขฟังก์ชัน generateQR ในไฟล์ admin.html
         function generateQR(id) {
             document.getElementById("qrcode").innerHTML = "";
