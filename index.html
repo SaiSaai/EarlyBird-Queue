@@ -3,26 +3,47 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Live Queue - Badminton</title>
+    <title>Queue Dashboard - Pastel Mode</title>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Kanit', sans-serif; background: #1a1a1a; color: white; padding: 15px; margin:0; }
-        h3 { color: #ffd700; border-left: 4px solid #ffd700; padding-left: 10px; margin: 20px 0 10px 0; }
-        .court-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
-        .court-card { background: #333; padding: 10px; border-radius: 12px; border-top: 4px solid #4caf50; }
-        .p-name { font-size: 0.9em; margin: 3px 0; display: flex; align-items: center; gap: 5px; }
-        .queue-item { background: #2a2a2a; padding: 12px; margin-bottom: 8px; border-radius: 12px; border: 1px solid #444; }
-        .highlight { background: #ffd700 !important; color: #000 !important; font-weight: 600; border-radius: 4px; padding: 0 5px; }
-        .skill-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+        :root {
+            --bg-color: #fdfcf0; --card-playing: #e7f3ff; --card-queue: #fff4e1;
+            --text-main: #5d5d5d; --accent-pink: #ffcfd2; --accent-blue: #a2d2ff;
+        }
+        body { font-family: 'Kanit', sans-serif; background: var(--bg-color); color: var(--text-main); margin: 0; padding: 20px; }
+        h3 { border-bottom: 2px solid #eee; padding-bottom: 10px; color: #888; font-weight: 400; display: flex; align-items: center; gap: 10px; }
+        
+        /* Grid Layout */
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 15px; margin-bottom: 30px; }
+        
+        /* Court Card */
+        .court-card { background: white; border-radius: 18px; padding: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.03); border-left: 6px solid var(--accent-blue); }
+        .p-item { margin: 5px 0; font-size: 0.95em; }
+        
+        /* Queue Item */
+        .queue-item { background: var(--card-queue); border-radius: 18px; padding: 15px; margin-bottom: 12px; display: flex; flex-direction: column; border: 1px solid #ffe8cc; }
+        .queue-tag { font-size: 0.7em; color: #ffa726; font-weight: 600; margin-bottom: 5px; }
+        .names-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+        
+        /* Highlights */
+        .me { background: var(--accent-pink); padding: 2px 8px; border-radius: 8px; font-weight: 600; color: #d63384; border: 1px solid #f8bbd0; }
+        .vs { font-size: 0.8em; color: #ccc; }
+        
+        #loader { text-align: center; margin-top: 50px; color: #aaa; }
     </style>
 </head>
 <body>
-    <h3>🎾 กำลังแข่งขัน (Live)</h3>
-    <div id="court-list" class="court-grid"></div>
 
-    <h3>⏳ คิวกลาง (Next)</h3>
-    <div id="queue-list"></div>
+    <div id="loader">🍭 กำลังจัดคิวพาสเทล...</div>
+
+    <div id="main-ui" style="display:none;">
+        <h3 id="my-status-header">🏸 กำลังลงสนาม</h3>
+        <div id="playing-list" class="grid"></div>
+
+        <h3>⏳ คิวถัดไป (Queue)</h3>
+        <div id="queue-list"></div>
+    </div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -37,50 +58,63 @@
     let myId = "";
 
     async function init() {
-        await liff.init({ liffId: "2009012689-o7UBlAd7" });
-        if (liff.isLoggedIn()) {
-            const profile = await liff.getProfile();
-            myId = profile.userId;
-        }
-        listenData();
+        // ลองดึง LIFF เพื่อหาว่าใครกำลังดูอยู่
+        try {
+            await liff.init({ liffId: "2009012689-o7UBlAd7" });
+            if (liff.isLoggedIn()) {
+                const profile = await liff.getProfile();
+                myId = profile.userId;
+            }
+        } catch(e) { console.log("Running without LIFF highlight"); }
+        
+        if (sessionId) startSync();
+        else document.getElementById('loader').innerText = "❌ ไม่พบรหัสก๊วน";
     }
 
-    function listenData() {
-        // 1. ติดตามรายชื่อคนที่กำลังเล่น
+    function startSync() {
+        document.getElementById('loader').style.display = 'none';
+        document.getElementById('main-ui').style.display = 'block';
+
+        // 1. ดึงคนในสนาม (จากคอลเลกชัน Attendance)
         onSnapshot(collection(db, `sessions/${sessionId}/attendance`), (snap) => {
             const players = snap.docs.map(d => ({id: d.id, ...d.data()})).filter(p => p.is_playing);
             renderPlaying(players);
         });
 
-        // 2. ติดตามคิวกลางจาก Session หลัก
-        onSnapshot(doc(db, "sessions", sessionId), (doc) => {
-            const data = doc.data();
+        // 2. ดึงคิวกลาง (จาก Session Document)
+        onSnapshot(doc(db, "sessions", sessionId), (snap) => {
+            const data = snap.data();
             renderQueue(data?.middle_queue || []);
         });
     }
 
-    function renderPlaying(players) {
-        const list = document.getElementById('court-list');
-        list.innerHTML = players.length ? "" : "<p style='color:#666'>ไม่มีใครแข่งขันขณะนี้</p>";
-        players.forEach(p => {
+    function renderPlaying(list) {
+        const container = document.getElementById('playing-list');
+        container.innerHTML = list.length ? "" : "<p style='color:#ccc'>สนามว่างจ้า...</p>";
+        list.forEach(p => {
             const div = document.createElement('div');
             div.className = "court-card";
-            div.innerHTML = `<div class="p-name ${p.id === myId ? 'highlight' : ''}">${p.display_name}</div>`;
-            list.appendChild(div);
+            div.innerHTML = `<div class="p-item ${p.id === myId ? 'me' : ''}">${p.display_name}</div>`;
+            container.appendChild(div);
         });
     }
 
     function renderQueue(queue) {
-        const list = document.getElementById('queue-list');
-        list.innerHTML = queue.length ? "" : "<p style='color:#666'>ไม่มีคิวรอ</p>";
+        const container = document.getElementById('queue-list');
+        container.innerHTML = queue.length ? "" : "<p style='color:#ccc'>ยังไม่มีคิวจ้า...</p>";
         queue.forEach((q, i) => {
             const div = document.createElement('div');
             div.className = "queue-item";
-            const names = q.slots.filter(s => s).map(s => 
-                `<span class="${s.id === myId ? 'highlight' : ''}">${s.name}</span>`
-            ).join(" vs ");
-            div.innerHTML = `<small style="color:#888">คิวที่ ${i+1}</small><div style="margin-top:5px">${names}</div>`;
-            list.appendChild(div);
+            const names = q.slots.map(s => {
+                if(!s) return "";
+                return `<span class="${s.id === myId ? 'me' : ''}">${s.name}</span>`;
+            }).filter(n => n !== "").join('<span class="vs"> & </span>');
+            
+            div.innerHTML = `
+                <div class="queue-tag">NEXT ${i+1}</div>
+                <div class="names-row">${names}</div>
+            `;
+            container.appendChild(div);
         });
     }
 

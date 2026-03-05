@@ -367,11 +367,20 @@
 
         // 2. แก้ไขปุ่มยืนยันลงสนาม (confirmBtn) ให้เรียกใช้ sync
         document.getElementById('confirmBtn').onclick = async () => {
-            const ps = selectedSlots.filter(p => p); if(!ps.length) return;
+            const ps = selectedSlots.filter(p => p); 
+            if(!ps.length) return;
+            
+            // 1. เพิ่มเข้า Local Array
             middleQueue.push({slots: [...selectedSlots]});
+            
+            // 2. ส่งขึ้น Cloud เพื่อให้คนอื่นเห็น (เพิ่มส่วนนี้)
+            await updateDoc(doc(db, "sessions", currentSessionId), {
+                middle_queue: middleQueue 
+            });
+
+            // 3. จัดการ UI เดิม
             selectedSlots = [null,null,null,null]; 
             localStorage.setItem(`queue_${currentSessionId}`, JSON.stringify(middleQueue));
-            await syncMiddleQueueToFirebase(); // <--- เพิ่มบรรทัดนี้
             renderFIFO(); renderMiddleQueue(); checkAndFillEmptyCourts();
         };
 
