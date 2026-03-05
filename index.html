@@ -57,6 +57,43 @@
     const sessionId = urlParams.get('session');
     let myId = "";
 
+    // --- ส่วนเริ่มต้นของ Script ในหน้าดูคิว ---
+
+    let currentSessionId = "";
+
+    window.onload = async () => {
+        // 1. ดึงค่าจาก URL Parameter (?session=xxx)
+        const urlParams = new URLSearchParams(window.location.search);
+        const sessionFromUrl = urlParams.get('session');
+
+        if (sessionFromUrl) {
+            // ถ้ามีใน URL ให้ใช้ตัวนี้ และบันทึกลง LocalStorage เผื่อวันหลังเข้าตรงๆ
+            currentSessionId = sessionFromUrl;
+            localStorage.setItem('user_last_session', sessionFromUrl);
+            console.log("ใช้งานจาก URL:", currentSessionId);
+        } else {
+            // 2. ถ้าไม่มีใน URL ให้ลองดึงจาก LocalStorage ที่เคยเซฟไว้
+            const savedSession = localStorage.getItem('user_last_session');
+            if (savedSession) {
+                currentSessionId = savedSession;
+                console.log("ใช้งานจากความจำในเครื่อง:", currentSessionId);
+            }
+        }
+
+        // 3. ตรวจสอบว่าสุดท้ายแล้วมี ID ไหม
+        if (currentSessionId) {
+            // เรียกฟังก์ชันเริ่มดึงข้อมูลคิว (เช่น listenToQueue(currentSessionId))
+            startApp(); 
+        } else {
+            // ถ้าไม่มีจริงๆ ให้แสดงหน้าจอแจ้งเตือนว่า "กรุณาสแกน QR Code อีกครั้ง"
+            document.body.innerHTML = `
+                <div style="text-align:center; padding:50px; font-family:Kanit;">
+                    <h2>ไม่พบข้อมูลก๊วน</h2>
+                    <p>กรุณาสแกน QR Code จากหน้าจอแอดมินเพื่อเข้าสู่ระบบ</p>
+                </div>
+            `;
+        }
+    };
     async function init() {
         // ลองดึง LIFF เพื่อหาว่าใครกำลังดูอยู่
         try {
