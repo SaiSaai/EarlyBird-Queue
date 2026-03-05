@@ -3,37 +3,68 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Check-in Badminton</title>
+    <title>Badminton Queue - Member</title>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Kanit', sans-serif; text-align: center; padding: 50px 20px; background: #fdfcf0; }
-        .profile-img { width: 100px; height: 100px; border-radius: 50%; border: 3px solid #4caf50; margin-bottom: 20px; }
-        .btn-checkin { background: #00b900; color: white; border: none; padding: 15px 30px; border-radius: 30px; font-size: 1.2em; cursor: pointer; font-weight: bold; width: 100%; max-width: 300px; }
-        .loading { display: block; margin: 20px auto; }
+        body { font-family: 'Kanit', sans-serif; background: #f4f7f6; margin: 0; padding: 20px; text-align: center; }
+        .card { background: white; padding: 25px; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); max-width: 400px; margin: auto; }
+        .profile-img { width: 90px; height: 90px; border-radius: 50%; border: 3px solid #4caf50; margin-bottom: 15px; object-fit: cover; }
+        .status-badge { display: inline-block; padding: 5px 15px; border-radius: 20px; font-weight: bold; margin-bottom: 15px; }
+        .status-waiting { background: #fff3e0; color: #ef6c00; }
+        .status-playing { background: #e8f5e9; color: #2e7d32; }
+        
+        .btn { border: none; padding: 12px 25px; border-radius: 12px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 10px; font-size: 1em; }
+        .btn-green { background: #00b900; color: white; }
+        .btn-outline { background: white; color: #666; border: 1px solid #ddd; }
+        
+        #registration-form, #member-dashboard { display: none; }
+        input[type="text"], select { width: 100%; padding: 10px; border-radius: 10px; border: 1px solid #ddd; margin-bottom: 15px; box-sizing: border-box; }
     </style>
 </head>
 <body>
-    <div id="app" style="display:none;">
-        <img id="pictureUrl" class="profile-img">
-        <h2 id="displayName">กำลังโหลด...</h2>
-        <p>ระดับฝีมือของคุณ:</p>
-        <select id="skill_level" style="padding:10px; border-radius:10px; margin-bottom:20px; width:200px;">
-            <option value="yellow">Yellow (เริ่มต้น)</option>
-            <option value="green">Green (ทั่วไป)</option>
-            <option value="blue">Blue (กลาง)</option>
-            <option value="red">Red (สูง)</option>
-            <option value="black">Black (มืออาชีพ)</option>
-        </select>
-        <br>
-        <button id="btnCheckin" class="btn-checkin">ลงชื่อเข้าก๊วน 🏸</button>
-    </div>
+
+<div class="card">
     <div id="loader">กำลังเชื่อมต่อ LINE...</div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    <div id="main-content" style="display:none;">
+        <img id="user-img" class="profile-img" src="">
+        <h2 id="user-name" style="margin: 5px 0;"></h2>
 
-         const firebaseConfig = { 
+        <div id="registration-form">
+            <p style="color: #666;">ยินดีต้อนรับ! กรุณาเลือกระดับฝีมือเพื่อเข้าก๊วน</p>
+            <select id="skill-level">
+                <option value="yellow">Yellow (เริ่มต้น)</option>
+                <option value="green">Green (ทั่วไป)</option>
+                <option value="blue">Blue (กลาง)</option>
+                <option value="red">Red (สูง)</option>
+                <option value="black">Black (มืออาชีพ)</option>
+            </select>
+            <button class="btn btn-green" onclick="handleCheckin()">ลงชื่อเข้าก๊วน 🏸</button>
+        </div>
+
+        <div id="member-dashboard">
+            <div id="queue-status" class="status-badge status-waiting">สถานะ: รอคิว...</div>
+            <div style="background: #f9f9f9; padding: 15px; border-radius: 15px; text-align: left; margin-bottom: 15px;">
+                <div>🎮 เล่นไปแล้ว: <span id="stat-games">0</span> เกม</div>
+                <div>🏸 ลูกแบดสะสม: <span id="stat-shuttles">0</span> ลูก</div>
+            </div>
+            
+            <hr style="border: 0.5px solid #eee; margin: 20px 0;">
+            
+            <p style="font-size: 0.8em; color: #999; text-align: left;">จัดการโปรไฟล์:</p>
+            <input type="text" id="edit-name" placeholder="ชื่อเล่นใหม่">
+            <button class="btn btn-outline" onclick="handleUpdateProfile()">อัปเดตชื่อ/รูปภาพ 🔄</button>
+            <p style="font-size: 0.7em; color: #ccc; margin-top: 10px;">*รูปภาพจะอัปเดตตาม LINE Profile ปัจจุบันของคุณ</p>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getFirestore, doc, getDoc, setDoc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    const firebaseConfig = { 
             apiKey: "AIzaSyDQbnx83sbs1sO4xsuLUV50uxbBinr2VtY",
             authDomain: "earlybird-queue.firebaseapp.com",
             projectId: "earlybird-queue",
@@ -42,49 +73,98 @@
             appId: "1:310694006567:web:f56fc19ed03b81bf8c2302",
             measurementId: "G-CHJP8C4V5S"
         };
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
 
-        // ดึง Session ID จาก URL
-        const urlParams = new URLSearchParams(window.location.search);
-        const sessionId = urlParams.get('session');
+    const urlParams = new URLSearchParams(window.location.search);
+    const sessionId = urlParams.get('session');
+    let userProfile = null;
 
-        async function initLiff() {
-            try {
-                await liff.init({ liffId: "2009012689-o7UBlAd7" }); // ใส่ LIFF ID จริงของคุณ
-                if (!liff.isLoggedIn()) {
-                    liff.login();
-                } else {
-                    const profile = await liff.getProfile();
-                    document.getElementById('loader').style.display = 'none';
-                    document.getElementById('app').style.display = 'block';
-                    document.getElementById('displayName').innerText = profile.displayName;
-                    document.getElementById('pictureUrl').src = profile.pictureUrl;
-
-                    document.getElementById('btnCheckin').onclick = async () => {
-                        if (!sessionId) return alert("ไม่พบ Session ID!");
-                        
-                        // บันทึกข้อมูลเข้า Firebase โดยใช้ UID ของ LINE เป็น ID เอกสาร
-                        await setDoc(doc(db, `sessions/${sessionId}/attendance`, profile.userId), {
-                            display_name: profile.displayName,
-                            picture_url: profile.pictureUrl,
-                            skill_level: document.getElementById('skill_level').value,
-                            is_playing: false,
-                            is_paid: false,
-                            games_played: 0,
-                            shuttle_used: 0,
-                            last_match_end: Date.now()
-                        }, { merge: true });
-
-                        alert("เช็คอินสำเร็จ! รอเรียกชื่อลงสนามนะครับ");
-                        liff.closeWindow(); // ปิดหน้าจออัตโนมัติ
-                    };
-                }
-            } catch (err) {
-                console.error("LIFF Error", err);
+    async function initLiff() {
+        try {
+            await liff.init({ liffId: "2009012689-o7UBlAd7" });
+            if (!liff.isLoggedIn()) {
+                liff.login();
+            } else {
+                userProfile = await liff.getProfile();
+                checkRegistration();
             }
+        } catch (err) { console.error(err); }
+    }
+
+    async function checkRegistration() {
+        if (!sessionId) return alert("กรุณาสแกน QR ใหม่ (ไม่พบ Session)");
+
+        const docRef = doc(db, `sessions/${sessionId}/attendance`, userProfile.userId);
+        const docSnap = await getDoc(docRef);
+
+        document.getElementById('loader').style.display = 'none';
+        document.getElementById('main-content').style.display = 'block';
+
+        if (docSnap.exists()) {
+            // กรณี A: เคยเช็คอินแล้ว -> แสดงหน้า Dashboard
+            showDashboard(docSnap.data());
+            // ทำการ Real-time Listen เพื่อดูสถานะเกม/คิว
+            onSnapshot(docRef, (snap) => showDashboard(snap.data()));
+        } else {
+            // กรณี B: ยังไม่เคยเช็คอิน -> แสดงฟอร์ม
+            document.getElementById('user-img').src = userProfile.pictureUrl;
+            document.getElementById('user-name').innerText = userProfile.displayName;
+            document.getElementById('registration-form').style.display = 'block';
         }
-        initLiff();
-    </script>
+    }
+
+    function showDashboard(data) {
+        document.getElementById('registration-form').style.display = 'none';
+        document.getElementById('member-dashboard').style.display = 'block';
+        
+        document.getElementById('user-img').src = data.picture_url || userProfile.pictureUrl;
+        document.getElementById('user-name').innerText = data.display_name;
+        document.getElementById('edit-name').value = data.display_name;
+        
+        document.getElementById('stat-games').innerText = data.games_played || 0;
+        document.getElementById('stat-shuttles').innerText = data.shuttle_used || 0;
+
+        const qStatus = document.getElementById('queue-status');
+        if (data.is_playing) {
+            qStatus.innerText = "สถานะ: 🏸 กำลังแข่งขัน";
+            qStatus.className = "status-badge status-playing";
+        } else if (data.is_paid) {
+            qStatus.innerText = "สถานะ: ✅ จ่ายเงินแล้ว";
+            qStatus.className = "status-badge";
+        } else {
+            qStatus.innerText = "สถานะ: ⏳ รอคิว...";
+            qStatus.className = "status-badge status-waiting";
+        }
+    }
+
+    window.handleCheckin = async () => {
+        const skill = document.getElementById('skill-level').value;
+        await setDoc(doc(db, `sessions/${sessionId}/attendance`, userProfile.userId), {
+            display_name: userProfile.displayName,
+            picture_url: userProfile.pictureUrl,
+            skill_level: skill,
+            is_playing: false,
+            is_paid: false,
+            games_played: 0,
+            shuttle_used: 0,
+            last_match_end: Date.now()
+        });
+        checkRegistration(); // รีเฟรชไปหน้า Dashboard
+    };
+
+    window.handleUpdateProfile = async () => {
+        const newName = document.getElementById('edit-name').value;
+        if (!newName) return;
+        
+        await updateDoc(doc(db, `sessions/${sessionId}/attendance`, userProfile.userId), {
+            display_name: newName,
+            picture_url: userProfile.pictureUrl // อัปเดตรูปตาม LINE Profile ล่าสุด
+        });
+        alert("อัปเดตข้อมูลสำเร็จ!");
+    };
+
+    initLiff();
+</script>
 </body>
 </html>
