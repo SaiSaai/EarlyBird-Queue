@@ -142,25 +142,52 @@
         onSnapshot(doc(db, "sessions", sid), (snap) => {
             const data = snap.data();
             const listDiv = document.getElementById('queue-list');
-            const middleQueue = data?.middle_queue || [];
-
-            if (middleQueue.length > 0) {
-                listDiv.innerHTML = middleQueue.map((item, i) => {
-                    const teamA = item.slots.slice(0, 2).filter(s => s).map(s => s.name).join(" + ") || "ว่าง";
-                    const teamB = item.slots.slice(2, 4).filter(s => s).map(s => s.name).join(" + ") || "ว่าง";
-                    return `
-                        <div class="queue-card">
-                            <div style="font-size: 0.8rem; color: #999; margin-bottom: 5px;">คิวที่ ${i+1}</div>
+            
+            // 1. ดึงข้อมูลสนามที่กำลังแข่ง (Live Courts)
+            const liveCourts = data?.live_courts || [];
+            let courtsHtml = "";
+            
+            if (liveCourts.length > 0) {
+                courtsHtml = `<div style="text-align:left; margin: 10px 0; font-weight:bold; color:#2e7d32;">🏸 สถานะสนามขณะนี้</div>`;
+                liveCourts.forEach(c => {
+                    const teamA = c.slots.slice(0, 2).map(s => s.html).join(" + ");
+                    const teamB = c.slots.slice(2, 4).map(s => s.html).join(" + ");
+                    const statusColor = c.playing ? "#4caf50" : "#9e9e9e";
+                    
+                    courtsHtml += `
+                        <div class="queue-card" style="border-left-color: ${statusColor}; background: ${c.playing ? '#f1f8e9' : '#fff'};">
+                            <div style="font-size: 0.8rem; color: ${statusColor}; font-weight: bold;">สนาม ${c.courtNum} (${c.status})</div>
                             <div class="match-info">
-                                <span style="color: #1976d2;">${teamA}</span>
-                                <span class="vs">VS</span>
-                                <span style="color: #388e3c;">${teamB}</span>
+                                <span>${teamA}</span> <span class="vs">VS</span> <span>${teamB}</span>
                             </div>
-                        </div>
-                    `;
-                }).join('');
+                        </div>`;
+                });
+            }
+
+            // 2. ดึงข้อมูลคิวรอ (Middle Queue)
+            const middleQueue = data?.middle_queue || [];
+            let queueHtml = "";
+            
+            if (middleQueue.length > 0) {
+                queueHtml = `<div style="text-align:left; margin: 20px 0 10px; font-weight:bold; color:#1976d2;">⏳ คิวถัดไป</div>`;
+                middleQueue.forEach((item, i) => {
+                    const qA = item.slots.slice(0, 2).filter(s => s).map(s => s.name).join(" + ");
+                    const qB = item.slots.slice(2, 4).filter(s => s).map(s => s.name).join(" + ");
+                    queueHtml += `
+                        <div class="queue-card">
+                            <div style="font-size: 0.8rem; color: #999;">คิวรอที่ ${i+1}</div>
+                            <div class="match-info">
+                                <span>${qA}</span> <span class="vs">VS</span> <span>${qB}</span>
+                            </div>
+                        </div>`;
+                });
+            }
+
+            // รวมร่างการแสดงผล
+            if (liveCourts.length === 0 && middleQueue.length === 0) {
+                listDiv.innerHTML = "<p style='color:#bbb; margin-top:20px;'>ยังไม่มีข้อมูลการจัดสนาม</p>";
             } else {
-                listDiv.innerHTML = "<p style='color:#bbb;'>ยังไม่มีคิวที่จัดแล้ว (รอแอดมินยืนยันลงสนาม)</p>";
+                listDiv.innerHTML = courtsHtml + queueHtml;
             }
         });
     }
