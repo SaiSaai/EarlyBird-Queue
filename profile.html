@@ -7,137 +7,166 @@
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
-        :root { --primary: #00C853; --bg: #fdfcf0; }
+        :root { --primary: #00C853; --accent: #FF5722; --bg: #fdfcf0; }
         * { box-sizing: border-box; font-family: 'Kanit', sans-serif; }
         body { background: var(--bg); margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
         
-        .profile-card { background: white; width: 100%; max-width: 400px; border-radius: 25px; padding: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); text-align: center; margin-top: 20px; }
-        .avatar { width: 100px; height: 100px; border-radius: 50%; border: 4px solid var(--primary); margin-bottom: 15px; object-fit: cover; }
+        /* Profile UI */
+        .profile-card { background: white; width: 100%; max-width: 400px; border-radius: 25px; padding: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); text-align: center; display: none; }
+        .avatar { width: 110px; height: 110px; border-radius: 50%; border: 4px solid white; box-shadow: 0 5px 15px rgba(0,0,0,0.1); margin-bottom: 15px; object-fit: cover; }
         
         .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 25px 0; }
-        .stat-box { background: #f9f9f9; padding: 15px; border-radius: 15px; border: 1px solid #eee; }
-        .stat-val { display: block; font-size: 1.5rem; font-weight: 600; color: var(--primary); }
-        .stat-label { font-size: 0.8rem; color: #888; }
+        .stat-box { background: #f9f9f9; padding: 15px; border-radius: 18px; border: 1px solid #eee; }
+        .stat-val { display: block; font-size: 1.6rem; font-weight: 600; color: var(--primary); }
+        .stat-label { font-size: 0.85rem; color: #888; }
 
-        .btn-action { width: 100%; padding: 12px; border: none; border-radius: 12px; font-weight: 600; cursor: pointer; margin-bottom: 10px; transition: 0.2s; }
-        .btn-home { background: var(--primary); color: white; }
-        .btn-edit { background: #eee; color: #555; }
+        /* Buttons */
+        .btn-action { width: 100%; padding: 14px; border: none; border-radius: 15px; font-weight: 600; cursor: pointer; margin-bottom: 12px; font-size: 1rem; transition: 0.2s; }
+        .btn-home { background: var(--primary); color: white; box-shadow: 0 4px 12px rgba(0,200,83,0.3); }
+        .btn-edit { background: #f0f0f0; color: #666; }
 
-        #debug-log { width: 100%; max-width: 400px; background: #333; color: #0f0; padding: 10px; font-size: 10px; border-radius: 10px; margin-top: 20px; text-align: left; display: none; }
+        /* Status & Logs */
+        #loader { text-align: center; margin-top: 50px; color: #666; }
+        #debug-log { width: 100%; max-width: 400px; background: #222; color: #0f0; padding: 12px; font-size: 11px; border-radius: 12px; margin-top: 20px; text-align: left; display: none; white-space: pre-wrap; word-break: break-all; }
+        .error-box { background: #fff1f0; border: 1px solid #ffa39e; padding: 20px; border-radius: 15px; text-align: center; color: #cf1322; }
     </style>
 </head>
 <body>
 
-    <div id="loader">กำลังดึงข้อมูลโปรไฟล์...</div>
+    <div id="loader">
+        <div style="font-size: 2rem;">🏸</div>
+        <p id="status-text">กำลังเริ่มต้นระบบ...</p>
+    </div>
 
-    <div id="content" class="profile-card" style="display:none;">
-        <img id="user-img" class="avatar" src="" alt="Profile">
-        <h2 id="user-name" style="margin:0;">-</h2>
-        <p id="user-skill" style="color:#666; margin:5px 0 0 0;">-</p>
+    <div id="profile-ui" class="profile-card">
+        <img id="user-img" class="avatar" src="https://via.placeholder.com/110" alt="Profile">
+        <h2 id="user-display-name" style="margin:0;">-</h2>
+        <div id="user-level-badge" style="margin-top: 5px; font-size: 0.9rem; color: #666;">Level: -</div>
 
         <div class="stats-grid">
             <div class="stat-box">
                 <span id="stat-games" class="stat-val">0</span>
-                <span class="stat-label">จำนวนเกม</span>
+                <span class="stat-label">เกมที่แข่ง</span>
             </div>
             <div class="stat-box">
                 <span id="stat-shuttles" class="stat-val">0</span>
-                <span class="stat-label">ลูกที่ใช้</span>
+                <span class="stat-label">ลูกแบดที่ใช้</span>
             </div>
         </div>
 
-        <button class="btn-action btn-home" onclick="location.href='index.html'">กลับไปดูคิว</button>
-        <button class="btn-action btn-edit" onclick="resetUser()">แก้ไขชื่อ/เปลี่ยนก๊วน</button>
+        <button class="btn-action btn-home" onclick="goHome()">🏠 กลับหน้าคิว</button>
+        <button class="btn-action btn-edit" onclick="resetSession()">🔄 เปลี่ยนก๊วน / ลงทะเบียนใหม่</button>
     </div>
 
-    <div id="debug-log"></div>
+    <div id="debug-log"><b>DEBUG CONSOLE:</b></div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, doc, onSnapshot, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+        // --- Config ---
         const firebaseConfig = { apiKey: "AIzaSyDQbnx83sbs1sO4xsuLUV50uxbBinr2VtY", authDomain: "earlybird-queue.firebaseapp.com", projectId: "earlybird-queue", storageBucket: "earlybird-queue.firebasestorage.app", messagingSenderId: "310694006567", appId: "1:310694006567:web:f56fc19ed03b81bf8c2302" };
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        function log(m) {
+        const log = (m) => {
             const d = document.getElementById('debug-log');
             d.style.display = 'block';
-            d.innerHTML += `> ${m}<br>`;
+            d.innerHTML += `\n> ${m}`;
+            document.getElementById('status-text').innerText = m;
             console.log(m);
-        }
-
-        // --- ตรวจสอบค่าที่ได้รับทันทีที่โหลดหน้า ---
-        const urlParams = new URLSearchParams(window.location.search);
-        const sidFromUrl = urlParams.get('session');
-        const sidFromStore = localStorage.getItem('last_sid');
-
-        console.log("DEBUG: Session จาก URL คือ:", sidFromUrl);
-        console.log("DEBUG: Session ในความจำเครื่องคือ:", sidFromStore);
-
-        // ถ้าไม่มีทั้งคู่ ให้แสดง Error บนหน้าจอเลย
-        if (!sidFromUrl && !sidFromStore) {
-            document.body.innerHTML = `
-                <div style="padding:20px; color:red; text-align:center;">
-                    <h3>❌ ตรวจไม่พบ Session ID</h3>
-                    <p>หน้า Profile ไม่ได้รับค่ารหัสก๊วน</p>
-                    <p style="font-size:12px; color:#666;">URL ปัจจุบัน: ${window.location.href}</p>
-                    <button onclick="window.location.href='index.html'">กลับไปหน้าหลัก</button>
-                </div>
-            `;
-        }
+        };
 
         window.onload = async () => {
             try {
+                log("กำลังเชื่อมต่อ LINE...");
                 await liff.init({ liffId: "2009012689-o7UBlAd7" });
+
                 if (!liff.isLoggedIn()) {
+                    log("ยังไม่ได้เข้าสู่ระบบ LINE...");
                     liff.login();
                     return;
                 }
 
-                const profile = await liff.getProfile();
-                const uid = profile.userId;
-                const sid = localStorage.getItem('last_sid'); // ใช้ชื่อ Key เดียวกับหน้า index
+                // ดึงโปรไฟล์ LINE
+                const lineProfile = await liff.getProfile();
+                const uid = lineProfile.userId;
+                document.getElementById('user-img').src = lineProfile.pictureUrl;
+                log("สวัสดีคุณ " + lineProfile.displayName);
 
-                document.getElementById('user-img').src = profile.pictureUrl || 'https://via.placeholder.com/100';
+                // --- การจัดการ Session ID (หัวใจสำคัญ) ---
+                const urlParams = new URLSearchParams(window.location.search);
+                let sid = urlParams.get('session'); // ลองดึงจาก URL ก่อน
 
                 if (!sid) {
-                    alert("ไม่พบรหัสก๊วน กรุณาสแกน QR ใหม่");
-                    window.location.href = 'index.html';
+                    sid = localStorage.getItem('last_sid'); // ถ้า URL ไม่มี (กรณี Redirect) ให้ดึงจากเครื่อง
+                    log("กู้คืน Session จากเครื่อง: " + sid);
+                } else {
+                    localStorage.setItem('last_sid', sid); // ถ้า URL มี ให้บันทึกทับในเครื่องไว้
+                    log("พบบทสนทนาใหม่: " + sid);
+                }
+
+                if (!sid) {
+                    showError("ไม่พบรหัสก๊วน กรุณาสแกน QR ใหม่");
                     return;
                 }
 
-                log("Checking: sessions/" + sid + "/attendance/" + uid);
-
                 // ดึงข้อมูลจาก Firebase
-                const userRef = doc(db, "sessions", sid, "attendance", uid);
-                
-                onSnapshot(userRef, (snap) => {
-                    if (snap.exists()) {
-                        const data = snap.data();
-                        document.getElementById('loader').style.display = 'none';
-                        document.getElementById('content').style.display = 'block';
-                        
-                        document.getElementById('user-name').innerText = data.display_name;
-                        document.getElementById('user-skill').innerText = "ระดับ: " + data.skill_level.toUpperCase();
-                        document.getElementById('stat-games').innerText = data.games_played || 0;
-                        document.getElementById('stat-shuttles').innerText = data.shuttle_used || 0;
-                    } else {
-                        log("ยังไม่มีข้อมูลการเช็คอินในก๊วนนี้");
-                        alert("คุณยังไม่ได้ลงชื่อเข้าก๊วนนี้");
-                        window.location.href = 'index.html';
-                    }
-                }, (err) => {
-                    log("Error: " + err.message);
-                });
+                fetchMemberData(sid, uid);
 
             } catch (err) {
                 log("Crash: " + err.message);
+                if(err.message.includes("expired")) {
+                    liff.logout();
+                    liff.login();
+                }
             }
         };
 
-        window.resetUser = () => {
-            if(confirm("ต้องการเปลี่ยนก๊วนหรือแก้ไขข้อมูลใช่หรือไม่?")) {
+        async function fetchMemberData(sid, uid) {
+            log("กำลังดึงข้อมูลจาก Cloud...");
+            const memberRef = doc(db, "sessions", sid, "attendance", uid);
+            
+            // ใช้ onSnapshot เพื่อให้ข้อมูลอัปเดตทันทีที่แอดมินกดในหน้าจัดคิว
+            onSnapshot(memberRef, (snap) => {
+                if (snap.exists()) {
+                    const data = snap.data();
+                    log("พบข้อมูลสมาชิกสำเร็จ!");
+                    
+                    document.getElementById('loader').style.display = 'none';
+                    document.getElementById('profile-ui').style.display = 'block';
+
+                    document.getElementById('user-display-name').innerText = data.display_name;
+                    document.getElementById('user-level-badge').innerText = "ระดับ: " + (data.skill_level || "ทั่วไป").toUpperCase();
+                    document.getElementById('stat-games').innerText = data.games_played || 0;
+                    document.getElementById('stat-shuttles').innerText = data.shuttle_used || 0;
+                } else {
+                    log("ยังไม่ได้เช็คอินในก๊วนนี้");
+                    showError("คุณยังไม่ได้ลงชื่อในก๊วนนี้ กรุณากลับไปเช็คอินก่อน");
+                }
+            }, (err) => {
+                log("Firebase Error: " + err.code);
+                showError("เข้าถึงข้อมูลไม่ได้ (Permission Denied)");
+            });
+        }
+
+        function showError(msg) {
+            document.getElementById('loader').innerHTML = `
+                <div class="error-box">
+                    <h3>❌ เกิดข้อผิดพลาด</h3>
+                    <p>${msg}</p>
+                    <button class="btn-action btn-home" onclick="location.href='index.html'">กลับหน้าหลัก</button>
+                </div>
+            `;
+        }
+
+        window.goHome = () => {
+            const sid = localStorage.getItem('last_sid');
+            window.location.href = sid ? `index.html?session=${sid}` : 'index.html';
+        };
+
+        window.resetSession = () => {
+            if(confirm("ต้องการล้างประวัติก๊วนเดิมเพื่อสแกนเข้าก๊วนใหม่ใช่หรือไม่?")) {
                 localStorage.removeItem('last_sid');
                 window.location.href = 'index.html';
             }
