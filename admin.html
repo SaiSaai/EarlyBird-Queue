@@ -72,18 +72,18 @@
         <div class="courts-wrapper" id="main-grid"></div>
     </div>
 
-    <div id="qr-overlay" onclick="this.style.display='none'"><div class="modal-content"><h2>Scan to Join!</h2><div id="qr-big" style="display:flex; justify-content:center; margin:20px 0;"></div></div></div>
+    <div id="qr-overlay" onclick="this.style.display='none'"><div class="modal-content"><h2>Scan to Register!</h2><div id="qr-big" style="display:flex; justify-content:center; margin:20px 0;"></div><p id="sid-text"></p></div></div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, doc, addDoc, onSnapshot, query, orderBy, updateDoc, serverTimestamp, writeBatch, increment } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, doc, setDoc, onSnapshot, query, orderBy, updateDoc, serverTimestamp, writeBatch, increment } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = { apiKey: "AIzaSyDQbnx83sbs1sO4xsuLUV50uxbBinr2VtY", authDomain: "earlybird-queue.firebaseapp.com", projectId: "earlybird-queue", storageBucket: "earlybird-queue.firebasestorage.app", messagingSenderId: "310694006567", appId: "1:310694006567:web:f56fc19ed03b81bf8c2302" };
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
         let selectedSlots = [null, null, null, null], 
-            currentSessionId = localStorage.getItem('last_session_id') || "", 
+            currentSessionId = localStorage.getItem('last_sid') || "", 
             lastSnapshotData = [], middleQueue = [], nextCourtNumber = 1;
 
         // --- Initialization ---
@@ -102,9 +102,11 @@
         // --- Core Functions ---
         window.createSession = async () => {
             if(currentSessionId && !confirm("เปิดก๊วนใหม่? ข้อมูลเดิมจะถูกล้าง")) return;
-            const ref = await addDoc(collection(db, "sessions"), { created_at: serverTimestamp() });
+            const sid = "GS" + Date.now().toString().slice(-6); // สร้าง ID แบบสั้น GSXXXXXX
+            await setDoc(doc(db, "sessions", sid), { status: "active", created_at: serverTimestamp(), middle_queue: [] });
+            
             localStorage.clear();
-            localStorage.setItem('last_session_id', ref.id);
+            localStorage.setItem('last_sid', sid);
             location.reload(); 
         };
 
@@ -213,14 +215,7 @@
         window.handleEndGame = async (id) => {
             const card = document.getElementById(id);
             const occupied = card.querySelectorAll('.occupied');
-            
-            // --- ส่วนที่เพิ่ม/แก้ไขใหม่ ---
-            // ดึงจำนวนลูกแบดที่ใช้จากหน้าจอสนามนั้นๆ
             const shuttleCount = parseInt(document.getElementById(`shuttle-${id}`).innerText) || 0;
-            // เราใช้ shuttleCount ตรงๆ เลย (คนละ x ลูก)
-            const shuttlePerPerson = shuttleCount; 
-            // -------------------------
-
             const batch = writeBatch(db);
             
             occupied.forEach(s => {
@@ -228,26 +223,17 @@
                     is_playing: false, 
                     last_match_end: Date.now(), 
                     games_played: increment(1),
-                    // บันทึกคนละ x ลูก ตามที่ระบุในสนามนั้นๆ
-                    shuttle_used: increment(shuttlePerPerson) 
+                    shuttle_used: increment(shuttleCount) 
                 });
-                
-                s.innerText = "ว่าง"; 
-                s.classList.remove('occupied'); 
-                delete s.dataset.uid;
+                s.innerText = "ว่าง"; s.classList.remove('occupied'); delete s.dataset.uid;
             });
-
             await batch.commit();
-            
             card.classList.remove('playing');
             document.getElementById(`status-${id}`).innerText = "🟢 ว่าง";
-            document.getElementById(`shuttle-${id}`).innerText = "1"; // รีเซ็ตค่าลูกแบดเป็น 1 สำหรับเกมถัดไป
+            document.getElementById(`shuttle-${id}`).innerText = "1";
             document.getElementById(`btn-start-${id}`).style.display = "block";
             document.getElementById(`btn-end-${id}`).style.display = "none";
-            
-            saveCourtsToLocal(); 
-            renderFIFO(); 
-            checkAndFillEmptyCourts();
+            saveCourtsToLocal(); renderFIFO(); checkAndFillEmptyCourts();
         };
 
         // --- Queue Rendering ---
@@ -255,10 +241,8 @@
             const list = document.getElementById('checkin-list'); 
             list.innerHTML = "";
             const midIds = new Set(middleQueue.flatMap(q => q.slots.filter(s => s).map(s => s.id)));
-
             lastSnapshotData.forEach(player => {
                 const { id, data } = player;
-                // เพิ่มเงื่อนไข !data.is_paid เพื่อไม่ให้คนจ่ายแล้วปรากฏในคิวรอ
                 if (!data.is_playing && !midIds.has(id) && !data.is_paid) {
                     const idx = selectedSlots.findIndex(p => p?.id === id);
                     const div = document.createElement('div');
@@ -274,7 +258,7 @@
                 }
             });
             updateBtn();
-        }   
+        } 
         function renderMiddleQueue() {
             const list = document.getElementById('queue-list'); list.innerHTML = "";
             middleQueue.forEach((q, i) => {
@@ -315,17 +299,31 @@
             }
         }
 
-        // --- Helpers ---
         function listenToAttendance() { onSnapshot(query(collection(db, `sessions/${currentSessionId}/attendance`), orderBy("last_match_end", "asc")), snap => { lastSnapshotData = snap.docs.map(d => ({ id: d.id, data: d.data() })); renderFIFO(); }); }
-        function generateQR(id) { document.getElementById("qrcode").innerHTML = ""; new QRCode(document.getElementById("qrcode"), { text: `https://liff.line.me/2009012689-o7UBlAd7?session=${id}`, width: 50, height: 50 }); }
+        
+        // --- เปลี่ยนให้ QR ลิงก์ไปหน้า profile.html ---
+        function generateQR(id) { 
+            document.getElementById("qrcode").innerHTML = ""; 
+            const liffUrl = `https://early-bird-queue.vercel.app/profile.html?session=${id}`;
+            new QRCode(document.getElementById("qrcode"), { text: liffUrl, width: 50, height: 50 }); 
+        }
+
         window.changeShuttle = (id, v) => { const el = document.getElementById(`shuttle-${id}`); let val = parseInt(el.innerText) + v; if(val >= 0) { el.innerText = val; saveCourtsToLocal(); } };
         window.togglePanel = (id) => document.getElementById(id).classList.toggle('collapsed');
         window.checkAndOpen = (id) => document.getElementById(id).classList.remove('collapsed');
         window.updateBtn = () => { document.getElementById('confirmBtn').innerText = `ยืนยันลงสนาม (${selectedSlots.filter(p=>p).length})`; };
-        window.expandQR = () => { if(!currentSessionId) return; document.getElementById('qr-big').innerHTML = ""; new QRCode(document.getElementById('qr-big'), { text: `https://liff.line.me/2009012689-o7UBlAd7?session=${currentSessionId}`, width: 250, height: 250 }); document.getElementById('qr-overlay').style.display = 'flex'; };
+        
+        window.expandQR = () => { 
+            if(!currentSessionId) return; 
+            document.getElementById('qr-big').innerHTML = ""; 
+            const liffUrl = `https://early-bird-queue.vercel.app/profile.html?session=${currentSessionId}`;
+            new QRCode(document.getElementById('qr-big'), { text: liffUrl, width: 250, height: 250 }); 
+            document.getElementById('sid-text').innerText = "Session ID: " + currentSessionId;
+            document.getElementById('qr-overlay').style.display = 'flex'; 
+        };
+        
         window.checkEmpty = () => { if(document.querySelectorAll('.court-card').length === 0) document.getElementById('empty-msg').style.display = 'block'; };
 
-        // --- Mock Data ---
         document.getElementById('mockBtn').onclick = async () => {
             if(!currentSessionId) return alert("เปิดก๊วนก่อน!");
             const batch = writeBatch(db);
@@ -333,7 +331,7 @@
             const lvls = ['yellow','green','blue','red','black'];
             for (let i = 0; i < 20; i++) {
                 const uid = "mock_" + Date.now() + "_" + i;
-                batch.set(doc(db, `sessions/${currentSessionId}/attendance`, uid), { display_name: names[i], is_playing: false, last_match_end: Date.now() + (i * 100), skill_level: lvls[Math.floor(Math.random()*5)], games_played: 0 });
+                batch.set(doc(db, `sessions/${currentSessionId}/attendance`, uid), { display_name: names[i], is_playing: false, last_match_end: Date.now() + (i * 100), skill_level: lvls[Math.floor(Math.random()*5)], games_played: 0, shuttle_used: 0 });
             }
             await batch.commit();
         };
