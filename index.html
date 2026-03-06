@@ -3,205 +3,153 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Badminton Queue - รายการคิว</title>
+    <title>BadQueue - Live Status</title>
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
-        :root { --primary: #00C853; --bg: #fdfcf0; --card: #ffffff; }
-        body { font-family: 'Kanit', sans-serif; background: var(--bg); margin: 0; padding: 20px; color: #333; }
-        .container { max-width: 500px; margin: 0 auto; text-align: center; }
-        
-        .status-tag { font-size: 0.9rem; padding: 8px 16px; border-radius: 20px; background: #fff; border: 1px solid #ddd; font-weight: 500; display: inline-block; margin-bottom: 20px; }
+        :root { --primary: #06C755; --blue: #2196f3; --bg: #fdfcf0; }
+        body { font-family: 'Kanit', sans-serif; background: var(--bg); margin: 0; padding: 15px; color: #333; }
+        .container { max-width: 500px; margin: 0 auto; }
+        .status-tag { font-size: 0.8rem; padding: 5px 12px; border-radius: 15px; background: #fff; border: 1px solid #ddd; display: inline-block; margin-bottom: 15px; }
         .online { color: #2e7d32; border-color: #a5d6a7; background: #e8f5e9; }
         
-        .btn-checkin { 
-            background: #06C755; color: white; padding: 20px; border-radius: 18px; border: none; 
-            font-size: 1.4rem; font-weight: 600; cursor: pointer; width: 100%; 
-            box-shadow: 0 6px 20px rgba(6,199,85,0.3); margin-bottom: 30px; 
-        }
-        .btn-checkin:disabled { background: #bbb; cursor: not-allowed; box-shadow: none; }
-        
-        /* สไตล์สำหรับปุ่มเมื่อเช็คอินแล้ว */
-        .already-in { background: #e8f5e9; color: #2e7d32; border: 2px dashed #2e7d32; padding: 15px; border-radius: 18px; font-weight: 600; margin-bottom: 30px; }
+        .already-in { background: #e8f5e9; color: #2e7d32; border: 2px dashed #2e7d32; padding: 15px; border-radius: 15px; font-weight: 600; margin-bottom: 20px; text-align: center; }
+        .btn-checkin { background: var(--primary); color: white; padding: 15px; border-radius: 15px; border: none; font-size: 1.2rem; font-weight: 600; width: 100%; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(6,199,85,0.2); }
 
-        .queue-header { text-align: left; margin-bottom: 15px; font-weight: 600; color: #666; }
-        .queue-card { 
-            background: var(--card); padding: 18px; border-radius: 15px; margin-bottom: 12px; 
-            text-align: left; border-left: 8px solid #2196f3; box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-        }
-        .match-info { font-size: 1.1rem; font-weight: 600; display: flex; justify-content: space-between; align-items: center; }
-        .vs { font-size: 0.8rem; color: #999; }
+        .section-title { font-size: 1rem; font-weight: 600; margin: 20px 0 10px; display: flex; align-items: center; gap: 8px; }
+        .card { background: white; padding: 15px; border-radius: 12px; margin-bottom: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border-left: 5px solid #ddd; }
+        .card-playing { border-left-color: var(--primary); background: #f1f8e9; }
+        .card-waiting { border-left-color: var(--blue); }
+        
+        .match-grid { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; text-align: center; font-weight: 500; }
+        .vs { font-size: 0.7rem; color: #999; font-weight: normal; }
+        .badge { font-size: 0.7rem; padding: 2px 8px; border-radius: 10px; color: white; margin-left: 5px; }
+        
+        /* สไตล์รายชื่อคนมาถึงแล้ว */
+        .member-chip { display: inline-block; background: #fff; border: 1px solid #eee; padding: 5px 12px; border-radius: 20px; font-size: 0.85rem; margin: 3px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
     </style>
 </head>
 <body>
     <div class="container">
-        <div id="session-status" class="status-tag">⌛ กำลังเชื่อมต่อระบบ...</div>
+        <div id="session-status" class="status-tag">⌛ เชื่อมต่อ...</div>
+        <p id="user-welcome" style="margin: 0 0 15px; color: #666; font-size: 0.9rem;">ยินดีต้อนรับนักกีฬา</p>
 
-        <h1 style="margin-bottom: 5px;">🏸 BadQueue</h1>
-        <p id="user-welcome" style="color: #666; margin-bottom: 25px;">ยินดีต้อนรับนักกีฬา</p>
-        
         <div id="action-area">
-            <button class="btn-checkin" id="btn-checkin" onclick="goToCheckin()" disabled>
-                รอแอดมินเปิดก๊วน...
-            </button>
+            <button class="btn-checkin" onclick="goToCheckin()">➕ ลงชื่อเข้าก๊วน</button>
         </div>
 
-        <div class="queue-header">⏳ คิวที่กำลังรอแข่ง</div>
-        <div id="queue-list">
-            <p style="color: #999; margin-top: 20px;">กำลังโหลดข้อมูลคิว...</p>
+        <div id="display-content">
+            </div>
+
+        <div class="section-title">👥 สมาชิกที่มาถึงแล้ว</div>
+        <div id="member-list">
+            <p style="color:#999; font-size:0.8rem;">กำลังโหลดรายชื่อ...</p>
         </div>
     </div>
 
     <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getFirestore, collection, query, where, onSnapshot, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, query, where, onSnapshot, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-    const firebaseConfig = { 
-        apiKey: "AIzaSyDQbnx83sbs1sO4xsuLUV50uxbBinr2VtY", 
-        authDomain: "earlybird-queue.firebaseapp.com", 
-        projectId: "earlybird-queue", 
-        storageBucket: "earlybird-queue.firebasestorage.app", 
-        messagingSenderId: "310694006567", 
-        appId: "1:310694006567:web:f56fc19ed03b81bf8c2302" 
-    };
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
+        const firebaseConfig = { 
+            apiKey: "AIzaSyDQbnx83sbs1sO4xsuLUV50uxbBinr2VtY", 
+            authDomain: "earlybird-queue.firebaseapp.com", 
+            projectId: "earlybird-queue", 
+            storageBucket: "earlybird-queue.firebasestorage.app", 
+            messagingSenderId: "310694006567", 
+            appId: "1:310694006567:web:f56fc19ed03b81bf8c2302" 
+        };
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
 
-    let activeSid = null;
-    let myUid = null;
+        let activeSid = null;
+        let myUid = null;
 
-    // 1. ฟังก์ชันหลัก: เริ่มต้นระบบ
-    async function startSystem() {
-        // รอโหลด LIFF ก่อน
-        try {
-            await liff.init({ liffId: "2009012689-o7UBlAd7" });
-            if (liff.isLoggedIn()) {
-                const profile = await liff.getProfile();
-                myUid = profile.userId;
-                document.getElementById('user-welcome').innerText = "สวัสดีคุณ " + profile.displayName;
-            }
-        } catch (err) {
-            console.error("LIFF Error:", err);
+        async function init() {
+            try {
+                await liff.init({ liffId: "2009012689-o7UBlAd7" });
+                if (liff.isLoggedIn()) {
+                    const p = await liff.getProfile();
+                    myUid = p.userId;
+                    document.getElementById('user-welcome').innerText = "สวัสดีคุณ " + p.displayName;
+                }
+            } catch(e) {}
+
+            // ฟังสถานะก๊วน
+            const q = query(collection(db, "sessions"), where("status", "==", "active"));
+            onSnapshot(q, (snap) => {
+                if(!snap.empty) {
+                    const d = snap.docs.sort((a,b) => b.data().created_at - a.data().created_at)[0];
+                    activeSid = d.id;
+                    document.getElementById('session-status').innerText = "🟢 ก๊วน: " + activeSid;
+                    document.getElementById('session-status').classList.add('online');
+                    updateUI(activeSid);
+                }
+            });
         }
 
-        // 2. ดึงข้อมูลก๊วนจาก Firebase
-        const q = query(collection(db, "sessions"), where("status", "==", "active"));
-        onSnapshot(q, async (snapshot) => {
-            if (!snapshot.empty) {
-                // เรียงหา Session ล่าสุด
-                const docs = snapshot.docs.sort((a, b) => (b.data().created_at?.seconds || 0) - (a.data().created_at?.seconds || 0));
-                activeSid = docs[0].id;
-
-                document.getElementById('session-status').innerText = "🟢 เปิดก๊วน: " + activeSid;
-                document.getElementById('session-status').className = "status-tag online";
-                
-                // *** สำคัญ: พอได้ SID แล้ว ต้องเช็คสถานะปุ่มและโหลดคิวทันที ***
-                await updateUIState(); 
-                listenToQueue(activeSid);
-            } else {
-                activeSid = null;
-                document.getElementById('session-status').innerText = "🔴 ปิดก๊วนชั่วคราว";
-                document.getElementById('action-area').innerHTML = `<button class="btn-checkin" disabled>แอดมินยังไม่เปิดก๊วน</button>`;
-                document.getElementById('queue-list').innerHTML = "<p style='color:#bbb;'>ไม่มีคิวในระบบ</p>";
+        async function updateUI(sid) {
+            // 1. เช็คว่าเราเช็คอินหรือยัง
+            if (myUid) {
+                const uDoc = await getDoc(doc(db, `sessions/${sid}/attendance`, myUid));
+                if (uDoc.exists()) {
+                    document.getElementById('action-area').innerHTML = `<div class="already-in">🎉 คุณลงชื่อเรียบร้อยแล้ว</div>`;
+                }
             }
-        });
-    }
 
-    // ฟังก์ชันอัปเดตปุ่ม (เช็คว่าเช็คอินหรือยัง)
-    async function updateUIState() {
-        const actionArea = document.getElementById('action-area');
-        
-        // กรณี 1: ยังไม่ได้ Login
-        if (!myUid) {
-            actionArea.innerHTML = `<button class="btn-checkin" onclick="goToCheckin()">➕ ลงชื่อเข้าคิวตอนนี้</button>`;
-            return;
-        }
+            // 2. ฟังข้อมูลสนามและคิว (Live)
+            onSnapshot(doc(db, "sessions", sid), (snap) => {
+                const data = snap.data();
+                const content = document.getElementById('display-content');
+                let html = "";
 
-        // กรณี 2: Login แล้ว -> เช็คในฐานข้อมูลว่ามีชื่อในก๊วนนี้หรือยัง
-        try {
-            const userDoc = await getDoc(doc(db, `sessions/${activeSid}/attendance`, myUid));
-            if (userDoc.exists()) {
-                // ถ้ามีชื่อแล้ว เปลี่ยนปุ่มเป็นสถานะสีเขียว
-                actionArea.innerHTML = `
-                    <div class="already-in">
-                        🎉 คุณลงชื่อเข้าก๊วนเรียบร้อยแล้ว<br>
-                        <small>รอแอดมินจัดคิวให้ครับ</small>
-                    </div>
-                `;
-            } else {
-                // ถ้ายังไม่มีชื่อ ให้โชว์ปุ่มลงชื่อปกติ
-                actionArea.innerHTML = `<button class="btn-checkin" onclick="goToCheckin()">➕ ลงชื่อเข้าคิวตอนนี้</button>`;
-            }
-        } catch (e) {
-            console.error("Check Attendance Error:", e);
-        }
-    }
+                // ส่วนที่ 1: สนาม (Live Courts)
+                const courts = data.live_courts || [];
+                if(courts.length > 0) {
+                    html += `<div class="section-title">🏸 สถานะสนาม</div>`;
+                    courts.forEach(c => {
+                        const tA = c.slots.slice(0,2).map(s => s.html || "ว่าง").join(" + ");
+                        const tB = c.slots.slice(2,4).map(s => s.html || "ว่าง").join(" + ");
+                        html += `
+                            <div class="card ${c.playing ? 'card-playing' : ''}">
+                                <div style="font-size:0.75rem; font-weight:bold; margin-bottom:5px;">สนาม ${c.courtNum} - ${c.status}</div>
+                                <div class="match-grid"><div>${tA}</div><div class="vs">VS</div><div>${tB}</div></div>
+                            </div>`;
+                    });
+                }
 
-    // ฟังก์ชันฟังการอัปเดตคิว (Real-time)
-    function listenToQueue(sid) {
-        onSnapshot(doc(db, "sessions", sid), (snap) => {
-            const data = snap.data();
-            const listDiv = document.getElementById('queue-list');
-            
-            // 1. ดึงข้อมูลสนามที่กำลังแข่ง (Live Courts)
-            const liveCourts = data?.live_courts || [];
-            let courtsHtml = "";
-            
-            if (liveCourts.length > 0) {
-                courtsHtml = `<div style="text-align:left; margin: 10px 0; font-weight:bold; color:#2e7d32;">🏸 สถานะสนามขณะนี้</div>`;
-                liveCourts.forEach(c => {
-                    const teamA = c.slots.slice(0, 2).map(s => s.html).join(" + ");
-                    const teamB = c.slots.slice(2, 4).map(s => s.html).join(" + ");
-                    const statusColor = c.playing ? "#4caf50" : "#9e9e9e";
-                    
-                    courtsHtml += `
-                        <div class="queue-card" style="border-left-color: ${statusColor}; background: ${c.playing ? '#f1f8e9' : '#fff'};">
-                            <div style="font-size: 0.8rem; color: ${statusColor}; font-weight: bold;">สนาม ${c.courtNum} (${c.status})</div>
-                            <div class="match-info">
-                                <span>${teamA}</span> <span class="vs">VS</span> <span>${teamB}</span>
-                            </div>
-                        </div>`;
+                // ส่วนที่ 2: คิวรอ (Middle Queue)
+                const queue = data.middle_queue || [];
+                if(queue.length > 0) {
+                    html += `<div class="section-title">⏳ คิวถัดไป</div>`;
+                    queue.forEach((q, i) => {
+                        const qA = q.slots.slice(0,2).map(s => s.name).join(" + ");
+                        const qB = q.slots.slice(2,4).map(s => s.name).join(" + ");
+                        html += `
+                            <div class="card card-waiting">
+                                <div style="font-size:0.75rem; color:#666;">คิวรอที่ ${i+1}</div>
+                                <div class="match-grid"><div>${qA}</div><div class="vs">VS</div><div>${qB}</div></div>
+                            </div>`;
+                    });
+                }
+                content.innerHTML = html || "<p style='text-align:center; color:#999; margin:20px 0;'>รอแอดมินจัดคิวแข่ง...</p>";
+            });
+
+            // 3. ฟังรายชื่อคนมาถึง (Attendance)
+            onSnapshot(collection(db, `sessions/${sid}/attendance`), (snap) => {
+                const list = document.getElementById('member-list');
+                if(snap.empty) { list.innerHTML = "ยังไม่มีคนเช็คอิน"; return; }
+                let memHtml = "";
+                snap.forEach(doc => {
+                    const m = doc.data();
+                    memHtml += `<div class="member-chip">${m.display_name}</div>`;
                 });
-            }
-
-            // 2. ดึงข้อมูลคิวรอ (Middle Queue)
-            const middleQueue = data?.middle_queue || [];
-            let queueHtml = "";
-            
-            if (middleQueue.length > 0) {
-                queueHtml = `<div style="text-align:left; margin: 20px 0 10px; font-weight:bold; color:#1976d2;">⏳ คิวถัดไป</div>`;
-                middleQueue.forEach((item, i) => {
-                    const qA = item.slots.slice(0, 2).filter(s => s).map(s => s.name).join(" + ");
-                    const qB = item.slots.slice(2, 4).filter(s => s).map(s => s.name).join(" + ");
-                    queueHtml += `
-                        <div class="queue-card">
-                            <div style="font-size: 0.8rem; color: #999;">คิวรอที่ ${i+1}</div>
-                            <div class="match-info">
-                                <span>${qA}</span> <span class="vs">VS</span> <span>${qB}</span>
-                            </div>
-                        </div>`;
-                });
-            }
-
-            // รวมร่างการแสดงผล
-            if (liveCourts.length === 0 && middleQueue.length === 0) {
-                listDiv.innerHTML = "<p style='color:#bbb; margin-top:20px;'>ยังไม่มีข้อมูลการจัดสนาม</p>";
-            } else {
-                listDiv.innerHTML = courtsHtml + queueHtml;
-            }
-        });
-    }
-
-    window.goToCheckin = () => {
-        if (activeSid) {
-            location.href = `profile.html?session=${activeSid}`;
-        } else {
-            alert("กรุณารอแอดมินเปิดก๊วนก่อนครับ");
+                list.innerHTML = memHtml;
+            });
         }
-    };
 
-    // เริ่มทำงาน
-    startSystem();
-</script>
+        window.goToCheckin = () => { if(activeSid) location.href=`profile.html?session=${activeSid}`; };
+        init();
+    </script>
 </body>
 </html>
