@@ -67,6 +67,26 @@
             console.log(m);
         }
 
+        // --- ตรวจสอบค่าที่ได้รับทันทีที่โหลดหน้า ---
+        const urlParams = new URLSearchParams(window.location.search);
+        const sidFromUrl = urlParams.get('session');
+        const sidFromStore = localStorage.getItem('last_sid');
+
+        console.log("DEBUG: Session จาก URL คือ:", sidFromUrl);
+        console.log("DEBUG: Session ในความจำเครื่องคือ:", sidFromStore);
+
+        // ถ้าไม่มีทั้งคู่ ให้แสดง Error บนหน้าจอเลย
+        if (!sidFromUrl && !sidFromStore) {
+            document.body.innerHTML = `
+                <div style="padding:20px; color:red; text-align:center;">
+                    <h3>❌ ตรวจไม่พบ Session ID</h3>
+                    <p>หน้า Profile ไม่ได้รับค่ารหัสก๊วน</p>
+                    <p style="font-size:12px; color:#666;">URL ปัจจุบัน: ${window.location.href}</p>
+                    <button onclick="window.location.href='index.html'">กลับไปหน้าหลัก</button>
+                </div>
+            `;
+        }
+
         window.onload = async () => {
             try {
                 await liff.init({ liffId: "2009012689-o7UBlAd7" });
