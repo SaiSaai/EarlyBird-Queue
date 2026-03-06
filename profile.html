@@ -65,37 +65,55 @@
 
         async function initLIFF() {
             try {
-                // เปลี่ยนเป็น LIFF ID ของคุณ
-                await liff.init({ liffId: "2009012689-o7UBlAd7" }); 
+                // 1. Init LIFF
+                await liff.init({ liffId: "2009012689-o7UBlAd7" });
                 
+                // 2. ตรวจสอบการ Login และความถูกต้องของ Token
                 if (!liff.isLoggedIn()) {
                     liff.login();
                     return;
                 }
 
-                const profile = await liff.getProfile();
-                uid = profile.userId;
-                lineDisplayName = profile.displayName;
-                linePic = profile.pictureUrl;
+                // --- เพิ่มส่วนนี้เพื่อแก้ปัญหา Token Expire ---
+                try {
+                    const profile = await liff.getProfile();
+                    uid = profile.userId;
+                    lineDisplayName = profile.displayName;
+                    linePic = profile.pictureUrl;
+                } catch (tokenErr) {
+                    // ถ้าดึง Profile ไม่ได้ (เช่น Token หมดอายุ) ให้เคลียร์ค่าแล้ว Login ใหม่
+                    console.error("Token error, logging out...", tokenErr);
+                    liff.logout();
+                    liff.login();
+                    return;
+                }
+                // ------------------------------------------
 
+                // 3. ดึง Session ID (เหมือนเดิม)
                 const params = new URLSearchParams(window.location.search);
                 sid = params.get('session') || localStorage.getItem('last_sid');
 
                 if (!sid) {
-                    document.getElementById('loading-text').innerText = "❌ ไม่พบรหัสก๊วน กรุณาสแกนใหม่";
+                    document.getElementById('status-msg').innerHTML = "⚠️ ไม่พบรหัสก๊วน";
                     return;
                 }
 
-                // ตรวจสอบว่าเคยเช็คอินใน Session นี้หรือยัง
-                const userDoc = await getDoc(doc(db, `sessions/${sid}/attendance`, uid));
-                if (userDoc.exists()) {
+                // 4. เช็ค Firebase (เหมือนเดิม)
+                const userSnap = await getDoc(doc(db, `sessions/${sid}/attendance`, uid));
+                if (userSnap.exists()) {
                     showSuccess();
                 } else {
                     showForm();
                 }
             } catch (err) {
-                console.error(err);
-                alert("LIFF Error: " + err.message);
+                console.error("LIFF Start Error:", err);
+                // แทนที่จะ Alert ให้ลอง Refresh หน้าจอแทนถ้าเป็น Error เกี่ยวกับ Token
+                if (err.message.includes("expire")) {
+                    liff.logout();
+                    liff.login();
+                } else {
+                    document.getElementById('status-msg').innerText = "เกิดข้อผิดพลาด: " + err.message;
+                }
             }
         }
 
