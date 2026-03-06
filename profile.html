@@ -4,106 +4,113 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Profile - Badminton</title>
-    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
-        :root { --primary: #00C853; --bg: #fdfcf0; }
-        * { box-sizing: border-box; font-family: 'Kanit', sans-serif; }
-        body { background: var(--bg); margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
-        .card { background: white; width: 100%; max-width: 400px; border-radius: 25px; padding: 25px; box-shadow: 0 8px 25px rgba(0,0,0,0.05); text-align: center; }
-        .hidden { display: none !important; }
-        input, select { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 12px; }
-        .btn { width: 100%; padding: 14px; border: none; border-radius: 15px; font-weight: 600; cursor: pointer; margin-top: 10px; }
-        .btn-primary { background: var(--primary); color: white; }
-        .btn-index { background: #2196f3; color: white; margin-top: 20px; }
-        .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; }
-        .stat-item { background: #f9f9f9; padding: 15px; border-radius: 12px; }
+        body { font-family: 'Kanit', sans-serif; background: #fdfcf0; padding: 20px; text-align: center; }
+        .card { background: white; padding: 25px; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); max-width: 400px; margin: auto; }
+        .profile-img { width: 90px; height: 90px; border-radius: 50%; border: 3px solid #4caf50; margin-bottom: 15px; }
+        .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 20px 0; }
+        .stat-box { background: #f8f9fa; padding: 15px; border-radius: 15px; }
+        .btn { border: none; padding: 12px; border-radius: 12px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 10px; }
+        .btn-green { background: #00b900; color: white; }
+        .btn-blue { background: #2196f3; color: white; }
+        input { width: 100%; padding: 10px; border-radius: 10px; border: 1px solid #ddd; margin-bottom: 10px; box-sizing: border-box; text-align: center; }
     </style>
 </head>
 <body>
+    <div class="card" id="app">
+        <div id="loader">กำลังโหลด...</div>
+        <div id="content" style="display:none;">
+            <img id="user-img" class="profile-img">
+            <h2 id="user-name"></h2>
+            
+            <div id="reg-section" style="display:none;">
+                <p>เลือกระดับฝีมือเพื่อเช็คอิน</p>
+                <select id="skill-level" style="width:100%; padding:10px; border-radius:10px; margin-bottom:15px;">
+                    <option value="yellow">มือใหม่หัดตี</option>
+                    <option value="green">ตีได้ซักพักแล้วยังไม่เก่ง</option>
+                    <option value="blue">ตีได้</option>
+                    <option value="red">ตีเก่ง</option>
+                    <option value="black">ระดับเทพ</option>
+                </select>
+                <button class="btn btn-green" onclick="handleCheckin()">ยืนยันเช็คอิน</button>
+            </div>
 
-    <div id="loading">กำลังเตรียมข้อมูล...</div>
-
-    <div id="reg-zone" class="card hidden">
-        <h3>ยินดีต้อนรับ! 👋</h3>
-        <p>ระบุชื่อเล่นเพื่อเข้าก๊วน</p>
-        <input type="text" id="reg-name" placeholder="ชื่อเล่น">
-        <select id="reg-skill">
-            <option value="green">มือใหม่</option>
-            <option value="blue">ทั่วไป</option>
-            <option value="red">แข็งแกร่ง</option>
-        </select>
-        <button class="btn btn-primary" onclick="doRegister()">เข้าก๊วนเลย</button>
-    </div>
-
-    <div id="profile-zone" class="card hidden">
-        <img id="user-img" src="" style="width:90px; height:90px; border-radius:50%; border:3px solid var(--primary);">
-        <h2 id="u-name" style="margin:10px 0 0 0;">-</h2>
-        <div class="stat-grid">
-            <div class="stat-item"><small>แข่งไป</small><br><b id="u-games" style="color:var(--primary); font-size:1.5em;">0</b> เกม</div>
-            <div class="stat-item"><small>ใช้ลูก</small><br><b id="u-shuttles" style="color:var(--primary); font-size:1.5em;">0</b> ลูก</div>
+            <div id="info-section" style="display:none;">
+                <div class="stat-grid">
+                    <div class="stat-box">🏸 ลูกแบด<br><b id="stat-shuttle">0</b> ลูก</div>
+                    <div class="stat-box">💰 ยอดเงิน<br><b id="stat-money">0</b> บ.</div>
+                </div>
+                <input type="text" id="edit-name" placeholder="เปลี่ยนชื่อเล่น">
+                <button class="btn btn-blue" onclick="handleUpdate()">อัปเดตชื่อ</button>
+                <button class="btn btn-outline" style="background:#eee;" onclick="goToDashboard()">ดูคิวรวมทั้งหมด 📊</button>
+            </div>
         </div>
-        <button class="btn btn-index" onclick="goToQueue()">⌛ ไปหน้าดูคิวกลาง</button>
-        <p style="font-size:12px; color:#ccc; margin-top:15px;" id="sid-display"></p>
     </div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getFirestore, doc, getDoc, setDoc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        const firebaseConfig = { apiKey: "AIzaSyDQbnx83sbs1sO4xsuLUV50uxbBinr2VtY", authDomain: "earlybird-queue.firebaseapp.com", projectId: "earlybird-queue", storageBucket: "earlybird-queue.firebasestorage.app", messagingSenderId: "310694006567", appId: "1:310694006567:web:f56fc19ed03b81bf8c2302" };
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
+    const firebaseConfig = { /* คัดลอก config ของคุณมาวาง */ };
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
 
-        let uid, sid;
+    const urlParams = new URLSearchParams(window.location.search);
+    const sessionId = urlParams.get('session');
+    let userProfile = null;
 
-        window.onload = async () => {
-            await liff.init({ liffId: "2009012689-o7UBlAd7" });
-            if (!liff.isLoggedIn()) { liff.login(); return; }
-            const profile = await liff.getProfile();
-            uid = profile.userId;
-            document.getElementById('user-img').src = profile.pictureUrl;
+    async function init() {
+        await liff.init({ liffId: "YOUR_LIFF_ID" });
+        if (!liff.isLoggedIn()) { liff.login(); return; }
+        userProfile = await liff.getProfile();
+        checkUser();
+    }
 
-            const params = new URLSearchParams(window.location.search);
-            sid = params.get('session') || localStorage.getItem('last_sid');
-            
-            if (!sid) {
-                document.getElementById('loading').innerText = "❌ กรุณาสแกน QR ใหม่";
-                return;
-            }
-            localStorage.setItem('last_sid', sid);
-            document.getElementById('sid-display').innerText = "ก๊วน ID: " + sid;
-            
-            const snap = await getDoc(doc(db, `sessions/${sid}/attendance`, uid));
-            document.getElementById('loading').classList.add('hidden');
-
-            if (snap.exists()) {
-                showData(snap.data());
+    async function checkUser() {
+        const docRef = doc(db, `sessions/${sessionId}/attendance`, userProfile.userId);
+        onSnapshot(docRef, (snap) => {
+            document.getElementById('loader').style.display = 'none';
+            document.getElementById('content').style.display = 'block';
+            const data = snap.data();
+            if (data) {
+                document.getElementById('info-section').style.display = 'block';
+                document.getElementById('reg-section').style.display = 'none';
+                document.getElementById('user-name').innerText = data.display_name;
+                document.getElementById('user-img').src = data.picture_url;
+                document.getElementById('stat-shuttle').innerText = data.shuttle_used || 0;
+                
+                // คำนวณเงินเบื้องต้น (ดึงราคาลูกแบดจากที่ตกลงกัน เช่น 30 บาท)
+                // ในอนาคตสามารถดึงค่ากลางจาก Firebase มาคำนวณได้
+                const money = (data.shuttle_used || 0) * 30 + 60; // 60 คือค่าคอร์ทสมมติ
+                document.getElementById('stat-money').innerText = money;
             } else {
-                document.getElementById('reg-zone').classList.remove('hidden');
+                document.getElementById('reg-section').style.display = 'block';
+                document.getElementById('user-name').innerText = userProfile.displayName;
+                document.getElementById('user-img').src = userProfile.pictureUrl;
             }
-        };
+        });
+    }
 
-        window.doRegister = async () => {
-            const name = document.getElementById('reg-name').value.trim();
-            if(!name) return;
-            const data = { display_name: name, skill_level: document.getElementById('reg-skill').value, games_played: 0, shuttle_used: 0, is_playing: false };
-            await setDoc(doc(db, `sessions/${sid}/attendance`, uid), data);
-            showData(data);
-        };
+    window.handleCheckin = async () => {
+        await setDoc(doc(db, `sessions/${sessionId}/attendance`, userProfile.userId), {
+            display_name: userProfile.displayName,
+            picture_url: userProfile.pictureUrl,
+            skill_level: document.getElementById('skill-level').value,
+            is_playing: false, is_paid: false, games_played: 0, shuttle_used: 0, last_match_end: Date.now()
+        });
+    };
 
-        function showData(data) {
-            document.getElementById('reg-zone').classList.add('hidden');
-            document.getElementById('profile-zone').classList.remove('hidden');
-            onSnapshot(doc(db, `sessions/${sid}/attendance`, uid), (d) => {
-                const res = d.data();
-                document.getElementById('u-name').innerText = res.display_name;
-                document.getElementById('u-games').innerText = res.games_played || 0;
-                document.getElementById('u-shuttles').innerText = res.shuttle_used || 0;
-            });
-        }
+    window.handleUpdate = async () => {
+        const newName = document.getElementById('edit-name').value;
+        if(newName) await updateDoc(doc(db, `sessions/${sessionId}/attendance`, userProfile.userId), { display_name: newName });
+        alert("อัปเดตแล้ว");
+    };
 
-        window.goToQueue = () => location.href = `index.html?session=${sid}`;
-    </script>
+    window.goToDashboard = () => { location.href = `index.html?session=${sessionId}`; };
+
+    init();
+</script>
 </body>
 </html>
