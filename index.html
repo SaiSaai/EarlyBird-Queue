@@ -3,139 +3,44 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Queue Member</title>
-    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <title>Queue Board</title>
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Kanit', sans-serif; padding: 20px; background: #fdfcf0; }
-        .card { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 10px; text-align: left; }
-        .hidden { display: none; }
-        button { width: 100%; padding: 12px; background: #00C853; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
-        input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; }
-        #log-area { background: #000; color: #0f0; padding: 10px; font-size: 11px; border-radius: 8px; margin-top: 20px; text-align: left; white-space: pre-wrap; }
+        .board { max-width: 500px; margin: 0 auto; }
+        .queue-item { background: white; padding: 15px; border-radius: 12px; margin-bottom: 10px; border-left: 5px solid #2196f3; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .btn-back { position: fixed; top: 10px; left: 10px; background: #fff; padding: 5px 12px; border-radius: 15px; text-decoration: none; font-size: 12px; border: 1px solid #ddd; }
     </style>
 </head>
 <body>
-
-    <h2 id="ui-title">🏸 Badminton Queue</h2>
-    <div id="ui-status">กำลังตรวจสอบระบบ...</div>
-
-    <div id="reg-zone" class="hidden">
-        <div class="card">
-            <h3>ลงชื่อเข้าก๊วน</h3>
-            <input type="text" id="user-name" placeholder="ระบุชื่อเล่น">
-            <button onclick="saveUser()">ยืนยัน</button>
-        </div>
+    <a href="profile.html" class="btn-back">👤 โปรไฟล์ฉัน</a>
+    <div class="board">
+        <h2 style="text-align:center;">⌛ คิวรอลงสนาม</h2>
+        <div id="list">กำลังโหลดคิว...</div>
     </div>
-
-    <div id="queue-zone" class="hidden">
-        <div class="card" id="user-display" style="background:#e8f5e9"></div>
-        <h4>⏳ รายการคิวตอนนี้</h4>
-        <div id="queue-list"></div>
-    </div>
-
-    <div id="log-area">ระบบเตรียมพร้อม...</div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = { apiKey: "AIzaSyDQbnx83sbs1sO4xsuLUV50uxbBinr2VtY", authDomain: "earlybird-queue.firebaseapp.com", projectId: "earlybird-queue", storageBucket: "earlybird-queue.firebasestorage.app", messagingSenderId: "310694006567", appId: "1:310694006567:web:f56fc19ed03b81bf8c2302" };
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        let myUid = "";
-        let mySid = "";
+        const sid = new URLSearchParams(window.location.search).get('session') || localStorage.getItem('last_sid');
 
-        function print(msg) {
-            document.getElementById('log-area').innerText += "\n> " + msg;
-            document.getElementById('ui-status').innerText = msg;
-        }
-
-        window.onload = async () => {
-            try {
-                print("กำลังโหลด LIFF...");
-                await liff.init({ liffId: "2009012689-o7UBlAd7" });
-
-                if (!liff.isLoggedIn()) {
-                    print("รอสักครู่... กำลังพาไปหน้า Login");
-                    liff.login();
-                    return;
-                }
-
-                const profile = await liff.getProfile();
-                myUid = profile.userId;
-                print("สวัสดี " + profile.displayName);
-
-                const params = new URLSearchParams(window.location.search);
-                mySid = params.get('session') || localStorage.getItem('last_sid');
-
-                if (!mySid) {
-                    print("❌ ไม่พบ ID ก๊วน (กรุณาสแกน QR ใหม่)");
-                    return;
-                }
-                localStorage.setItem('last_sid', mySid);
-                print("เข้าสู่ก๊วน ID: " + mySid);
-
-                // เริ่มตรวจสอบ User
-                checkUserStatus();
-
-            } catch (err) {
-                print("💥 เกิดข้อผิดพลาด: " + err.message);
-            }
-        };
-
-        async function checkUserStatus() {
-            try {
-                print("เช็คสถานะเช็คอินใน Firebase...");
-                const docPath = `sessions/${mySid}/attendance/${myUid}`;
-                print("Path: " + docPath);
-                
-                const snap = await getDoc(doc(db, "sessions", mySid, "attendance", myUid));
-
-                document.getElementById('ui-status').classList.add('hidden');
-
-                if (snap.exists()) {
-                    print("พบข้อมูลแล้ว!");
-                    renderQueue(snap.data());
-                } else {
-                    print("ยังไม่ได้ลงชื่อสมัคร");
-                    document.getElementById('reg-zone').classList.remove('hidden');
-                }
-            } catch (e) {
-                print("🔥 Firebase Error: " + e.message);
-            }
-        }
-
-        window.saveUser = async () => {
-            const name = document.getElementById('user-name').value.trim();
-            if(!name) return;
-            print("กำลังบันทึกชื่อ...");
-            const data = { display_name: name, skill_level: 'green', is_playing: false, last_match_end: Date.now() };
-            try {
-                await setDoc(doc(db, "sessions", mySid, "attendance", myUid), data);
-                renderQueue(data);
-            } catch (e) { print("บันทึกไม่สำเร็จ: " + e.message); }
-        };
-
-        function renderQueue(userData) {
-            document.getElementById('reg-zone').classList.add('hidden');
-            document.getElementById('queue-zone').classList.remove('hidden');
-            document.getElementById('user-display').innerText = "คุณ: " + userData.display_name;
-            
-            print("กำลังติดตามคิว Real-time...");
-            onSnapshot(doc(db, "sessions", mySid), (d) => {
-                if(!d.exists()) {
-                    print("⚠️ ไม่พบเอกสารก๊วนนี้ในระบบ");
-                    return;
-                }
-                const q = d.data().middle_queue || [];
-                document.getElementById('queue-list').innerHTML = q.length ? 
-                    q.map((c, i) => `<div class="card">คิว ${i+1}: ${c.slots.filter(s=>s).map(s=>s.name).join(", ")}</div>`).join('') :
-                    "<p>ไม่มีคิวรอ</p>";
-            }, (err) => {
-                print("Snapshot Error: " + err.message);
+        if (sid) {
+            onSnapshot(doc(db, "sessions", sid), (d) => {
+                const q = d.data()?.middle_queue || [];
+                document.getElementById('list').innerHTML = q.length ? q.map((c, i) => `
+                    <div class="queue-item">
+                        <b>คิวที่ ${i+1}</b><br>
+                        ${c.slots.filter(s=>s).map(s=>s.name).join(" vs ")}
+                    </div>
+                `).join('') : "ยังไม่มีคิวรอ";
             });
+        } else {
+            document.getElementById('list').innerText = "ไม่พบรหัสก๊วน";
         }
     </script>
 </body>
