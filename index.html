@@ -3,68 +3,71 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Badminton Queue - ดูคิวและเช็คอิน</title>
+    <title>Badminton Queue</title>
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
         :root { --primary: #00C853; --bg: #fdfcf0; }
         body { font-family: 'Kanit', sans-serif; background: var(--bg); margin: 0; padding: 20px; text-align: center; }
-        .container { max-width: 500px; margin: 0 auto; }
-        .btn-checkin { background: #06C755; color: white; padding: 15px 30px; border-radius: 50px; border: none; font-size: 1.2rem; font-weight: 600; cursor: pointer; box-shadow: 0 4px 15px rgba(6,199,85,0.3); width: 100%; margin-bottom: 30px; }
-        .queue-card { background: white; padding: 15px; border-radius: 15px; margin-bottom: 12px; text-align: left; border-left: 6px solid #2196f3; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
-        .nav-bar { display: flex; justify-content: space-between; margin-bottom: 20px; }
+        .btn-checkin { background: #06C755; color: white; padding: 18px; border-radius: 50px; border: none; font-size: 1.3rem; font-weight: 600; cursor: pointer; width: 100%; max-width: 400px; box-shadow: 0 4px 15px rgba(6,199,85,0.3); margin-bottom: 20px; }
+        .queue-card { background: white; padding: 15px; border-radius: 15px; margin-bottom: 12px; text-align: left; border-left: 6px solid #2196f3; box-shadow: 0 2px 10px rgba(0,0,0,0.05); max-width: 400px; margin-left: auto; margin-right: auto; }
+        .status-tag { font-size: 0.8rem; padding: 4px 12px; border-radius: 20px; background: #eee; color: #666; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="nav-bar">
-            <button onclick="location.href='profile.html'" style="background:none; border:1px solid #ccc; border-radius:10px; padding:5px 15px;">👤 โปรไฟล์ของฉัน</button>
-            <span id="session-label" style="color:#888; font-size:0.8rem;"></span>
-        </div>
-
-        <h1>🏸 คิวรอสนาม</h1>
-        
-        <button class="btn-checkin" onclick="startCheckin()">🟢 กดเช็คอินเข้าก๊วน</button>
-
-        <div id="queue-list">กำลังโหลดคิว...</div>
+    <div style="margin-bottom: 20px;">
+        <span id="session-status" class="status-tag">กำลังค้นหาก๊วนที่เปิดอยู่...</span>
     </div>
+
+    <button class="btn-checkin" id="btn-checkin" onclick="goToCheckin()">🏸 เช็คอินเข้าก๊วนตอนนี้</button>
+
+    <div id="queue-list">กำลังโหลดคิว...</div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, query, where, orderBy, limit, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = { apiKey: "AIzaSyDQbnx83sbs1sO4xsuLUV50uxbBinr2VtY", authDomain: "earlybird-queue.firebaseapp.com", projectId: "earlybird-queue", storageBucket: "earlybird-queue.firebasestorage.app", messagingSenderId: "310694006567", appId: "1:310694006567:web:f56fc19ed03b81bf8c2302" };
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // ดึง Session ID จาก URL (Admin ส่งให้) หรือจากเครื่อง
-        const urlParams = new URLSearchParams(window.location.search);
-        const sid = urlParams.get('session') || localStorage.getItem('last_sid');
+        let activeSid = null;
 
-        if (sid) {
-            localStorage.setItem('last_sid', sid);
-            document.getElementById('session-label').innerText = "ก๊วน: " + sid;
-            
-            // Listen คิวกลาง
+        // 1. ดึงก๊วนล่าสุดที่ Status เป็น active
+        const q = query(collection(db, "sessions"), where("status", "==", "active"), orderBy("created_at", "desc"), limit(1));
+        
+        onSnapshot(q, (snap) => {
+            if (!snap.empty) {
+                const doc = snap.docs[0];
+                activeSid = doc.id;
+                document.getElementById('session-status').innerText = "🟢 ก๊วนที่เปิดอยู่: " + activeSid;
+                document.getElementById('session-status').style.background = "#e8f5e9";
+                document.getElementById('session-status').style.color = "#2e7d32";
+                loadQueue(activeSid);
+            } else {
+                document.getElementById('session-status').innerText = "🔴 ยังไม่มีการเปิดก๊วนในขณะนี้";
+                document.getElementById('btn-checkin').style.opacity = "0.5";
+                document.getElementById('queue-list').innerText = "กรุณารอแอดมินเปิดก๊วน";
+            }
+        });
+
+        function loadQueue(sid) {
             onSnapshot(doc(db, "sessions", sid), (snap) => {
                 const data = snap.data();
                 const list = document.getElementById('queue-list');
-                const q = data?.middle_queue || [];
-                list.innerHTML = q.length ? q.map((c, i) => `
+                const qData = data?.middle_queue || [];
+                list.innerHTML = qData.length ? qData.map((c, i) => `
                     <div class="queue-card">
                         <b>คิวที่ ${i+1}</b><br>
                         ${c.slots.filter(s=>s).map(s=>s.name).join(" vs ")}
                     </div>
-                `).join('') : "ยังไม่มีคิวในขณะนี้";
+                `).join('') : "ยังไม่มีคนในคิวกลาง";
             });
-        } else {
-            document.getElementById('queue-list').innerHTML = "<b>ไม่พบรหัสก๊วน</b><br>กรุณาสแกน QR จาก Admin";
         }
 
-        window.startCheckin = () => {
-            if (!sid) return alert("ไม่พบรหัสก๊วน กรุณาสแกน QR ก่อน");
-            // ส่งไปหน้า Profile เพื่อบังคับ Login และบันทึกชื่อ
-            location.href = `profile.html?session=${sid}`;
+        window.goToCheckin = () => {
+            if (!activeSid) return alert("ขออภัย แอดมินยังไม่ได้เปิดก๊วนครับ");
+            location.href = `profile.html?session=${activeSid}`;
         };
     </script>
 </body>

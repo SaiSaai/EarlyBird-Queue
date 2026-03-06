@@ -99,13 +99,19 @@
             new Sortable(document.getElementById('main-grid'), { animation: 150, handle: '.court-header', onEnd: saveCourtsToLocal });
         };
 
-        // --- Core Functions ---
+        // ในหน้า admin.html ตรงฟังก์ชัน createSession ให้แก้เป็นแบบนี้:
         window.createSession = async () => {
-            if(currentSessionId && !confirm("เปิดก๊วนใหม่? ข้อมูลเดิมจะถูกล้าง")) return;
-            const sid = "GS" + Date.now().toString().slice(-6); // สร้าง ID แบบสั้น GSXXXXXX
-            await setDoc(doc(db, "sessions", sid), { status: "active", created_at: serverTimestamp(), middle_queue: [] });
+            if(currentSessionId && !confirm("เปิดก๊วนใหม่?")) return;
             
-            localStorage.clear();
+            const sid = "GS" + Date.now().toString().slice(-6);
+            
+            // สำคัญ: ต้องใส่ status: "active" เพื่อให้หน้า Index ค้นเจอ
+            await setDoc(doc(db, "sessions", sid), { 
+                status: "active", 
+                created_at: serverTimestamp(), 
+                middle_queue: [] 
+            });
+            
             localStorage.setItem('last_sid', sid);
             location.reload(); 
         };

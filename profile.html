@@ -85,10 +85,12 @@
             } catch (e) { console.error(e); }
         };
 
+        // ในหน้า profile.html แก้ฟังก์ชัน showForm ให้ดูดีขึ้น
         function showForm() {
             document.getElementById('loading-state').classList.add('hidden');
             document.getElementById('reg-form').classList.remove('hidden');
             document.getElementById('user-img').src = linePic;
+            // ดึงชื่อจาก LINE ใส่ในช่อง Input ให้เลย ลูกค้าแค่กดตกลง
             document.getElementById('display-name').value = lineDisplayName;
         }
 
