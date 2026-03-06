@@ -87,7 +87,7 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getFirestore, collection, onSnapshot, doc, updateDoc, deleteDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getFirestore, collection, onSnapshot, doc, updateDoc, deleteDoc, query, orderBy, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
     const firebaseConfig = { 
         apiKey: "AIzaSyDQbnx83sbs1sO4xsuLUV50uxbBinr2VtY", 
@@ -100,14 +100,22 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // แก้ไขจุดนี้: ใช้ 'last_sid' ให้ตรงกับหน้า admin.html
     const sessionId = localStorage.getItem('last_sid');
     let members = [];
+    let sessionData = null; // เก็บข้อมูลภาพรวมของก๊วน (สนาม/คิว)
 
     if (sessionId) {
+        listenToSession();
         listenToMembers();
     } else {
         alert("กรุณาเปิดก๊วนในหน้า Admin ก่อนครับ");
+    }
+
+    // ติดตามข้อมูลสนามและคิว
+    function listenToSession() {
+        onSnapshot(doc(db, "sessions", sessionId), (snap) => {
+            sessionData = snap.data();
+        });
     }
 
     function listenToMembers() {
@@ -125,19 +133,13 @@
         members.forEach(m => {
             const extra = parseFloat(document.getElementById(`extra-${m.id}`)?.value) || m.extra_cost || 0;
             const discount = parseFloat(document.getElementById(`discount-${m.id}`)?.value) || m.discount || 0;
-            
-            // สูตรตามที่กำหนด: ค่าคอร์ทคงที่ + (ลูกสะสม * ราคาลูก) + ค่าน้ำ - ส่วนลด
             const shuttleCost = (m.shuttle_used || 0) * shuttlePrice;
             const total = courtRate + shuttleCost + extra - discount;
 
             const rowTotalEl = document.getElementById(`total-${m.id}`);
             if (rowTotalEl) rowTotalEl.innerText = Math.round(total).toLocaleString();
-            
-            // เฉพาะคนที่ "จ่ายแล้ว" ถึงจะนำมานับรวมใน Grand Total (หรือจะนับทั้งหมดก็ได้ แล้วแต่คุณสะดวก)
-            // ในที่นี้ผมนับรวมทั้งหมดให้เห็นยอดเป้าหมายครับ
             grandTotal += total;
         });
-
         document.getElementById('grand-total').innerText = Math.round(grandTotal).toLocaleString();
     };
 
@@ -147,9 +149,7 @@
             list.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:40px; color:#999;">ยังไม่มีสมาชิกเช็คอิน</td></tr>';
             return;
         }
-
         list.innerHTML = "";
-        // เรียงให้คนยังไม่จ่ายอยู่บน
         const sortedMembers = [...members].sort((a, b) => (a.is_paid === b.is_paid) ? 0 : a.is_paid ? 1 : -1);
 
         sortedMembers.forEach(m => {
@@ -168,7 +168,7 @@
                             <option value="red" ${m.skill_level=='red'?'selected':''}>R</option>
                             <option value="black" ${m.skill_level=='black'?'selected':''}>BK</option>
                         </select>
-                        <button class="btn-del" onclick="deleteMember('${m.id}', '${m.display_name}')" title="ลบชื่อ">🗑️</button>
+                        <button class="btn-del" onclick="deleteMember('${m.id}', '${m.display_name}')">🗑️</button>
                     </div>
                 </td>
                 <td style="text-align:center;">${m.games_played || 0}</td>
@@ -187,12 +187,41 @@
         calculateAll();
     }
 
+    window.togglePaid = async (id, status) => {
+        // กรณีจะกด "จ่ายแล้ว" (Status = true) ให้เช็คเงื่อนไขก่อน
+        if (status === true && sessionData) {
+            const player = members.find(m => m.id === id);
+            
+            // 1. เช็คในสนาม (Live Courts)
+            const isInCourt = (sessionData.live_courts || []).some(court => 
+                court.slots.some(slot => slot.id === id)
+            );
+
+            // 2. เช็คในคิวรอ (Middle Queue)
+            const isInQueue = (sessionData.middle_queue || []).some(q => 
+                q.slots.some(slot => slot && slot.id === id)
+            );
+
+            if (isInCourt) {
+                alert(`⚠️ ไม่สามารถเก็บเงิน ${player.display_name} ได้\nเนื่องจากยังแข่งอยู่ในสนาม`);
+                return;
+            }
+
+            if (isInQueue) {
+                alert(`⚠️ ไม่สามารถเก็บเงิน ${player.display_name} ได้\nเนื่องจากยังมีชื่ออยู่ในคิวรอ`);
+                return;
+            }
+        }
+        
+        await updateDoc(doc(db, `sessions/${sessionId}/attendance`, id), { is_paid: status });
+    };
+
     window.updateMember = async (id, data) => {
         await updateDoc(doc(db, `sessions/${sessionId}/attendance`, id), data);
     };
 
     window.deleteMember = async (id, name) => {
-        if (confirm(`ลบคุณ ${name} ออกจากก๊วน? ข้อมูลเกมและลูกแบดจะหายไป`)) {
+        if (confirm(`ลบคุณ ${name} ออกจากก๊วน?`)) {
             await deleteDoc(doc(db, `sessions/${sessionId}/attendance`, id));
         }
     };
@@ -206,17 +235,6 @@
             updateMember(id, data);
         }, 800);
         calculateAll();
-    };
-
-    window.togglePaid = async (id, status) => {
-        if (status === true) {
-            const player = members.find(m => m.id === id);
-            if (player.is_playing) {
-                alert(`⚠️ ${player.display_name} กำลังแข่งอยู่ในสนามครับ!`);
-                return;
-            }
-        }
-        await updateDoc(doc(db, `sessions/${sessionId}/attendance`, id), { is_paid: status });
     };
 </script>
 </body>
