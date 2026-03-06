@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Badminton Queue - ดูคิวและเช็คอิน</title>
+    <title>Badminton Queue - รายการคิว</title>
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
@@ -11,50 +11,42 @@
         body { font-family: 'Kanit', sans-serif; background: var(--bg); margin: 0; padding: 20px; color: #333; }
         .container { max-width: 500px; margin: 0 auto; text-align: center; }
         
-        /* Status Bar */
-        .status-container { margin-bottom: 25px; }
-        .status-tag { font-size: 0.9rem; padding: 8px 16px; border-radius: 20px; background: #fff; border: 1px solid #ddd; box-shadow: 0 2px 5px rgba(0,0,0,0.05); font-weight: 500; }
+        .status-tag { font-size: 0.9rem; padding: 8px 16px; border-radius: 20px; background: #fff; border: 1px solid #ddd; font-weight: 500; display: inline-block; margin-bottom: 20px; }
         .online { color: #2e7d32; border-color: #a5d6a7; background: #e8f5e9; }
         
-        /* Main Button */
         .btn-checkin { 
             background: #06C755; color: white; padding: 20px; border-radius: 18px; border: none; 
             font-size: 1.4rem; font-weight: 600; cursor: pointer; width: 100%; 
             box-shadow: 0 6px 20px rgba(6,199,85,0.3); margin-bottom: 30px; 
-            transition: transform 0.2s, background 0.2s;
         }
-        .btn-checkin:active { transform: scale(0.98); }
         .btn-checkin:disabled { background: #bbb; cursor: not-allowed; box-shadow: none; }
+        
+        /* สไตล์สำหรับปุ่มเมื่อเช็คอินแล้ว */
+        .already-in { background: #e8f5e9; color: #2e7d32; border: 2px dashed #2e7d32; padding: 15px; border-radius: 18px; font-weight: 600; margin-bottom: 30px; }
 
-        /* Queue List */
-        .queue-header { text-align: left; margin-bottom: 15px; font-weight: 600; color: #666; display: flex; align-items: center; gap: 8px; }
+        .queue-header { text-align: left; margin-bottom: 15px; font-weight: 600; color: #666; }
         .queue-card { 
             background: var(--card); padding: 18px; border-radius: 15px; margin-bottom: 12px; 
-            text-align: left; border-left: 8px solid #2196f3; 
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            text-align: left; border-left: 8px solid #2196f3; box-shadow: 0 4px 12px rgba(0,0,0,0.05);
         }
         .match-info { font-size: 1.1rem; font-weight: 600; display: flex; justify-content: space-between; align-items: center; }
-        .team-a { color: #1976d2; }
-        .team-b { color: #388e3c; }
         .vs { font-size: 0.8rem; color: #999; }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="status-container">
-            <span id="session-status" class="status-tag">⌛ กำลังเชื่อมต่อระบบ...</span>
-        </div>
+        <div id="session-status" class="status-tag">⌛ กำลังเชื่อมต่อระบบ...</div>
 
-        <h1 style="font-weight: 600; margin-bottom: 10px;">🏸 BadQueue</h1>
-        <p style="color: #666; margin-bottom: 25px;">ดูคิวสนามแบบ Real-time</p>
+        <h1 style="margin-bottom: 5px;">🏸 BadQueue</h1>
+        <p id="user-welcome" style="color: #666; margin-bottom: 25px;">ยินดีต้อนรับนักกีฬา</p>
         
-        <button class="btn-checkin" id="btn-checkin" onclick="goToCheckin()" disabled>
-            รอแอดมินเปิดก๊วน...
-        </button>
-
-        <div class="queue-header">
-            <span>⏳ คิวรอถัดไป</span>
+        <div id="action-area">
+            <button class="btn-checkin" id="btn-checkin" onclick="goToCheckin()" disabled>
+                รอแอดมินเปิดก๊วน...
+            </button>
         </div>
+
+        <div class="queue-header">⏳ คิวที่กำลังรอแข่ง</div>
         <div id="queue-list">
             <p style="color: #999; margin-top: 20px;">กำลังโหลดข้อมูลคิว...</p>
         </div>
@@ -62,7 +54,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, query, where, onSnapshot, doc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, query, where, onSnapshot, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = { 
             apiKey: "AIzaSyDQbnx83sbs1sO4xsuLUV50uxbBinr2VtY", 
@@ -76,39 +68,65 @@
         const db = getFirestore(app);
 
         let activeSid = null;
+        let myUid = null;
 
-        // ค้นหาก๊วนที่มีสถานะ active
+        // 1. เริ่มต้น LIFF เพื่อรู้ว่าใครกำลังดูหน้าเว็บ
+        async function initLine() {
+            try {
+                await liff.init({ liffId: "2009012689-o7UBlAd7" });
+                if (liff.isLoggedIn()) {
+                    const profile = await liff.getProfile();
+                    myUid = profile.userId;
+                    document.getElementById('user-welcome').innerText = "สวัสดีคุณ " + profile.displayName;
+                }
+            } catch (err) {
+                console.error("LIFF Error:", err);
+            }
+        }
+
+        // 2. ตรวจสอบสถานะก๊วน
         const q = query(collection(db, "sessions"), where("status", "==", "active"));
-
-        onSnapshot(q, (snapshot) => {
+        onSnapshot(q, async (snapshot) => {
             if (!snapshot.empty) {
-                // เลือกก๊วนที่ใหม่ที่สุด
-                const sorted = snapshot.docs.sort((a, b) => {
-                    const timeA = a.data().created_at?.seconds || 0;
-                    const timeB = b.data().created_at?.seconds || 0;
-                    return timeB - timeA;
-                });
+                const sorted = snapshot.docs.sort((a, b) => (b.data().created_at?.seconds || 0) - (a.data().created_at?.seconds || 0));
+                activeSid = sorted[0].id;
+
+                document.getElementById('session-status').innerText = "🟢 เปิดก๊วน: " + activeSid;
+                document.getElementById('session-status').className = "status-tag online";
                 
-                const latestDoc = sorted[0];
-                activeSid = latestDoc.id;
-
-                const statusTag = document.getElementById('session-status');
-                const btn = document.getElementById('btn-checkin');
-
-                statusTag.innerText = "🟢 เปิดก๊วน: " + activeSid;
-                statusTag.className = "status-tag online";
-                btn.innerText = "➕ ลงชื่อเข้าคิวตอนนี้";
-                btn.disabled = false;
-
+                // เช็คว่าเราเช็คอินหรือยัง
+                checkMyStatus();
                 listenToQueue(activeSid);
             } else {
                 document.getElementById('session-status').innerText = "🔴 ปิดก๊วนชั่วคราว";
-                document.getElementById('session-status').className = "status-tag";
-                document.getElementById('btn-checkin').innerText = "รอแอดมินเปิดก๊วน";
-                document.getElementById('btn-checkin').disabled = true;
-                document.getElementById('queue-list').innerHTML = "<p style='color:#bbb;'>ยังไม่มีคิวในระบบ</p>";
+                document.getElementById('action-area').innerHTML = `<button class="btn-checkin" disabled>แอดมินยังไม่เปิดก๊วน</button>`;
             }
         });
+
+        async function checkMyStatus() {
+            if (!myUid || !activeSid) {
+                // ถ้ายังไม่ login ให้โชว์ปุ่มลงชื่อปกติ
+                document.getElementById('btn-checkin').disabled = false;
+                document.getElementById('btn-checkin').innerText = "➕ ลงชื่อเข้าคิวตอนนี้";
+                return;
+            }
+
+            // ไปเช็คใน Firebase ว่ามี UID ของเราในก๊วนนี้หรือยัง
+            const userDoc = await getDoc(doc(db, `sessions/${activeSid}/attendance`, myUid));
+            if (userDoc.exists()) {
+                // ถ้ามีแล้ว ให้ซ่อนปุ่ม และโชว์สถานะแทน
+                document.getElementById('action-area').innerHTML = `
+                    <div class="already-in">
+                        🎉 คุณลงชื่อเข้าก๊วนเรียบร้อยแล้ว<br>
+                        <small>รอแอดมินจัดคิวให้ครับ</small>
+                    </div>
+                `;
+            } else {
+                // ถ้ายังไม่มี ให้โชว์ปุ่มลงชื่อ
+                document.getElementById('btn-checkin').disabled = false;
+                document.getElementById('btn-checkin').innerText = "➕ ลงชื่อเข้าคิวตอนนี้";
+            }
+        }
 
         function listenToQueue(sid) {
             onSnapshot(doc(db, "sessions", sid), (snap) => {
@@ -120,29 +138,28 @@
                     listDiv.innerHTML = middleQueue.map((item, i) => {
                         const teamA = item.slots.slice(0, 2).filter(s => s).map(s => s.name).join(" + ") || "รอนักกีฬา";
                         const teamB = item.slots.slice(2, 4).filter(s => s).map(s => s.name).join(" + ") || "รอนักกีฬา";
-                        
                         return `
                             <div class="queue-card">
                                 <div style="font-size: 0.8rem; color: #999; margin-bottom: 5px;">คิวที่ ${i+1}</div>
                                 <div class="match-info">
-                                    <span class="team-a">${teamA}</span>
+                                    <span style="color: #1976d2;">${teamA}</span>
                                     <span class="vs">VS</span>
-                                    <span class="team-b">${teamB}</span>
+                                    <span style="color: #388e3c;">${teamB}</span>
                                 </div>
                             </div>
                         `;
                     }).join('');
                 } else {
-                    listDiv.innerHTML = "<p style='color:#bbb;'>ไม่มีคิวที่รอนัดหมาย</p>";
+                    listDiv.innerHTML = "<p style='color:#bbb;'>ยังไม่มีคิวที่รอนัดหมาย</p>";
                 }
             });
         }
 
         window.goToCheckin = () => {
-            if (activeSid) {
-                location.href = `profile.html?session=${activeSid}`;
-            }
+            if (activeSid) location.href = `profile.html?session=${activeSid}`;
         };
+
+        initLine();
     </script>
 </body>
 </html>
