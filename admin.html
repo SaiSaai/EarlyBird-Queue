@@ -126,22 +126,34 @@
         };
 
         // --- Persistence Logic ---
-        function saveCourtsToLocal() {
+        async function saveCourtsToLocal() {
             if(!currentSessionId) return;
             const courts = [];
             document.querySelectorAll('.court-card').forEach(card => {
                 const slots = [];
-                card.querySelectorAll('.slot').forEach(s => slots.push({ uid: s.dataset.uid || null, html: s.innerHTML, occupied: s.classList.contains('occupied') }));
+                card.querySelectorAll('.slot').forEach(s => slots.push({ 
+                    uid: s.dataset.uid || null, 
+                    html: s.innerHTML, 
+                    occupied: s.classList.contains('occupied') 
+                }));
                 courts.push({ 
                     id: card.id, 
                     courtNum: card.querySelector('select').value, 
                     status: document.getElementById(`status-${card.id}`).innerText, 
-                    shuttle: document.getElementById(`shuttle-${card.id}`).innerText, 
                     playing: card.classList.contains('playing'), 
                     slots 
                 });
             });
+            
+            // บันทึกลงเครื่องแอดมิน (เหมือนเดิม)
             localStorage.setItem(`courts_${currentSessionId}`, JSON.stringify(courts));
+
+            // --- เพิ่มส่วนนี้: อัปโหลดขึ้น Firebase ให้ลูกก๊วนเห็น ---
+            try {
+                await updateDoc(doc(db, "sessions", currentSessionId), {
+                    live_courts: courts
+                });
+            } catch (e) { console.error("Sync Error:", e); }
         }
 
         function loadCourtsFromLocal() {
