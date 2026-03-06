@@ -301,11 +301,11 @@
 
         function listenToAttendance() { onSnapshot(query(collection(db, `sessions/${currentSessionId}/attendance`), orderBy("last_match_end", "asc")), snap => { lastSnapshotData = snap.docs.map(d => ({ id: d.id, data: d.data() })); renderFIFO(); }); }
         
-        // --- เปลี่ยนให้ QR ลิงก์ไปหน้า profile.html ---
         function generateQR(id) { 
             document.getElementById("qrcode").innerHTML = ""; 
-            const liffUrl = `https://early-bird-queue.vercel.app/profile.html?session=${id}`;
-            new QRCode(document.getElementById("qrcode"), { text: liffUrl, width: 50, height: 50 }); 
+            // เปลี่ยนจาก profile.html เป็น index.html
+            const shareUrl = `https://early-bird-queue.vercel.app/index.html?session=${id}`;
+            new QRCode(document.getElementById("qrcode"), { text: shareUrl, width: 50, height: 50 }); 
         }
 
         window.changeShuttle = (id, v) => { const el = document.getElementById(`shuttle-${id}`); let val = parseInt(el.innerText) + v; if(val >= 0) { el.innerText = val; saveCourtsToLocal(); } };

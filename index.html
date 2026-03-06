@@ -1,69 +1,71 @@
 <!DOCTYPE html>
-<html>
+<html lang="th">
 <head>
-    <title>คิวแบดมินตัน</title>
-    <link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Badminton Queue - ดูคิวและเช็คอิน</title>
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root { --primary: #00C853; --bg: #fdfcf0; }
+        body { font-family: 'Kanit', sans-serif; background: var(--bg); margin: 0; padding: 20px; text-align: center; }
+        .container { max-width: 500px; margin: 0 auto; }
+        .btn-checkin { background: #06C755; color: white; padding: 15px 30px; border-radius: 50px; border: none; font-size: 1.2rem; font-weight: 600; cursor: pointer; box-shadow: 0 4px 15px rgba(6,199,85,0.3); width: 100%; margin-bottom: 30px; }
+        .queue-card { background: white; padding: 15px; border-radius: 15px; margin-bottom: 12px; text-align: left; border-left: 6px solid #2196f3; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .nav-bar { display: flex; justify-content: space-between; margin-bottom: 20px; }
+    </style>
 </head>
 <body>
-    <h1>คิวแข่งวันนี้</h1>
-    <div id="queue-list"></div>
+    <div class="container">
+        <div class="nav-bar">
+            <button onclick="location.href='profile.html'" style="background:none; border:1px solid #ccc; border-radius:10px; padding:5px 15px;">👤 โปรไฟล์ของฉัน</button>
+            <span id="session-label" style="color:#888; font-size:0.8rem;"></span>
+        </div>
+
+        <h1>🏸 คิวรอสนาม</h1>
+        
+        <button class="btn-checkin" onclick="startCheckin()">🟢 กดเช็คอินเข้าก๊วน</button>
+
+        <div id="queue-list">กำลังโหลดคิว...</div>
+    </div>
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
-        import { getFirestore, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-firestore.js";//"https://www.gstatic.com/firebasejs/12.8.0/firebase-analytics.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        const firebaseConfig = { 
-             apiKey: "AIzaSyDQbnx83sbs1sO4xsuLUV50uxbBinr2VtY",
-            authDomain: "earlybird-queue.firebaseapp.com",
-            projectId: "earlybird-queue",
-            storageBucket: "earlybird-queue.firebasestorage.app",
-            messagingSenderId: "310694006567",
-            appId: "1:310694006567:web:f56fc19ed03b81bf8c2302",
-            measurementId: "G-CHJP8C4V5S"
-        };
+        const firebaseConfig = { apiKey: "AIzaSyDQbnx83sbs1sO4xsuLUV50uxbBinr2VtY", authDomain: "earlybird-queue.firebaseapp.com", projectId: "earlybird-queue", storageBucket: "earlybird-queue.firebasestorage.app", messagingSenderId: "310694006567", appId: "1:310694006567:web:f56fc19ed03b81bf8c2302" };
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // ดึงข้อมูลคิวแบบ Real-time
-        onSnapshot(collection(db, "queues"), (snapshot) => {
-            const list = document.getElementById('queue-list');
-            list.innerHTML = "";
-            snapshot.forEach(doc => {
-                const data = doc.data();
-                list.innerHTML += `<p>${data.pairA} vs ${data.pairB} - สถานะ: ${data.status}</p>`;
+        // ดึง Session ID จาก URL (Admin ส่งให้) หรือจากเครื่อง
+        const urlParams = new URLSearchParams(window.location.search);
+        const sid = urlParams.get('session') || localStorage.getItem('last_sid');
+
+        if (sid) {
+            localStorage.setItem('last_sid', sid);
+            document.getElementById('session-label').innerText = "ก๊วน: " + sid;
+            
+            // Listen คิวกลาง
+            onSnapshot(doc(db, "sessions", sid), (snap) => {
+                const data = snap.data();
+                const list = document.getElementById('queue-list');
+                const q = data?.middle_queue || [];
+                list.innerHTML = q.length ? q.map((c, i) => `
+                    <div class="queue-card">
+                        <b>คิวที่ ${i+1}</b><br>
+                        ${c.slots.filter(s=>s).map(s=>s.name).join(" vs ")}
+                    </div>
+                `).join('') : "ยังไม่มีคิวในขณะนี้";
             });
-        });
-        async function main() {
-    // 2. สั่งให้ LIFF ทำงาน
-    await liff.init({ liffId: "รหัส-LIFF-ID-ของคุณ" });
+        } else {
+            document.getElementById('queue-list').innerHTML = "<b>ไม่พบรหัสก๊วน</b><br>กรุณาสแกน QR จาก Admin";
+        }
 
-    if (!liff.isLoggedIn()) {
-      liff.login(); // ถ้ายังไม่ล็อกอิน ให้เด้งหน้า Login ของ Line
-    } else {
-      const profile = await liff.getProfile();
-      
-      // 3. เอาข้อมูลจาก Line ไปบันทึกลง Firebase (Users Table)
-      const userRef = doc(db, "users", profile.userId);
-      await setDoc(userRef, {
-        line_user_id: profile.userId,
-        display_name: profile.displayName,
-        profile_image_url: profile.pictureUrl,
-        last_seen: Date.now()
-      }, { merge: true });
-
-      console.log("ยินดีต้อนรับคุณ", profile.displayName);
-      
-      // โชว์รูปโปรไฟล์บนหน้าเว็บหน่อย
-      document.getElementById('user-info').innerHTML = `
-        <img src="${profile.pictureUrl}" width="50" style="border-radius:50%">
-        <p>สวัสดีคุณ ${profile.displayName}</p>
-        <button onclick="checkIn()">เข้าก๊วนวันนี้</button>
-      `;
-    }
-  }
-
-  main();
+        window.startCheckin = () => {
+            if (!sid) return alert("ไม่พบรหัสก๊วน กรุณาสแกน QR ก่อน");
+            // ส่งไปหน้า Profile เพื่อบังคับ Login และบันทึกชื่อ
+            location.href = `profile.html?session=${sid}`;
+        };
     </script>
 </body>
 </html>
