@@ -136,10 +136,29 @@
         location.reload(); 
     };
 
-    window.terminateSession = () => {
+    /*window.terminateSession = () => {
         if(confirm("ล้างข้อมูลสนามและคิวทั้งหมดในเครื่องใช่หรือไม่?")) {
             localStorage.clear();
             location.reload();
+        } 
+    };*/
+    // ฟังก์ชันสำหรับแอดมินกดจบก๊วน
+    window.terminateSession = async () => {
+        if (!confirm("ต้องการจบก๊วนนี้ใช่ไหม? ข้อมูลสนามและคิวจะถูกเคลียร์หน้า Index ทันที")) return;
+        
+        const sid = localStorage.getItem('last_sid');
+        if (sid) {
+            try {
+                await updateDoc(doc(db, "sessions", sid), { 
+                    status: "closed",
+                    closed_at: Date.now(),
+                    live_courts: [], // เคลียร์สนาม
+                    middle_queue: []  // เคลียร์คิว
+                });
+                alert("จบก๊วนเรียบร้อยแล้ว");
+            } catch (e) {
+                console.error("Error closing session: ", e);
+            }
         }
     };
 

@@ -84,14 +84,28 @@
                 }
             } catch(e) {}
 
+            // ค้นหาก๊วนที่ Active ล่าสุด
             const q = query(collection(db, "sessions"), where("status", "==", "active"));
             onSnapshot(q, (snap) => {
                 if(!snap.empty) {
                     const d = snap.docs.sort((a,b) => b.data().created_at - a.data().created_at)[0];
                     activeSid = d.id;
                     document.getElementById('session-status').innerText = "🟢 ก๊วน: " + activeSid;
-                    document.getElementById('session-status').classList.add('online');
+                    document.getElementById('session-status').style.display = "inline-block";
                     updateUI(activeSid);
+                } else {
+                    // --- กรณีไม่มีก๊วนที่ Active (ก๊วนถูกปิดแล้ว) ---
+                    activeSid = null;
+                    document.getElementById('session-status').style.display = "none"; // ซ่อนรหัสก๊วน
+                    document.getElementById('display-content').innerHTML = `
+                        <div style="text-align:center; margin-top:50px; color:#999;">
+                            <p style="font-size:3rem;">😴</p>
+                            <p>ก๊วนจบลงแล้ว หรือยังไม่ได้เปิดก๊วนใหม่</p>
+                        </div>`;
+                    document.getElementById('action-area').innerHTML = `<button class="btn-checkin" onclick="goToCheckin()">➕ ลงชื่อเข้าก๊วน</button>`;
+                    
+                    // สั่งลบข้อมูลการเช็คอินในเครื่องผู้ใช้ (Check-out อัตโนมัติ)
+                    localStorage.removeItem('my_checkin_status'); 
                 }
             });
         }
