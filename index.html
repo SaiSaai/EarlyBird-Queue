@@ -7,31 +7,42 @@
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
-        :root { --primary: #06C755; --blue: #2196f3; --bg: #fdfcf0; }
+        :root { --primary: #06C755; --blue: #2196f3; --bg: #fdfcf0; --me-bg: #fff9c4; --me-border: #fbc02d; }
         body { font-family: 'Kanit', sans-serif; background: var(--bg); margin: 0; padding: 15px; color: #333; }
         .container { max-width: 500px; margin: 0 auto; }
-        .status-tag { font-size: 0.8rem; padding: 5px 12px; border-radius: 15px; background: #fff; border: 1px solid #ddd; display: inline-block; margin-bottom: 15px; }
+        
+        .status-tag { font-size: 0.8rem; padding: 5px 12px; border-radius: 15px; background: #fff; border: 1px solid #ddd; display: inline-block; margin-bottom: 10px; }
         .online { color: #2e7d32; border-color: #a5d6a7; background: #e8f5e9; }
         
         .already-in { background: #e8f5e9; color: #2e7d32; border: 2px dashed #2e7d32; padding: 15px; border-radius: 15px; font-weight: 600; margin-bottom: 20px; text-align: center; }
         .btn-checkin { background: var(--primary); color: white; padding: 15px; border-radius: 15px; border: none; font-size: 1.2rem; font-weight: 600; width: 100%; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(6,199,85,0.2); }
 
-        .section-title { font-size: 1rem; font-weight: 600; margin: 20px 0 10px; display: flex; align-items: center; gap: 8px; }
-        .card { background: white; padding: 15px; border-radius: 12px; margin-bottom: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border-left: 5px solid #ddd; }
+        .section-title { font-size: 1.1rem; font-weight: 600; margin: 25px 0 12px; display: flex; align-items: center; border-left: 4px solid #333; padding-left: 10px; }
+        .card { background: white; padding: 15px; border-radius: 12px; margin-bottom: 12px; box-shadow: 0 3px 10px rgba(0,0,0,0.05); border-left: 6px solid #ddd; }
         .card-playing { border-left-color: var(--primary); background: #f1f8e9; }
         .card-waiting { border-left-color: var(--blue); }
         
-        .match-grid { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; text-align: center; font-weight: 500; }
-        .vs { font-size: 0.7rem; color: #999; font-weight: normal; }
-        .badge { font-size: 0.7rem; padding: 2px 8px; border-radius: 10px; color: white; margin-left: 5px; }
+        .match-grid { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; text-align: center; font-size: 1rem; }
+        .vs { font-size: 0.7rem; color: #999; margin: 0 10px; }
         
-        /* สไตล์รายชื่อคนมาถึงแล้ว */
-        .member-chip { display: inline-block; background: #fff; border: 1px solid #eee; padding: 5px 12px; border-radius: 20px; font-size: 0.85rem; margin: 3px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        /* สไตล์พิเศษสำหรับชื่อเรา */
+        .me { 
+            background: var(--me-bg); 
+            color: #d4a017; 
+            padding: 2px 6px; 
+            border-radius: 4px; 
+            font-weight: 600; 
+            border: 1px solid var(--me-border);
+            display: inline-block;
+        }
+
+        .shuttle-badge { background: #eee; padding: 2px 8px; border-radius: 10px; font-size: 0.7rem; margin-top: 5px; display: inline-block; }
     </style>
 </head>
 <body>
     <div class="container">
-        <div id="session-status" class="status-tag">⌛ เชื่อมต่อ...</div>
+        <div id="session-status" class="status-tag">⌛ กำลังเชื่อมต่อ...</div>
+        <h2 style="margin: 5px 0;">🏸 BadQueue Live</h2>
         <p id="user-welcome" style="margin: 0 0 15px; color: #666; font-size: 0.9rem;">ยินดีต้อนรับนักกีฬา</p>
 
         <div id="action-area">
@@ -39,11 +50,7 @@
         </div>
 
         <div id="display-content">
-            </div>
-
-        <div class="section-title">👥 สมาชิกที่มาถึงแล้ว</div>
-        <div id="member-list">
-            <p style="color:#999; font-size:0.8rem;">กำลังโหลดรายชื่อ...</p>
+            <p style="text-align:center; color:#999; margin-top:50px;">กำลังโหลดข้อมูลสนาม...</p>
         </div>
     </div>
 
@@ -64,6 +71,7 @@
 
         let activeSid = null;
         let myUid = null;
+        let myName = "";
 
         async function init() {
             try {
@@ -71,11 +79,11 @@
                 if (liff.isLoggedIn()) {
                     const p = await liff.getProfile();
                     myUid = p.userId;
-                    document.getElementById('user-welcome').innerText = "สวัสดีคุณ " + p.displayName;
+                    myName = p.displayName;
+                    document.getElementById('user-welcome').innerText = "สวัสดีคุณ " + myName;
                 }
             } catch(e) {}
 
-            // ฟังสถานะก๊วน
             const q = query(collection(db, "sessions"), where("status", "==", "active"));
             onSnapshot(q, (snap) => {
                 if(!snap.empty) {
@@ -88,8 +96,17 @@
             });
         }
 
+        // ฟังก์ชันช่วยใส่ Class 'me' ให้ชื่อเรา
+        function formatName(nameStr) {
+            if (!nameStr || nameStr === "ว่าง") return "ว่าง";
+            // เช็คว่าในชื่อมีชื่อเราอยู่ไหม (เผื่อกรณีแอดมินแก้ชื่อ หรือมี Skill Dot ติดมา)
+            if (myName && nameStr.includes(myName)) {
+                return `<span class="me">${nameStr}</span>`;
+            }
+            return nameStr;
+        }
+
         async function updateUI(sid) {
-            // 1. เช็คว่าเราเช็คอินหรือยัง
             if (myUid) {
                 const uDoc = await getDoc(doc(db, `sessions/${sid}/attendance`, myUid));
                 if (uDoc.exists()) {
@@ -97,54 +114,45 @@
                 }
             }
 
-            // 2. ฟังข้อมูลสนามและคิว (Live)
             onSnapshot(doc(db, "sessions", sid), (snap) => {
                 const data = snap.data();
                 const content = document.getElementById('display-content');
                 let html = "";
 
-                // ส่วนที่ 1: สนาม (Live Courts)
-                const courts = data.live_courts || [];
+                // 1. ส่วนสนาม (Live Courts)
+                const courts = data?.live_courts || [];
                 if(courts.length > 0) {
-                    html += `<div class="section-title">🏸 สถานะสนาม</div>`;
+                    html += `<div class="section-title">🏸 กำลังแข่ง</div>`;
                     courts.forEach(c => {
-                        const tA = c.slots.slice(0,2).map(s => s.html || "ว่าง").join(" + ");
-                        const tB = c.slots.slice(2,4).map(s => s.html || "ว่าง").join(" + ");
+                        const tA = c.slots.slice(0,2).map(s => formatName(s.html)).join(" + ");
+                        const tB = c.slots.slice(2,4).map(s => formatName(s.html)).join(" + ");
                         html += `
                             <div class="card ${c.playing ? 'card-playing' : ''}">
-                                <div style="font-size:0.75rem; font-weight:bold; margin-bottom:5px;">สนาม ${c.courtNum} - ${c.status}</div>
+                                <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                                    <div style="font-size:0.75rem; font-weight:bold; margin-bottom:8px;">สนาม ${c.courtNum} - ${c.status}</div>
+                                    <div class="shuttle-badge">🏸 ${c.shuttle || 1} ลูก</div>
+                                </div>
                                 <div class="match-grid"><div>${tA}</div><div class="vs">VS</div><div>${tB}</div></div>
                             </div>`;
                     });
                 }
 
-                // ส่วนที่ 2: คิวรอ (Middle Queue)
-                const queue = data.middle_queue || [];
+                // 2. ส่วนคิวรอ (Middle Queue)
+                const queue = data?.middle_queue || [];
                 if(queue.length > 0) {
                     html += `<div class="section-title">⏳ คิวถัดไป</div>`;
                     queue.forEach((q, i) => {
-                        const qA = q.slots.slice(0,2).map(s => s.name).join(" + ");
-                        const qB = q.slots.slice(2,4).map(s => s.name).join(" + ");
+                        const qA = q.slots.slice(0,2).map(s => formatName(s?.name)).join(" + ");
+                        const qB = q.slots.slice(2,4).map(s => formatName(s?.name)).join(" + ");
                         html += `
                             <div class="card card-waiting">
-                                <div style="font-size:0.75rem; color:#666;">คิวรอที่ ${i+1}</div>
+                                <div style="font-size:0.75rem; color:#666; margin-bottom:8px;">คิวรอที่ ${i+1}</div>
                                 <div class="match-grid"><div>${qA}</div><div class="vs">VS</div><div>${qB}</div></div>
                             </div>`;
                     });
                 }
-                content.innerHTML = html || "<p style='text-align:center; color:#999; margin:20px 0;'>รอแอดมินจัดคิวแข่ง...</p>";
-            });
-
-            // 3. ฟังรายชื่อคนมาถึง (Attendance)
-            onSnapshot(collection(db, `sessions/${sid}/attendance`), (snap) => {
-                const list = document.getElementById('member-list');
-                if(snap.empty) { list.innerHTML = "ยังไม่มีคนเช็คอิน"; return; }
-                let memHtml = "";
-                snap.forEach(doc => {
-                    const m = doc.data();
-                    memHtml += `<div class="member-chip">${m.display_name}</div>`;
-                });
-                list.innerHTML = memHtml;
+                
+                content.innerHTML = html || "<p style='text-align:center; color:#999; margin-top:50px;'>ยังไม่มีข้อมูลการจัดคิวจากแอดมิน</p>";
             });
         }
 
