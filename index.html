@@ -53,113 +53,128 @@
     </div>
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, query, where, onSnapshot, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getFirestore, collection, query, where, onSnapshot, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        const firebaseConfig = { 
-            apiKey: "AIzaSyDQbnx83sbs1sO4xsuLUV50uxbBinr2VtY", 
-            authDomain: "earlybird-queue.firebaseapp.com", 
-            projectId: "earlybird-queue", 
-            storageBucket: "earlybird-queue.firebasestorage.app", 
-            messagingSenderId: "310694006567", 
-            appId: "1:310694006567:web:f56fc19ed03b81bf8c2302" 
-        };
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
+    const firebaseConfig = { 
+        apiKey: "AIzaSyDQbnx83sbs1sO4xsuLUV50uxbBinr2VtY", 
+        authDomain: "earlybird-queue.firebaseapp.com", 
+        projectId: "earlybird-queue", 
+        storageBucket: "earlybird-queue.firebasestorage.app", 
+        messagingSenderId: "310694006567", 
+        appId: "1:310694006567:web:f56fc19ed03b81bf8c2302" 
+    };
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
 
-        let activeSid = null;
-        let myUid = null;
+    let activeSid = null;
+    let myUid = null;
 
-        // 1. เริ่มต้น LIFF เพื่อรู้ว่าใครกำลังดูหน้าเว็บ
-        async function initLine() {
-            try {
-                await liff.init({ liffId: "2009012689-o7UBlAd7" });
-                if (liff.isLoggedIn()) {
-                    const profile = await liff.getProfile();
-                    myUid = profile.userId;
-                    document.getElementById('user-welcome').innerText = "สวัสดีคุณ " + profile.displayName;
-                }
-            } catch (err) {
-                console.error("LIFF Error:", err);
+    // 1. ฟังก์ชันหลัก: เริ่มต้นระบบ
+    async function startSystem() {
+        // รอโหลด LIFF ก่อน
+        try {
+            await liff.init({ liffId: "2009012689-o7UBlAd7" });
+            if (liff.isLoggedIn()) {
+                const profile = await liff.getProfile();
+                myUid = profile.userId;
+                document.getElementById('user-welcome').innerText = "สวัสดีคุณ " + profile.displayName;
             }
+        } catch (err) {
+            console.error("LIFF Error:", err);
         }
 
-        // 2. ตรวจสอบสถานะก๊วน
+        // 2. ดึงข้อมูลก๊วนจาก Firebase
         const q = query(collection(db, "sessions"), where("status", "==", "active"));
         onSnapshot(q, async (snapshot) => {
             if (!snapshot.empty) {
-                const sorted = snapshot.docs.sort((a, b) => (b.data().created_at?.seconds || 0) - (a.data().created_at?.seconds || 0));
-                activeSid = sorted[0].id;
+                // เรียงหา Session ล่าสุด
+                const docs = snapshot.docs.sort((a, b) => (b.data().created_at?.seconds || 0) - (a.data().created_at?.seconds || 0));
+                activeSid = docs[0].id;
 
                 document.getElementById('session-status').innerText = "🟢 เปิดก๊วน: " + activeSid;
                 document.getElementById('session-status').className = "status-tag online";
                 
-                // เช็คว่าเราเช็คอินหรือยัง
-                checkMyStatus();
+                // *** สำคัญ: พอได้ SID แล้ว ต้องเช็คสถานะปุ่มและโหลดคิวทันที ***
+                await updateUIState(); 
                 listenToQueue(activeSid);
             } else {
+                activeSid = null;
                 document.getElementById('session-status').innerText = "🔴 ปิดก๊วนชั่วคราว";
                 document.getElementById('action-area').innerHTML = `<button class="btn-checkin" disabled>แอดมินยังไม่เปิดก๊วน</button>`;
+                document.getElementById('queue-list').innerHTML = "<p style='color:#bbb;'>ไม่มีคิวในระบบ</p>";
             }
         });
+    }
 
-        async function checkMyStatus() {
-            if (!myUid || !activeSid) {
-                // ถ้ายังไม่ login ให้โชว์ปุ่มลงชื่อปกติ
-                document.getElementById('btn-checkin').disabled = false;
-                document.getElementById('btn-checkin').innerText = "➕ ลงชื่อเข้าคิวตอนนี้";
-                return;
-            }
+    // ฟังก์ชันอัปเดตปุ่ม (เช็คว่าเช็คอินหรือยัง)
+    async function updateUIState() {
+        const actionArea = document.getElementById('action-area');
+        
+        // กรณี 1: ยังไม่ได้ Login
+        if (!myUid) {
+            actionArea.innerHTML = `<button class="btn-checkin" onclick="goToCheckin()">➕ ลงชื่อเข้าคิวตอนนี้</button>`;
+            return;
+        }
 
-            // ไปเช็คใน Firebase ว่ามี UID ของเราในก๊วนนี้หรือยัง
+        // กรณี 2: Login แล้ว -> เช็คในฐานข้อมูลว่ามีชื่อในก๊วนนี้หรือยัง
+        try {
             const userDoc = await getDoc(doc(db, `sessions/${activeSid}/attendance`, myUid));
             if (userDoc.exists()) {
-                // ถ้ามีแล้ว ให้ซ่อนปุ่ม และโชว์สถานะแทน
-                document.getElementById('action-area').innerHTML = `
+                // ถ้ามีชื่อแล้ว เปลี่ยนปุ่มเป็นสถานะสีเขียว
+                actionArea.innerHTML = `
                     <div class="already-in">
                         🎉 คุณลงชื่อเข้าก๊วนเรียบร้อยแล้ว<br>
                         <small>รอแอดมินจัดคิวให้ครับ</small>
                     </div>
                 `;
             } else {
-                // ถ้ายังไม่มี ให้โชว์ปุ่มลงชื่อ
-                document.getElementById('btn-checkin').disabled = false;
-                document.getElementById('btn-checkin').innerText = "➕ ลงชื่อเข้าคิวตอนนี้";
+                // ถ้ายังไม่มีชื่อ ให้โชว์ปุ่มลงชื่อปกติ
+                actionArea.innerHTML = `<button class="btn-checkin" onclick="goToCheckin()">➕ ลงชื่อเข้าคิวตอนนี้</button>`;
             }
+        } catch (e) {
+            console.error("Check Attendance Error:", e);
         }
+    }
 
-        function listenToQueue(sid) {
-            onSnapshot(doc(db, "sessions", sid), (snap) => {
-                const data = snap.data();
-                const listDiv = document.getElementById('queue-list');
-                const middleQueue = data?.middle_queue || [];
+    // ฟังก์ชันฟังการอัปเดตคิว (Real-time)
+    function listenToQueue(sid) {
+        onSnapshot(doc(db, "sessions", sid), (snap) => {
+            const data = snap.data();
+            const listDiv = document.getElementById('queue-list');
+            const middleQueue = data?.middle_queue || [];
 
-                if (middleQueue.length > 0) {
-                    listDiv.innerHTML = middleQueue.map((item, i) => {
-                        const teamA = item.slots.slice(0, 2).filter(s => s).map(s => s.name).join(" + ") || "รอนักกีฬา";
-                        const teamB = item.slots.slice(2, 4).filter(s => s).map(s => s.name).join(" + ") || "รอนักกีฬา";
-                        return `
-                            <div class="queue-card">
-                                <div style="font-size: 0.8rem; color: #999; margin-bottom: 5px;">คิวที่ ${i+1}</div>
-                                <div class="match-info">
-                                    <span style="color: #1976d2;">${teamA}</span>
-                                    <span class="vs">VS</span>
-                                    <span style="color: #388e3c;">${teamB}</span>
-                                </div>
+            if (middleQueue.length > 0) {
+                listDiv.innerHTML = middleQueue.map((item, i) => {
+                    const teamA = item.slots.slice(0, 2).filter(s => s).map(s => s.name).join(" + ") || "ว่าง";
+                    const teamB = item.slots.slice(2, 4).filter(s => s).map(s => s.name).join(" + ") || "ว่าง";
+                    return `
+                        <div class="queue-card">
+                            <div style="font-size: 0.8rem; color: #999; margin-bottom: 5px;">คิวที่ ${i+1}</div>
+                            <div class="match-info">
+                                <span style="color: #1976d2;">${teamA}</span>
+                                <span class="vs">VS</span>
+                                <span style="color: #388e3c;">${teamB}</span>
                             </div>
-                        `;
-                    }).join('');
-                } else {
-                    listDiv.innerHTML = "<p style='color:#bbb;'>ยังไม่มีคิวที่รอนัดหมาย</p>";
-                }
-            });
+                        </div>
+                    `;
+                }).join('');
+            } else {
+                listDiv.innerHTML = "<p style='color:#bbb;'>ยังไม่มีคิวที่จัดแล้ว (รอแอดมินยืนยันลงสนาม)</p>";
+            }
+        });
+    }
+
+    window.goToCheckin = () => {
+        if (activeSid) {
+            location.href = `profile.html?session=${activeSid}`;
+        } else {
+            alert("กรุณารอแอดมินเปิดก๊วนก่อนครับ");
         }
+    };
 
-        window.goToCheckin = () => {
-            if (activeSid) location.href = `profile.html?session=${activeSid}`;
-        };
-
-        initLine();
-    </script>
+    // เริ่มทำงาน
+    startSystem();
+</script>
 </body>
 </html>
