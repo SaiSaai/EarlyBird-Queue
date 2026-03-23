@@ -42,25 +42,6 @@
 <body>
 
 <div class="container">
-    <div class="setup-bar" style="background: #e3f2fd; border-color: #bbdefb; margin-top: -10px;">
-    <div class="setup-item">
-        👤 เพิ่มสมาชิก: 
-        <input type="text" id="new-member-name" placeholder="ชื่อลูกค้า" class="input-small" style="width: 150px; text-align: left;">
-    </div>
-    <div class="setup-item">
-        มือ: 
-        <select id="new-member-skill" style="padding: 8px; border-radius: 8px;">
-            <option value="yellow">Yellow (Y)</option>
-            <option value="green" selected>Green (G)</option>
-            <option value="blue">Blue (B)</option>
-            <option value="red">Red (R)</option>
-            <option value="black">Black (BK)</option>
-        </select>
-    </div>
-    <button onclick="adminAddMember()" style="background: #2196f3; color: white; border: none; padding: 8px 20px; border-radius: 10px; cursor: pointer; font-weight: 600;">
-        ➕ เพิ่มเข้าก๊วน
-    </button>
-</div>
     <h2>👥 สรุปยอดสมาชิก (รายคน)
         <button onclick="window.history.back()" style="font-size: 0.6em; cursor: pointer; padding: 8px 15px; border-radius: 10px; border: 1px solid #ddd; background: #fff;">⬅️ กลับ</button>
     </h2>
@@ -106,7 +87,7 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getFirestore, collection, onSnapshot, doc, updateDoc, deleteDoc, query, orderBy, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getFirestore, collection, onSnapshot, doc, updateDoc, deleteDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
     const firebaseConfig = { 
         apiKey: "AIzaSyDQbnx83sbs1sO4xsuLUV50uxbBinr2VtY", 
@@ -121,14 +102,15 @@
 
     const sessionId = localStorage.getItem('last_sid');
     let members = [];
-    let currentLiveCourts = [];
-    let currentQueue = [];
+    let currentLiveCourts = []; // เก็บรายชื่อคนในสนาม
+    let currentQueue = [];      // เก็บรายชื่อคนในคิว
 
     if (sessionId) {
-        listenToSession();
-        listenToMembers();
+        listenToSession(); // ติดตามสถานะสนาม/คิว
+        listenToMembers(); // ติดตามรายชื่อสมาชิก
     }
-   // 1. ฟังก์ชันติดตามสถานะสนามและคิว (เพื่อใช้เช็คชื่อตอนกดจ่ายเงิน)
+
+    // 1. ฟังก์ชันติดตามสถานะสนามและคิว (เพื่อใช้เช็คชื่อตอนกดจ่ายเงิน)
     function listenToSession() {
         onSnapshot(doc(db, "sessions", sessionId), (snap) => {
             const data = snap.data();
@@ -146,24 +128,17 @@
         });
     }
 
-    // แก้ไขใหม่: เช็คทั้ง ID และ ชื่อ เพื่อความแม่นยำ 100%
+    // 2. ฟังก์ชันตรวจสอบว่าคนนี้ "ติดภารกิจ" หรือไม่
     function isMemberBusy(id) {
-        const player = members.find(m => m.id === id);
-        const pName = player ? player.display_name : "";
-
         // เช็คในสนาม
         const inCourt = currentLiveCourts.some(court => 
-            court.slots && court.slots.some(slot => 
-                slot && (slot.id === id || slot.name === pName || slot.html === pName)
-            )
+            court.slots.some(slot => slot.id === id)
         );
         if (inCourt) return "แข่งอยู่";
 
         // เช็คในคิว
         const inQueue = currentQueue.some(q => 
-            q.slots && q.slots.some(slot => 
-                slot && (slot.id === id || slot.name === pName)
-            )
+            q.slots.some(slot => slot && slot.id === id)
         );
         if (inQueue) return "รอคิวอยู่";
 
@@ -171,17 +146,20 @@
     }
 
     window.togglePaid = async (id, status) => {
+        // ถ้าจะกด "จ่ายแล้ว" (Status = true) ต้องเช็คก่อน
         if (status === true) {
             const busyStatus = isMemberBusy(id);
             if (busyStatus) {
                 const player = members.find(m => m.id === id);
-                alert(`⚠️ ไม่สามารถเก็บเงิน ${player.display_name} ได้\nเนื่องจากยัง "${busyStatus}"`);
+                alert(`⚠️ ไม่สามารถเก็บเงิน ${player.display_name} ได้\nเนื่องจากยัง "${busyStatus}" กรุณารอให้จบเกมหรือเอาออกจากคิวก่อน`);
                 return;
             }
         }
+        
         await updateDoc(doc(db, `sessions/${sessionId}/attendance`, id), { is_paid: status });
     };
 
+    // --- ส่วนแสดงผลและการคำนวณ (เหมือนเดิม) ---
     window.calculateAll = () => {
         const courtRate = parseFloat(document.getElementById('court-per-person').value) || 0;
         const shuttlePrice = parseFloat(document.getElementById('shuttle-price').value) || 0;
@@ -243,7 +221,6 @@
 
     window.updateMember = async (id, data) => { await updateDoc(doc(db, `sessions/${sessionId}/attendance`, id), data); };
     window.deleteMember = async (id, name) => { if (confirm(`ลบคุณ ${name} ออกจากก๊วน?`)) await deleteDoc(doc(db, `sessions/${sessionId}/attendance`, id)); };
-    
     let timer;
     window.updateDebounced = (id, field, val) => {
         clearTimeout(timer);
@@ -253,32 +230,6 @@
             updateMember(id, data);
         }, 800);
         calculateAll();
-    };
-
-    // ปรับปรุงใหม่: ใช้ตัวแปรที่ import ไว้ด้านบนแล้ว
-    window.adminAddMember = async () => {
-        const nameInput = document.getElementById('new-member-name');
-        const skillInput = document.getElementById('new-member-skill');
-        const name = nameInput.value.trim();
-        if (!name) return alert("กรุณาใส่ชื่อลูกค้า");
-        if (!sessionId) return alert("ไม่พบรหัสก๊วน");
-
-        const customId = "manual_" + Date.now();
-        try {
-            await setDoc(doc(db, `sessions/${sessionId}/attendance`, customId), {
-                display_name: name,
-                skill_level: skillInput.value,
-                is_paid: false,
-                games_played: 0,
-                shuttle_used: 0,
-                extra_cost: 0,
-                discount: 0,
-                checkin_at: Date.now(),
-                type: "manual"
-            });
-            nameInput.value = "";
-            alert(`เพิ่มคุณ ${name} แล้ว`);
-        } catch (e) { alert("Error: " + e.message); }
     };
 </script>
 </body>

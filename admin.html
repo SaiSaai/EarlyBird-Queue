@@ -54,6 +54,24 @@
         <div id="checkin-list" class="list-box"></div>
         <button id="confirmBtn" style="background:#007bff; color:white; width:100%; padding:14px; margin-top:10px; font-size:1.1em;">ยืนยันลงสนาม (0)</button>
         <button id="mockBtn" style="margin-top:8px; background:#f0f0f0; color:#666; width:100%; padding:8px; font-size:0.8em; border:1px dashed #ccc;">🤖 Test: สุ่มคน 20 คน</button>
+        <div style="background: #f8f9fa; padding: 15px; border-radius: 12px; margin-bottom: 20px; border: 1px dashed #ccc;">
+    <h4 style="margin-top:0;">➕ เพิ่มสมาชิกด้วยตนเอง</h4>
+    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+        <input type="text" id="admin-manual-name" placeholder="ชื่อลูกค้า" style="padding: 8px; border-radius: 6px; border: 1px solid #ddd; flex: 1;">
+        
+        <select id="admin-manual-skill" style="padding: 8px; border-radius: 6px; border: 1px solid #ddd;">
+            <option value="yellow">Yellow (Y)</option>
+            <option value="green" selected>Green (G)</option>
+            <option value="blue">Blue (B)</option>
+            <option value="red">Red (R)</option>
+            <option value="black">Black (BK)</option>
+        </select>
+
+        <button onclick="manualAddPlayer()" style="background: #28a745; color: white; border: none; padding: 8px 20px; border-radius: 6px; cursor: pointer; font-weight: bold;">
+            เพิ่มเข้าก๊วน
+        </button>
+    </div>
+</div>
     </div>
 
     <div class="side-panel" id="panel-queue" data-label="⏳ คิวกลาง" onclick="checkAndOpen('panel-queue')" style="background: #fffdf5; border-right: none; border-left: 2px solid #eee;">
@@ -439,6 +457,46 @@
         }
         await batch.commit();
     };
+    window.manualAddPlayer = async () => {
+    const nameInput = document.getElementById('admin-manual-name');
+    const skillInput = document.getElementById('admin-manual-skill');
+    const name = nameInput.value.trim();
+    
+    // ดึง sessionId จากจุดที่หน้า Admin เก็บไว้ (ปกติคือ localStorage.getItem('last_sid'))
+    const sid = localStorage.getItem('last_sid'); 
+
+    if (!name) return alert("กรุณาใส่ชื่อลูกค้า");
+    if (!sid) return alert("ไม่พบรหัสก๊วนที่เปิดอยู่");
+
+    // สร้าง ID พิเศษสำหรับคนที่แอดมินเพิ่มเอง
+    const customId = "manual_" + Date.now();
+
+    try {
+        // บันทึกลงใน attendance ของก๊วนปัจจุบัน
+        await setDoc(doc(db, `sessions/${sid}/attendance`, customId), {
+            id: customId,
+            display_name: name,
+            skill_level: skillInput.value,
+            is_paid: false,
+            games_played: 0,
+            shuttle_used: 0,
+            extra_cost: 0,
+            discount: 0,
+            checkin_at: Date.now(),
+            type: "manual"
+        });
+
+        // เคลียร์ค่าในช่องกรอก
+        nameInput.value = "";
+        alert(`เพิ่มคุณ ${name} เรียบร้อยแล้ว`);
+        
+        // หมายเหตุ: หน้า Admin ของคุณควรมี onSnapshot ที่ดึงรายชื่อจาก attendance 
+        // มาแสดงผลอยู่แล้ว ชื่อใหม่นี้จะเด้งขึ้นมาในรายการ "คนว่าง" ทันทีครับ
+    } catch (e) {
+        console.error("Error manual adding:", e);
+        alert("เกิดข้อผิดพลาด: " + e.message);
+    }
+};
 </script>
 </body>
 </html>
