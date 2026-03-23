@@ -457,46 +457,42 @@
         }
         await batch.commit();
     };
+    // แก้ไขฟังก์ชันเพิ่มสมาชิกด้วยตนเอง
     window.manualAddPlayer = async () => {
-    const nameInput = document.getElementById('admin-manual-name');
-    const skillInput = document.getElementById('admin-manual-skill');
-    const name = nameInput.value.trim();
-    
-    // ดึง sessionId จากจุดที่หน้า Admin เก็บไว้ (ปกติคือ localStorage.getItem('last_sid'))
-    const sid = localStorage.getItem('last_sid'); 
+        const nameInput = document.getElementById('admin-manual-name');
+        const skillInput = document.getElementById('admin-manual-skill');
+        const name = nameInput.value.trim();
+        const sid = localStorage.getItem('last_sid'); 
 
-    if (!name) return alert("กรุณาใส่ชื่อลูกค้า");
-    if (!sid) return alert("ไม่พบรหัสก๊วนที่เปิดอยู่");
+        if (!name) return alert("กรุณาใส่ชื่อลูกค้า");
+        if (!sid) return alert("ไม่พบรหัสก๊วนที่เปิดอยู่");
 
-    // สร้าง ID พิเศษสำหรับคนที่แอดมินเพิ่มเอง
-    const customId = "manual_" + Date.now();
+        const customId = "manual_" + Date.now();
 
-    try {
-        // บันทึกลงใน attendance ของก๊วนปัจจุบัน
-        await setDoc(doc(db, `sessions/${sid}/attendance`, customId), {
-            id: customId,
-            display_name: name,
-            skill_level: skillInput.value,
-            is_paid: false,
-            games_played: 0,
-            shuttle_used: 0,
-            extra_cost: 0,
-            discount: 0,
-            checkin_at: Date.now(),
-            type: "manual"
-        });
+        try {
+            // ใช้ setDoc ที่ import ไว้แล้วด้านบน
+            await setDoc(doc(db, `sessions/${sid}/attendance`, customId), {
+                id: customId,
+                display_name: name,
+                skill_level: skillInput.value,
+                is_paid: false,
+                is_playing: false, // *** สำคัญ: ต้องใส่เพื่อให้ปรากฏในลิสต์คนว่าง
+                games_played: 0,
+                shuttle_used: 0,
+                extra_cost: 0,
+                discount: 0,
+                last_match_end: 0, // *** ใส่ค่า 0 เพื่อให้คนใหม่ไปอยู่คิวแรกๆ หรือตาม logic sorting
+                checkin_at: Date.now(),
+                type: "manual"
+            });
 
-        // เคลียร์ค่าในช่องกรอก
-        nameInput.value = "";
-        alert(`เพิ่มคุณ ${name} เรียบร้อยแล้ว`);
-        
-        // หมายเหตุ: หน้า Admin ของคุณควรมี onSnapshot ที่ดึงรายชื่อจาก attendance 
-        // มาแสดงผลอยู่แล้ว ชื่อใหม่นี้จะเด้งขึ้นมาในรายการ "คนว่าง" ทันทีครับ
-    } catch (e) {
-        console.error("Error manual adding:", e);
-        alert("เกิดข้อผิดพลาด: " + e.message);
-    }
-};
+            nameInput.value = "";
+            // ไม่ต้อง alert ก็ได้ครับ เพราะชื่อจะเด้งขึ้นมาในลิสต์ให้เห็นเลย (Real-time)
+        } catch (e) {
+            console.error("Error manual adding:", e);
+            alert("เกิดข้อผิดพลาด: " + e.message);
+        }
+    };
 </script>
 </body>
 </html>
