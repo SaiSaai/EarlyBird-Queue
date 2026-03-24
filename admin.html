@@ -147,7 +147,7 @@
         };*/
         window.terminateSession = async () => {
             const sid = localStorage.getItem('last_sid');
-            if (!sid) return alert("ไม่พบข้อมูลก๊วนที่เปิดอยู่");
+            if (!sid || lastSnapshotData.length === 0) return alert("ไม่พบข้อมูลก๊วนที่เปิดอยู่");
 
             // --- 1. เริ่มการคำนวณสรุปผลยอดของวันนี้ ---
             let totalMembers = lastSnapshotData.length;
@@ -163,7 +163,7 @@
                 // หรือถ้าคุณเก็บยอดจ่ายจริงไว้ใน is_paid_amount ให้ดึงตัวเลขนั้นมาแทน
                 totalExtra += (d.extra_cost || 0);
                 totalDiscount += (d.discount || 0);
-                totalIncome += (p.data.paid_amount || 0);
+                totalIncome += (p.paid_amount || 0);
                 
                 // ถ้าจ่ายแล้ว (is_paid) เราจะนับเป็นรายได้
                 // ในที่นี้ถ้าคุณมีระบบคำนวณเงินโอน/เงินสด ให้ดึงจากฟิลด์ที่เก็บยอดเงินครับ
@@ -173,9 +173,13 @@
                 }
             });
 
+            // --- 2. สร้าง Format ข้อความสำหรับส่ง LINE ---
+            const reportDate = new Date().toLocaleDateString('th-TH', { 
+                year: 'numeric', month: 'long', day: 'numeric' 
+            });
             // สร้างข้อความสรุป
             const summaryMsg = `
-        📊 สรุปภาพรวมก๊วนวันนี้:
+        📊 สรุปภาพรวมก๊วนวันนี้ (${reportDate}) : 
         ----------------------------
         👥 สมาชิกทั้งหมด: ${totalMembers} คน
         🏸 ใช้ลูกแบดรวม: ${totalShuttle / 4} ลูก
@@ -184,19 +188,22 @@
         💸 ยอดส่วนลด (Discount): ${totalDiscount} บาท
         ----------------------------
         ยืนยันการจบก๊วนและล้างหน้าจอหรือไม่?
-        (ข้อมูลจะถูกบันทึกเข้าประวัติในระบบ)
             `;
 
-            if (!confirm(summaryMsg)) return;
+            if (!confirm(summaryMsg + "\n\n⚠️ กดตกลงเพื่อคัดลอกรายงาน และจบก๊วนทันที")) return;
 
             // --- 2. ดำเนินการปิดก๊วนบน Firebase ---
             try {
+                // คัดลอกลง Clipboard
+                await navigator.clipboard.writeText(summaryText);
+                // อัปเดต Firebase
                 await updateDoc(doc(db, "sessions", sid), { 
                     status: "closed",
                     closed_at: Date.now(),
                     summary: {
                         members_count: totalMembers,
                         shuttle_total: totalShuttle,
+                        income_total: totalIncome,
                         extra_total: totalExtra,
                         discount_total: totalDiscount
                     },
