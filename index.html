@@ -76,21 +76,15 @@
 
         
         async function init() {
-            document.getElementById('display-content').innerHTML = `
-                        <div style="text-align:center; margin-top:50px; color:#999;">
-                            <p style="font-size:3rem;">😴</p>
-                            <p>ก๊วนจบลงแล้ว หรือยังไม่ได้เปิดก๊วนใหม่</p>
-                        </div>`;
-                    }
-            /*try {
-                await liff.init({ liffId: "2009012689-o7UBlAd7" });
-                if (liff.isLoggedIn()) {
-                    const p = await liff.getProfile();
-                    myUid = p.userId;
-                    myName = p.displayName;
-                    document.getElementById('user-welcome').innerText = "สวัสดีคุณ " + myName;
-                }
-            } catch(e) {}
+            // try {
+            //     await liff.init({ liffId: "2009012689-o7UBlAd7" });
+            //     if (liff.isLoggedIn()) {
+            //         const p = await liff.getProfile();
+            //         myUid = p.userId;
+            //         myName = p.displayName;
+            //         document.getElementById('user-welcome').innerText = "สวัสดีคุณ " + myName;
+            //     }
+            // } catch(e) {}
 
             // ค้นหาก๊วนที่ Active ล่าสุด
             const q = query(collection(db, "sessions"), where("status", "==", "active"));
@@ -110,13 +104,13 @@
                             <p style="font-size:3rem;">😴</p>
                             <p>ก๊วนจบลงแล้ว หรือยังไม่ได้เปิดก๊วนใหม่</p>
                         </div>`;
-                    document.getElementById('action-area').innerHTML = `<button class="btn-checkin" onclick="goToCheckin()">➕ ลงชื่อเข้าก๊วน</button>`;
+                    //document.getElementById('action-area').innerHTML = `<button class="btn-checkin" onclick="goToCheckin()">➕ ลงชื่อเข้าก๊วน</button>`;
                     
                     // สั่งลบข้อมูลการเช็คอินในเครื่องผู้ใช้ (Check-out อัตโนมัติ)
-                    localStorage.removeItem('my_checkin_status'); 
+                    //localStorage.removeItem('my_checkin_status'); 
                 }
             });
-        }*/
+        }
 
         // ฟังก์ชันช่วยใส่ Class 'me' ให้ชื่อเรา
         function formatName(nameStr) {
