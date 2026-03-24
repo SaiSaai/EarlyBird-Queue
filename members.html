@@ -199,11 +199,11 @@
                         <span class="skill-dot lvl-${m.skill_level || 'yellow'}"></span>
                         <input type="text" value="${m.display_name}" onchange="updateMember('${m.id}', {display_name: this.value})">
                         <select onchange="updateMember('${m.id}', {skill_level: this.value})">
-                            <option value="yellow" ${m.skill_level=='yellow'?'selected':''}>Y</option>
-                            <option value="green" ${m.skill_level=='green'?'selected':''}>G</option>
-                            <option value="blue" ${m.skill_level=='blue'?'selected':''}>B</option>
-                            <option value="red" ${m.skill_level=='red'?'selected':''}>R</option>
-                            <option value="black" ${m.skill_level=='black'?'selected':''}>BK</option>
+                            <option value="yellow" ${m.skill_level=='yellow'?'selected':''}>มือใหม่</option>
+                            <option value="green" ${m.skill_level=='green'?'selected':''}>เบา</option>
+                            <option value="blue" ${m.skill_level=='blue'?'selected':''}>กลาง</option>
+                            <option value="red" ${m.skill_level=='red'?'selected':''}>หนัก</option>
+                            <option value="black" ${m.skill_level=='black'?'selected':''}>หนักมาก</option>
                         </select>
                         <button class="btn-del" onclick="deleteMember('${m.id}', '${m.display_name}')">🗑️</button>
                     </div>

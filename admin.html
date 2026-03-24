@@ -137,12 +137,80 @@
             location.reload(); 
         };
 
-        window.terminateSession = async () => {
+        /*window.terminateSession = async () => {
             if (!confirm("จบก๊วนนี้?")) return;
             const sid = localStorage.getItem('last_sid');
             if (sid) {
                 await updateDoc(doc(db, "sessions", sid), { status: "closed", closed_at: Date.now(), live_courts: [], middle_queue: [] });
                 alert("จบก๊วนเรียบร้อย");
+            }
+        };*/
+        window.terminateSession = async () => {
+            const sid = localStorage.getItem('last_sid');
+            if (!sid) return alert("ไม่พบข้อมูลก๊วนที่เปิดอยู่");
+
+            // --- 1. เริ่มการคำนวณสรุปผลยอดของวันนี้ ---
+            let totalMembers = lastSnapshotData.length;
+            let totalShuttle = 0;
+            let totalIncome = 0;
+            let totalExtra = 0;
+            let totalDiscount = 0;
+
+            lastSnapshotData.forEach(p => {
+                const d = p.data;
+                totalShuttle += (d.shuttle_used || 0);
+                // สมมติค่าสนาม/ค่าลูกพื้นฐาน (ปรับตัวเลขตามก๊วนคุณได้เลยครับ)
+                // หรือถ้าคุณเก็บยอดจ่ายจริงไว้ใน is_paid_amount ให้ดึงตัวเลขนั้นมาแทน
+                totalExtra += (d.extra_cost || 0);
+                totalDiscount += (d.discount || 0);
+                
+                // ถ้าจ่ายแล้ว (is_paid) เราจะนับเป็นรายได้
+                // ในที่นี้ถ้าคุณมีระบบคำนวณเงินโอน/เงินสด ให้ดึงจากฟิลด์ที่เก็บยอดเงินครับ
+                if (d.is_paid) {
+                    // ตัวอย่าง: ยอดเงินรวม = (ค่าเฉลี่ยที่ระบบคิด) + extra - discount
+                    // แต่เพื่อให้แม่นยำที่สุด ผมแนะนำให้คุณมีฟิลด์ยอดเงินที่จ่ายจริงครับ
+                }
+            });
+
+            // สร้างข้อความสรุป
+            const summaryMsg = `
+        📊 สรุปภาพรวมก๊วนวันนี้:
+        ----------------------------
+        👥 สมาชิกทั้งหมด: ${totalMembers} คน
+        🏸 ใช้ลูกแบดรวม: ${totalShuttle} ลูก
+        💰 ยอดเงินเพิ่ม (Extra): ${totalExtra} บาท
+        💸 ยอดส่วนลด (Discount): ${totalDiscount} บาท
+        ----------------------------
+        ยืนยันการจบก๊วนและล้างหน้าจอหรือไม่?
+        (ข้อมูลจะถูกบันทึกเข้าประวัติในระบบ)
+            `;
+
+            if (!confirm(summaryMsg)) return;
+
+            // --- 2. ดำเนินการปิดก๊วนบน Firebase ---
+            try {
+                await updateDoc(doc(db, "sessions", sid), { 
+                    status: "closed",
+                    closed_at: Date.now(),
+                    summary: {
+                        members_count: totalMembers,
+                        shuttle_total: totalShuttle,
+                        extra_total: totalExtra,
+                        discount_total: totalDiscount
+                    },
+                    live_courts: [], 
+                    middle_queue: [] 
+                });
+                
+                // ล้างข้อมูลในเครื่องแอดมิน
+                localStorage.removeItem(`courts_${sid}`);
+                localStorage.removeItem(`queue_${sid}`);
+                
+                alert("🏁 จบก๊วนเรียบร้อย! ระบบบันทึกสรุปยอดไว้แล้ว");
+                location.reload(); // รีเฟรชเพื่อเริ่มใหม่
+            } catch (e) {
+                console.error("Error closing session: ", e);
+                alert("เกิดข้อผิดพลาดในการปิดก๊วน");
             }
         };
 
