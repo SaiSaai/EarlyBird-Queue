@@ -74,9 +74,15 @@
         let myUid = null;
         let myName = "";
 
-        /*
+        
         async function init() {
-            try {
+            document.getElementById('display-content').innerHTML = `
+                        <div style="text-align:center; margin-top:50px; color:#999;">
+                            <p style="font-size:3rem;">😴</p>
+                            <p>ก๊วนจบลงแล้ว หรือยังไม่ได้เปิดก๊วนใหม่</p>
+                        </div>`;
+                    }
+            /*try {
                 await liff.init({ liffId: "2009012689-o7UBlAd7" });
                 if (liff.isLoggedIn()) {
                     const p = await liff.getProfile();
