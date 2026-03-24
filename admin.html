@@ -74,9 +74,9 @@
             <option value="black">Black (BK)</option>
         </select>
 
-        <button onclick="manualAddPlayer()" style="background: #28a745; color: white; border: none; padding: 8px 20px; border-radius: 6px; cursor: pointer; font-weight: bold;">
+        <!--<button onclick="manualAddPlayer()" style="background: #28a745; color: white; border: none; padding: 8px 20px; border-radius: 6px; cursor: pointer; font-weight: bold;">
             เพิ่มเข้าก๊วน
-        </button>
+        </button>-->
     </div>
 </div>
     </div>
@@ -466,7 +466,7 @@
     };*/
 
     // แก้ไขฟังก์ชันเพิ่มสมาชิกด้วยตนเอง
-    window.manualAddPlayer = async () => {
+    /*window.manualAddPlayer = async () => {
         const nameInput = document.getElementById('admin-manual-name');
         const skillInput = document.getElementById('admin-manual-skill');
         const name = nameInput.value.trim();
@@ -500,7 +500,7 @@
             console.error("Error manual adding:", e);
             alert("เกิดข้อผิดพลาด: " + e.message);
         }
-    };
+    };*/
 
     window.importBulkPlayers = async () => {
     const input = document.getElementById('bulk-paste-input');
@@ -546,7 +546,7 @@
             shuttle_used: 0,
             extra_cost: 0,
             discount: 0,
-            last_match_end: 0,
+            last_match_end: Date.now() + (i * 100), 
             checkin_at: Date.now(),
             type: "manual"
         });
