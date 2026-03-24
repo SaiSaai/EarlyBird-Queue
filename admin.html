@@ -53,7 +53,14 @@
         <h3>👥 คิวรอ <span style="float:right; font-size:0.7em; cursor:pointer;" onclick="event.stopPropagation(); togglePanel('panel-fifo')">❌</span></h3>
         <div id="checkin-list" class="list-box"></div>
         <button id="confirmBtn" style="background:#007bff; color:white; width:100%; padding:14px; margin-top:10px; font-size:1.1em;">ยืนยันลงสนาม (0)</button>
-        <button id="mockBtn" style="margin-top:8px; background:#f0f0f0; color:#666; width:100%; padding:8px; font-size:0.8em; border:1px dashed #ccc;">🤖 Test: สุ่มคน 20 คน</button>
+        <!--<button id="mockBtn" style="margin-top:8px; background:#f0f0f0; color:#666; width:100%; padding:8px; font-size:0.8em; border:1px dashed #ccc;">🤖 Test: สุ่มคน 20 คน</button>-->
+        <div style="background: #fff; padding: 15px; border-radius: 12px; margin-top: 10px; border: 1px solid #ddd;">
+    <h4 style="margin: 0 0 10px 0;">📋 นำเข้าคิวรายชื่อ (Bulk Paste)</h4>
+    <textarea id="bulk-paste-input" rows="5" placeholder="วางรายชื่อที่นี่...&#10;1. ตุ่ม&#10;2. ปอง" style="width: 100%; border-radius: 8px; border: 1px solid #ccc; padding: 8px; font-size: 0.9em;"></textarea>
+    <button onclick="importBulkPlayers()" style="background: #6f42c1; color: white; width: 100%; padding: 10px; margin-top: 8px; border-radius: 8px; font-weight: bold;">
+        🚀 นำเข้ารายชื่อทั้งหมด
+    </button>
+</div>
         <div style="background: #f8f9fa; padding: 15px; border-radius: 12px; margin-bottom: 20px; border: 1px dashed #ccc;">
     <h4 style="margin-top:0;">➕ เพิ่มสมาชิกด้วยตนเอง</h4>
     <div style="display: flex; gap: 10px; flex-wrap: wrap;">
@@ -439,7 +446,7 @@
             document.getElementById('empty-msg').style.display = 'block'; 
     };
 
-    document.getElementById('mockBtn').onclick = async () => {
+    /*document.getElementById('mockBtn').onclick = async () => {
         if(!currentSessionId) return alert("เปิดก๊วนก่อน!");
         const batch = writeBatch(db);
         const names = ["สมชาย", "วิภา", "มานะ", "ก้อง", "ฟ้า", "ต้น", "เปิ้ล", "นัท", "บอย", "แอน", "ขวัญ", "เจมส์", "ตั้ม", "นุช", "เก่ง", "ปลา", "เอก", "หมี", "โอ๋", "ต่าย"];
@@ -456,7 +463,8 @@
             });
         }
         await batch.commit();
-    };
+    };*/
+
     // แก้ไขฟังก์ชันเพิ่มสมาชิกด้วยตนเอง
     window.manualAddPlayer = async () => {
         const nameInput = document.getElementById('admin-manual-name');
@@ -493,6 +501,66 @@
             alert("เกิดข้อผิดพลาด: " + e.message);
         }
     };
+
+    window.importBulkPlayers = async () => {
+    const input = document.getElementById('bulk-paste-input');
+    const rawText = input.value.trim();
+    const sid = localStorage.getItem('last_sid');
+
+    if (!rawText) return alert("กรุณาวางรายชื่อก่อนครับ");
+    if (!sid) return alert("กรุณาเปิดก๊วนก่อน");
+
+    // 1. แยกบรรทัดและ Clean ชื่อ
+    const lines = rawText.split('\n');
+    const playersToProcess = lines.map(line => {
+        // Regex: ตัดตัวเลข, จุด, และช่องว่างหน้า-หลังออก
+        return line.replace(/^\d+\.\s*/, '').trim();
+    }).filter(name => name.length > 0);
+
+    if (playersToProcess.length === 0) return alert("ไม่พบรายชื่อที่ใช้งานได้");
+
+    if (!confirm(`ยืนยันนำเข้าผู้เล่นจำนวน ${playersToProcess.length} คน?`)) return;
+
+    const batch = writeBatch(db);
+    
+    // ดึงข้อมูลสมาชิกทั้งหมดในระบบ (ถ้ามี Master List สมาชิกแยกไว้จะดีมาก 
+    // แต่ถ้าไม่มี เราจะเช็คจากสมาชิกที่เคยเช็คอินใน Session นี้ก่อน)
+    // หมายเหตุ: เพื่อความแม่นยำที่สุด ควรมี Collection 'members' แยกต่างหาก 
+    // แต่ในที่นี้จะเช็คจาก lastSnapshotData ที่มีอยู่แล้วในหน้า Admin ครับ
+    
+    for (const name of playersToProcess) {
+        const customId = "manual_" + Date.now() + "_" + Math.random().toString(36).substr(2, 5);
+        
+        // ค้นหาว่าชื่อนี้เคยมาหรือยังใน snapshot ปัจจุบัน (เพื่อดึงสีเดิม)
+        const existingPlayer = lastSnapshotData.find(p => p.data.display_name === name);
+        const defaultColor = existingPlayer ? (existingPlayer.data.skill_level || "yellow") : "yellow";
+
+        const playerRef = doc(db, `sessions/${sid}/attendance`, customId);
+        batch.set(playerRef, {
+            id: customId,
+            display_name: name,
+            skill_level: defaultColor, // ใช้สีเดิมถ้าเคยมา หรือเหลืองถ้าคนใหม่
+            is_paid: false,
+            is_playing: false,
+            games_played: 0,
+            shuttle_used: 0,
+            extra_cost: 0,
+            discount: 0,
+            last_match_end: 0,
+            checkin_at: Date.now(),
+            type: "manual"
+        });
+    }
+
+    try {
+        await batch.commit();
+        input.value = "";
+        alert(`นำเข้า ${playersToProcess.length} รายชื่อเรียบร้อย!`);
+    } catch (e) {
+        console.error("Bulk Import Error:", e);
+        alert("เกิดข้อผิดพลาดในการนำเข้า");
+    }
+};
 </script>
 </body>
 </html>
