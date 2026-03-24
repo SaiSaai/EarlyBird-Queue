@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BadQueue - Live Status</title>
-    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <!-- <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script> -->
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
         :root { --primary: #06C755; --blue: #2196f3; --bg: #fdfcf0; --me-bg: #fff9c4; --me-border: #fbc02d; }
@@ -111,6 +111,11 @@
         //         }
         //     });
         // }
+        async function init() {
+            // ไม่ใช้ LINE แล้ว
+            myUid = null;
+            myName = "";
+        }
 
         // ฟังก์ชันช่วยใส่ Class 'me' ให้ชื่อเรา
         function formatName(nameStr) {
@@ -122,13 +127,13 @@
             return nameStr;
         }
 
-        async function updateUI(sid) {
-            if (myUid) {
-                const uDoc = await getDoc(doc(db, `sessions/${sid}/attendance`, myUid));
-                if (uDoc.exists()) {
-                    document.getElementById('action-area').innerHTML = `<div class="already-in">🎉 คุณลงชื่อเรียบร้อยแล้ว</div>`;
-                }
-            }
+        // async function updateUI(sid) {
+        //     if (myUid) {
+        //         const uDoc = await getDoc(doc(db, `sessions/${sid}/attendance`, myUid));
+        //         if (uDoc.exists()) {
+        //             document.getElementById('action-area').innerHTML = `<div class="already-in">🎉 คุณลงชื่อเรียบร้อยแล้ว</div>`;
+        //         }
+        //     }
 
             onSnapshot(doc(db, "sessions", sid), (snap) => {
                 const data = snap.data();
