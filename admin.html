@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Badminton Admin - Pro Edition 2026</title>
+    <title>Badminton Admin - Collapsible Queue</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
@@ -15,18 +15,36 @@
         * { box-sizing: border-box; font-family: 'Kanit', sans-serif; }
         body { background-color: var(--primary-bg); margin: 0; display: flex; height: 100vh; overflow: hidden; }
         
-        #left-sidebar-container { width: 580px; height: 100vh; display: flex; flex-direction: column; background: #fff; border-right: 2px solid #eee; flex-shrink: 0; }
+        /* Sidebar กับระบบหุบ */
+        #left-sidebar-container { 
+            width: 480px; height: 100vh; display: flex; flex-direction: column; 
+            background: #fff; border-right: 2px solid #eee; flex-shrink: 0; 
+            transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+            position: relative; z-index: 100;
+        }
+        #left-sidebar-container.collapsed { margin-left: -480px; }
+        
+        #toggle-sidebar {
+            position: absolute; right: -30px; top: 50%; transform: translateY(-50%);
+            width: 30px; height: 80px; background: #fff; border: 2px solid #eee;
+            border-left: none; border-radius: 0 15px 15px 0; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: bold; color: #666; box-shadow: 4px 0 10px rgba(0,0,0,0.05);
+        }
+
         .queue-split-area { display: flex; flex: 1; min-height: 0; border-bottom: 2px solid #eee; }
         .side-panel { flex: 1; display: flex; flex-direction: column; padding: 15px; overflow: hidden; }
         .panel-main { flex: 1; padding: 15px; overflow-y: auto; position: relative; }
         .list-box { flex: 1; border: 1px solid #ddd; border-radius: 12px; overflow-y: auto; padding: 10px; background: #fafafa; }
         
-        .player-item { padding: 10px; margin-bottom: 8px; border-radius: 10px; border: 2px solid #eee; background: white; cursor: pointer; font-weight: bold; display: flex; align-items: center; transition: 0.2s; }
+        /* Player Items */
+        .player-item { padding: 10px; margin-bottom: 8px; border-radius: 10px; border: 2px solid #eee; background: white; cursor: pointer; font-weight: bold; display: flex; align-items: center; transition: 0.2s; font-size: 0.9em; }
         .player-item:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.05); }
         .skill-dot { display: inline-block; width: 14px; height: 14px; border-radius: 50%; border: 1px solid rgba(0,0,0,0.2); flex-shrink: 0; }
         .lvl-yellow { background: var(--v-yellow); } .lvl-green { background: var(--v-green); } .lvl-blue { background: var(--v-blue); } .lvl-red { background: var(--v-red); } .lvl-black { background: var(--v-black); }
         .sel-a { border-color: var(--team-a); background: #e7f3ff; } .sel-b { border-color: var(--team-b); background: #f0fff4; }
 
+        /* Courts */
         .courts-wrapper { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; padding-bottom: 40px; }
         .court-card { background: white; border-radius: 20px; padding: 15px; box-shadow: 0 8px 15px rgba(0,0,0,0.05); border-top: 10px solid #ccc; }
         .court-card.playing { border-top-color: #4caf50; background: var(--playing-bg); }
@@ -38,10 +56,8 @@
         .btn-start { background: #4caf50; color: white; width: 100%; padding: 12px; margin-top: 8px; }
         .btn-end { background: var(--accent-red); color: #d00; width: 100%; padding: 12px; margin-top: 8px; }
         
-        .history-section { margin-top: 40px; padding: 20px; background: white; border-radius: 20px; border: 1px solid #eee; }
         .history-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        .history-table th { background: #f8f9fa; padding: 12px; text-align: left; border-bottom: 2px solid #eee; font-size: 0.9em; }
-        .history-table td { padding: 12px; border-bottom: 1px solid #eee; font-size: 0.85em; }
+        .history-table td { padding: 10px; border-bottom: 1px solid #eee; font-size: 0.85em; }
         
         #qr-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 9999; justify-content: center; align-items: center; }
         .modal-content { background: white; padding: 25px; border-radius: 25px; text-align: center; }
@@ -50,40 +66,39 @@
 <body>
 
     <div id="left-sidebar-container">
+        <button id="toggle-sidebar" onclick="toggleSidebar()">◀</button>
+
         <div class="queue-split-area">
             <div class="side-panel">
-                <h3>👥 คิวรอ (FIFO)</h3>
+                <h3 style="margin:0 0 10px 0;">👥 คิวรอ</h3>
                 <div id="checkin-list" class="list-box"></div>
-                <button id="confirmBtn" class="btn-primary" style="width:100%; padding:14px; margin-top:10px; font-size:1.1em;">ยืนยันลงสนาม (0)</button>
+                <button id="confirmBtn" class="btn-primary" style="width:100%; padding:12px; margin-top:10px;">ยืนยัน (0)</button>
             </div>
             <div class="side-panel" style="background: #fffdf5;">
-                <h3>⏳ คิวกลาง</h3>
+                <h3 style="margin:0 0 10px 0;">⏳ คิวกลาง</h3>
                 <div id="queue-list" class="list-box"></div>
             </div>
         </div>
-        <div style="padding: 15px; background: #f9f9f9; border-top: 1px solid #eee;">
-            <textarea id="bulk-paste-input" rows="3" placeholder="วางรายชื่อจาก LINE ที่นี่..." style="width: 100%; border-radius: 8px; border: 1px solid #ddd; padding: 10px; font-size: 0.9em; resize: none;"></textarea>
-            <button onclick="importBulkPlayers()" style="width: 100%; padding: 10px; margin-top: 5px; background: #6f42c1; color: white;">🚀 นำเข้ารายชื่อ</button>
+        <div style="padding: 12px; background: #f9f9f9; border-top: 1px solid #eee;">
+            <textarea id="bulk-paste-input" rows="2" placeholder="วางชื่อจาก LINE..." style="width: 100%; border-radius: 8px; border: 1px solid #ddd; padding: 8px; font-size: 0.8em; resize: none;"></textarea>
+            <button onclick="importBulkPlayers()" style="width: 100%; padding: 8px; margin-top: 5px; background: #6f42c1; color: white; font-size: 0.85em;">🚀 นำเข้าชื่อ</button>
         </div>
     </div>
 
     <div class="panel-main">
         <div style="display:flex; gap:12px; margin-bottom:20px; align-items: center;">
-            <button onclick="createSession()" style="background: #4caf50; color: white; padding: 12px 20px;">🚀 เปิดก๊วนใหม่</button>
-            <button onclick="addNewCourt()" style="background: #2196f3; color: white; padding: 12px 20px;">➕ เพิ่มสนาม</button>
-            <button onclick="terminateSession()" style="background: #ff4d4f; color: white; padding: 12px 20px;">🏁 จบก๊วน & ส่งสรุป</button>
+            <button onclick="createSession()" style="background: #4caf50; color: white; padding: 10px 15px;">🚀 เปิดก๊วน</button>
+            <button onclick="addNewCourt()" style="background: #2196f3; color: white; padding: 10px 15px;">➕ เพิ่มสนาม</button>
+            <button onclick="terminateSession()" style="background: #ff4d4f; color: white; padding: 10px 15px;">🏁 จบก๊วน</button>
             <div id="qrcode" onclick="expandQR()" style="margin-left: auto; cursor: zoom-in;"></div>
         </div>
 
         <div id="empty-msg" style="text-align:center; color:#999; margin-top:50px;">ยังไม่มีสนาม กด "เพิ่มสนาม"</div>
         <div class="courts-wrapper" id="main-grid"></div>
 
-        <div class="history-section">
-            <h3>📜 ประวัติการแข่งวันนี้</h3>
+        <div style="margin-top: 30px; padding: 20px; background: white; border-radius: 20px; border: 1px solid #eee;">
+            <h3>📜 ประวัติการแข่ง</h3>
             <table class="history-table">
-                <thead>
-                    <tr><th>#</th><th>สนาม</th><th>คู่แข่งขัน</th><th>เวลาจบ</th></tr>
-                </thead>
                 <tbody id="match-history-list"></tbody>
             </table>
         </div>
@@ -101,6 +116,14 @@
 
         let selectedSlots = [null, null, null, null], currentSessionId = localStorage.getItem('last_sid') || "", lastSnapshotData = [], middleQueue = [], nextCourtNumber = 1;
 
+        // ฟังก์ชัน Toggle Sidebar
+        window.toggleSidebar = () => {
+            const sidebar = document.getElementById('left-sidebar-container');
+            const btn = document.getElementById('toggle-sidebar');
+            sidebar.classList.toggle('collapsed');
+            btn.innerText = sidebar.classList.contains('collapsed') ? "▶" : "◀";
+        };
+
         window.onload = () => {
             if (currentSessionId) {
                 generateQR(currentSessionId);
@@ -113,7 +136,9 @@
             new Sortable(document.getElementById('main-grid'), { animation: 150, handle: '.court-header', onEnd: saveCourtsToLocal });
         };
 
-        // --- Session Management ---
+        // --- Logic ฟังก์ชันทั้งหมดของคุณ (createSession, terminateSession, assignSlot, handleEndGame, etc.) ---
+        // (ยกมาจากโค้ดก่อนหน้านี้เพื่อให้ทำงานได้สมบูรณ์)
+
         window.createSession = async () => {
             if(currentSessionId && !confirm("เริ่มก๊วนใหม่? ข้อมูลปัจจุบันจะถูกเคลียร์")) return;
             const sid = "GS" + Date.now().toString().slice(-6);
@@ -123,7 +148,7 @@
 
         window.terminateSession = async () => {
             if (lastSnapshotData.length === 0) return alert("ไม่มีข้อมูลสมาชิก");
-            const baseRate = 150; // ปรับค่าสนามพื้นฐานที่นี่
+            const baseRate = 150;
             let totalShuttle = 0, totalExtra = 0, totalDiscount = 0;
             lastSnapshotData.forEach(p => {
                 totalShuttle += (p.data.shuttle_used || 0);
@@ -132,7 +157,6 @@
             });
             const netTotal = (lastSnapshotData.length * baseRate) + totalExtra - totalDiscount;
             const report = `📊 สรุปก๊วนวันนี้\n----------------\n👥 สมาชิก: ${lastSnapshotData.length} คน\n🏸 ลูกแบด: ${totalShuttle} ลูก\n💰 ยอดเพิ่ม: ${totalExtra} บ.\n💸 ส่วนลด: ${totalDiscount} บ.\n----------------\n💵 ยอดรวมสุทธิ: ${netTotal.toLocaleString()} บาท`;
-
             if (confirm(report + "\n\nกดตกลงเพื่อ Copy รายงานและจบก๊วน")) {
                 await navigator.clipboard.writeText(report);
                 await updateDoc(doc(db, "sessions", currentSessionId), { status: "closed", summary: report });
@@ -142,7 +166,6 @@
             }
         };
 
-        // --- Core Functions ---
         async function saveCourtsToLocal() {
             if(!currentSessionId) return;
             const courts = [];
@@ -196,12 +219,10 @@
             saveCourtsToLocal();
         };
 
-        // --- Game Logic ---
         window.assignSlot = async (el, courtId) => {
             const sIdx = selectedSlots.findIndex(p => p !== null);
             const oldUid = el.dataset.uid;
             const batch = writeBatch(db);
-
             if (sIdx === -1 && oldUid) {
                 if(confirm("เอาออกจากสนาม?")) {
                     batch.update(doc(db, `sessions/${currentSessionId}/attendance`, oldUid), { is_playing: false });
@@ -233,11 +254,8 @@
             const card = document.getElementById(id);
             const players = Array.from(card.querySelectorAll('.slot')).map(s => s.innerText.replace('ว่าง','').trim() || "-");
             const batch = writeBatch(db);
-            
-            // บันทึกประวัติ
             const mRef = doc(collection(db, `sessions/${currentSessionId}/matches`));
             batch.set(mRef, { court: card.querySelector('select').value, teamA: [players[0], players[1]], teamB: [players[2], players[3]], timestamp: Date.now() });
-
             const sUsed = parseInt(document.getElementById(`shuttle-${id}`).innerText);
             card.querySelectorAll('.occupied').forEach(s => {
                 batch.update(doc(db, `sessions/${currentSessionId}/attendance`, s.dataset.uid), { is_playing: false, last_match_end: Date.now(), games_played: increment(1), shuttle_used: increment(sUsed) });
@@ -251,7 +269,6 @@
             saveCourtsToLocal(); renderFIFO(); checkAndFillEmptyCourts();
         };
 
-        // --- Queue System ---
         function renderFIFO() {
             const list = document.getElementById('checkin-list'); list.innerHTML = "";
             const midIds = new Set(middleQueue.flatMap(q => q.slots.filter(s => s).map(s => s.id)));
@@ -276,7 +293,7 @@
         function renderMiddleQueue() {
             const list = document.getElementById('queue-list'); list.innerHTML = "";
             middleQueue.forEach((q, i) => {
-                const div = document.createElement('div'); div.className = "player-item"; div.style.fontSize = "0.8em";
+                const div = document.createElement('div'); div.className = "player-item"; div.style.fontSize = "0.75em";
                 div.innerHTML = `Q${i+1}: ${q.slots[0]?.name||'-'}+${q.slots[1]?.name||'-'} VS ${q.slots[2]?.name||'-'}+${q.slots[3]?.name||'-'}`;
                 div.onclick = () => { selectedSlots = [...q.slots]; middleQueue.splice(i, 1); saveQueue(); renderMiddleQueue(); renderFIFO(); };
                 list.appendChild(div);
@@ -303,7 +320,6 @@
             }
         }
 
-        // --- Database Listeners ---
         function listenToAttendance() {
             onSnapshot(query(collection(db, `sessions/${currentSessionId}/attendance`), orderBy("last_match_end", "asc")), snap => {
                 lastSnapshotData = snap.docs.map(d => ({ id: d.id, data: d.data() })); renderFIFO();
@@ -320,7 +336,6 @@
             });
         }
 
-        // --- Helper ---
         window.importBulkPlayers = async () => {
             const input = document.getElementById('bulk-paste-input');
             const lines = input.value.trim().split('\n').map(l => l.replace(/^\d+\.\s*/, '').trim()).filter(n => n);
@@ -335,8 +350,8 @@
 
         const saveQueue = () => localStorage.setItem(`queue_${currentSessionId}`, JSON.stringify(middleQueue));
         window.changeShuttle = (id, v) => { const el = document.getElementById(`shuttle-${id}`); let n = parseInt(el.innerText)+v; if(n>0) { el.innerText=n; saveCourtsToLocal(); } };
-        window.updateBtn = () => { document.getElementById('confirmBtn').innerText = `ยืนยันลงสนาม (${selectedSlots.filter(s=>s).length})`; };
-        window.generateQR = (id) => { document.getElementById("qrcode").innerHTML = ""; new QRCode(document.getElementById("qrcode"), { text: `https://early-bird-queue.vercel.app/index.html?session=${id}`, width: 50, height: 50 }); };
+        window.updateBtn = () => { document.getElementById('confirmBtn').innerText = `ยืนยัน (${selectedSlots.filter(s=>s).length})`; };
+        window.generateQR = (id) => { document.getElementById("qrcode").innerHTML = ""; new QRCode(document.getElementById("qrcode"), { text: `https://early-bird-queue.vercel.app/index.html?session=${id}`, width: 40, height: 40 }); };
         window.expandQR = () => { document.getElementById('qr-big').innerHTML = ""; new QRCode(document.getElementById('qr-big'), { text: `https://early-bird-queue.vercel.app/profile.html?session=${currentSessionId}`, width: 200, height: 200 }); document.getElementById('sid-text').innerText = "Session ID: " + currentSessionId; document.getElementById('qr-overlay').style.display = 'flex'; };
     </script>
 </body>
