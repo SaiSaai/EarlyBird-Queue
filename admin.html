@@ -50,8 +50,8 @@
         .team-pill {
             padding: 4px 10px; border-radius: 8px; font-weight: 600; display: inline-block;
         }
-        .team-a-pill { background-color: var(--team-a); color: #dd340a; }
-        .team-b-pill { background-color: var(--team-b); color: #59d35f; }
+        .team-a-pill { background-color: var(--team-a); color: #004085; }
+        .team-b-pill { background-color: var(--team-b); color: #09440c; }
         .vs-text { margin: 0 10px; font-weight: bold; color: #999; font-style: italic; }
         .game-no { font-weight: bold; color: #666; }
 
@@ -264,26 +264,35 @@
         };
 
         // --- Queue System ---
-        function renderFIFO() {
+        window.renderFIFO = () => {
             const list = document.getElementById('checkin-list'); list.innerHTML = "";
-            const midIds = new Set(middleQueue.flatMap(q => q.slots.filter(s => s).map(s => s.id)));
+            
             lastSnapshotData.forEach(p => {
-                if (!p.data.is_playing && !midIds.has(p.id)) {
-                    const selIdx = selectedSlots.findIndex(s => s?.id === p.id);
+                if (!p.data.is_playing) {
                     const div = document.createElement('div');
-                    div.className = "player-item " + (selIdx > -1 ? (selIdx < 2 ? 'sel-a' : 'sel-b') : '');
-                    div.innerHTML = `<span class="skill-dot lvl-${p.data.skill_level}"></span> <span style="margin-left:8px">${p.data.display_name} (${p.data.games_played||0})</span>`;
+                    div.className = "player-item";
+                    div.innerHTML = `<span class="skill-dot lvl-${p.data.skill_level}"></span> <span>${p.data.display_name}</span>`;
+                    
+                    // เพิ่มการคลิกเพื่อจิ้มเลือก + สั่ง Highlight ประวัติ
                     div.onclick = () => {
-                        const idx = selectedSlots.findIndex(s => s?.id === p.id);
-                        if(idx > -1) selectedSlots[idx] = null;
-                        else { const f = selectedSlots.indexOf(null); if(f > -1) selectedSlots[f] = {id: p.id, name: p.data.display_name}; }
+                        // Logic เดิม: เลือกคนลงสล็อต
+                        const selIdx = selectedSlots.findIndex(s => s?.id === p.id);
+                        if(selIdx > -1) {
+                            selectedSlots[selIdx] = null;
+                            highlightInHistory(null); // ถ้ากดยกเลิก ให้ล้างไฮไลต์
+                        } else {
+                            const f = selectedSlots.indexOf(null);
+                            if(f > -1) {
+                                selectedSlots[f] = {id: p.id, name: p.data.display_name};
+                                highlightInHistory(p.data.display_name); // สั่งส่องไฟในประวัติ
+                            }
+                        }
                         renderFIFO(); updateBtn();
                     };
                     list.appendChild(div);
                 }
             });
-            updateBtn();
-        }
+        };
 
         function renderMiddleQueue() {
             const list = document.getElementById('queue-list'); list.innerHTML = "";
@@ -365,6 +374,27 @@
                 if(el.innerText.trim() === name.trim()) {
                     el.style.border = "2px solid #ff0000"; // ขอบแดงเน้นชื่อ
                     el.style.boxShadow = "0 0 5px rgba(255,0,0,0.5)";
+                }
+            });
+        };
+
+        // ฟังก์ชันสำหรับสั่ง Highlight ชื่อในประวัติ
+        window.highlightInHistory = (name) => {
+            // 1. ล้างไฮไลต์เก่าออกก่อน
+            document.querySelectorAll('.clickable-name').forEach(el => {
+                el.style.backgroundColor = ""; // คืนค่าสีพื้นหลังเดิม
+                el.style.border = "none";
+            });
+
+            // 2. ถ้าไม่มีชื่อที่ส่งมา (เช่น จิ้มยกเลิก) ก็จบแค่นี้
+            if (!name) return;
+
+            // 3. ค้นหาชื่อในประวัติ แล้วใส่สีแดงเน้น (หรือสีที่คุณชอบ)
+            document.querySelectorAll('.clickable-name').forEach(el => {
+                if (el.innerText.trim() === name.trim()) {
+                    el.style.backgroundColor = "#ffcfd2"; // สีแดงอ่อนเน้นชื่อ
+                    el.style.border = "2px solid #ff4d4f";
+                    el.style.borderRadius = "8px";
                 }
             });
         };
