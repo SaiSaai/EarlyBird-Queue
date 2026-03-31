@@ -199,7 +199,7 @@
                 // --- 2. สำหรับสลับคิวกลาง (อันใหม่ที่เพิ่มเข้าไป) ---
                 new Sortable(document.getElementById('queue-list'), {
                     animation: 150,
-                    handle: '.drag-icon', // ลากได้เฉพาะตรงไอคอน ⠿
+                    //handle: '.drag-icon', // ลากได้เฉพาะตรงไอคอน ⠿
                     ghostClass: 'sortable-ghost',
                     onEnd: (evt) => {
                         // ดึงข้อมูลออกมาจากตำแหน่งเดิม แล้วไปวางตำแหน่งใหม่ใน Array
@@ -465,14 +465,14 @@
 
                 // คลิกเพื่อดึงกลับมาแก้ไข (Optional: ถ้าลากแล้วไม่อยากให้คลิกโดนง่ายๆ ให้ใช้ double click แทนได้ครับ)
                 div.onclick = () => { 
-                    if(confirm("ดึงคิวนี้กลับมาแก้ไข?")) {
+                    //if(confirm("ดึงคิวนี้กลับมาแก้ไข?")) {
                         selectedSlots = [...q.slots]; 
                         middleQueue.splice(i, 1); 
                         saveQueue(); 
                         renderMiddleQueue(); 
                         renderFIFO(); 
                         updateBtn();
-                    }
+                    //}
                 };
                 list.appendChild(div);
             });
