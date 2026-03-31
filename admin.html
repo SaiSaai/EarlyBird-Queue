@@ -322,39 +322,52 @@
             });
         }
 
+        // แก้ไขฟังก์ชัน listenToMatches เพื่อให้แต่ละชื่อมี Class 'clickable-name'
         function listenToMatches() {
             onSnapshot(query(collection(db, `sessions/${currentSessionId}/matches`), orderBy("timestamp", "desc")), snap => {
                 const list = document.getElementById('match-history-list');
                 list.innerHTML = "";
                 
-                // ใช้ snap.size เพื่อหาจำนวนเกมทั้งหมดและนับถอยหลัง
-                const totalMatches = snap.size;
-
                 snap.docs.forEach((doc, i) => {
                     const m = doc.data();
                     const time = new Date(m.timestamp).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
-                    const gameNumber = totalMatches - i; // เกมที่ 1 จะอยู่ล่างสุด เกมล่าสุดอยู่บนสุด
+                    const gameNumber = snap.size - i;
 
+                    // เพิ่ม function highlightName ไว้ที่ onclick ของแต่ละชื่อ
                     const row = `
                         <tr>
-                            <td class="game-no">เกมที่ ${gameNumber}</td>
+                            <td class="game-idx">เกมที่ ${gameNumber}</td>
                             <td><span class="badge-court">สนาม ${m.court}</span></td>
                             <td>
-                                <div class="team-pill team-a-pill">
-                                    ${m.teamA[0]} + ${m.teamA[1]}
-                                </div>
-                                <span class="vs-text">VS</span>
-                                <div class="team-pill team-b-pill">
-                                    ${m.teamB[0]} + ${m.teamB[1]}
+                                <div class="team-group">
+                                    <span class="team-pill team-a-pill clickable-name" onclick="highlightName('${m.teamA[0]}')">${m.teamA[0]}</span> + 
+                                    <span class="team-pill team-a-pill clickable-name" onclick="highlightName('${m.teamA[1]}')">${m.teamA[1]}</span>
+                                    <span class="vs-label">VS</span>
+                                    <span class="team-pill team-b-pill clickable-name" onclick="highlightName('${m.teamB[0]}')">${m.teamB[0]}</span> + 
+                                    <span class="team-pill team-b-pill clickable-name" onclick="highlightName('${m.teamB[1]}')">${m.teamB[1]}</span>
                                 </div>
                             </td>
-                            <td style="color: #999;">${time}</td>
+                            <td style="color: #888; font-size: 0.8em; text-align: right;">${time} น.</td>
                         </tr>
                     `;
                     list.insertAdjacentHTML('beforeend', row);
                 });
             });
         }
+
+        // เพิ่มฟังก์ชันนี้ลงใน <script> ของคุณ
+        window.highlightName = (name) => {
+            // ลบไฮไลต์เก่าทั้งหมดก่อน
+            document.querySelectorAll('.clickable-name').forEach(el => el.style.border = "none");
+            
+            // ค้นหาทุกชื่อที่ตรงกับที่กด แล้วใส่ Border เน้นให้เห็นชัด
+            document.querySelectorAll('.clickable-name').forEach(el => {
+                if(el.innerText.trim() === name.trim()) {
+                    el.style.border = "2px solid #ff0000"; // ขอบแดงเน้นชื่อ
+                    el.style.boxShadow = "0 0 5px rgba(255,0,0,0.5)";
+                }
+            });
+        };
 
         // --- Helper ---
         window.importBulkPlayers = async () => {
