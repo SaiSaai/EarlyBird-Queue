@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Badminton Admin - Ultimate Edition</title>
+    <title>Badminton Admin - Pro Edition 2026</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
@@ -15,39 +15,34 @@
         * { box-sizing: border-box; font-family: 'Kanit', sans-serif; }
         body { background-color: var(--primary-bg); margin: 0; display: flex; height: 100vh; overflow: hidden; }
         
-        /* Layout Structure */
-        #left-sidebar-container { 
-            width: 580px; height: 100vh; display: flex; flex-direction: column; 
-            background: #fff; border-right: 2px solid #eee; flex-shrink: 0; 
-        }
+        #left-sidebar-container { width: 580px; height: 100vh; display: flex; flex-direction: column; background: #fff; border-right: 2px solid #eee; flex-shrink: 0; }
         .queue-split-area { display: flex; flex: 1; min-height: 0; border-bottom: 2px solid #eee; }
-        
         .side-panel { flex: 1; display: flex; flex-direction: column; padding: 15px; overflow: hidden; }
         .panel-main { flex: 1; padding: 15px; overflow-y: auto; position: relative; }
-
-        /* Items */
         .list-box { flex: 1; border: 1px solid #ddd; border-radius: 12px; overflow-y: auto; padding: 10px; background: #fafafa; }
+        
         .player-item { padding: 10px; margin-bottom: 8px; border-radius: 10px; border: 2px solid #eee; background: white; cursor: pointer; font-weight: bold; display: flex; align-items: center; transition: 0.2s; }
         .player-item:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.05); }
         .skill-dot { display: inline-block; width: 14px; height: 14px; border-radius: 50%; border: 1px solid rgba(0,0,0,0.2); flex-shrink: 0; }
         .lvl-yellow { background: var(--v-yellow); } .lvl-green { background: var(--v-green); } .lvl-blue { background: var(--v-blue); } .lvl-red { background: var(--v-red); } .lvl-black { background: var(--v-black); }
-        .sel-a { border-color: var(--team-a); background: #e7f3ff; }
-        .sel-b { border-color: var(--team-b); background: #f0fff4; }
+        .sel-a { border-color: var(--team-a); background: #e7f3ff; } .sel-b { border-color: var(--team-b); background: #f0fff4; }
 
-        /* Courts */
-        .courts-wrapper { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; padding-bottom: 100px; }
+        .courts-wrapper { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; padding-bottom: 40px; }
         .court-card { background: white; border-radius: 20px; padding: 15px; box-shadow: 0 8px 15px rgba(0,0,0,0.05); border-top: 10px solid #ccc; }
         .court-card.playing { border-top-color: #4caf50; background: var(--playing-bg); }
-        .slot { background: white; padding: 10px; border-radius: 8px; font-size: 0.85em; font-weight: bold; border: 1px dashed #ccc; cursor: pointer; display: flex; align-items: center; gap: 8px; min-height: 42px; margin-bottom: 5px; }
+        .slot { background: white; padding: 10px; border-radius: 8px; font-size: 0.85em; font-weight: bold; border: 1px dashed #ccc; cursor: pointer; display: flex; align-items: center; gap: 8px; min-height: 42px; margin-bottom: 5px; overflow: hidden; }
         .slot.occupied { border-style: solid; border-color: rgba(0,0,0,0.1); }
 
-        /* Buttons & Inputs */
         button { cursor: pointer; border: none; font-family: 'Kanit'; font-weight: 600; border-radius: 10px; transition: 0.2s; }
         .btn-primary { background: #007bff; color: white; }
-        .btn-bulk { background: #6f42c1; color: white; }
         .btn-start { background: #4caf50; color: white; width: 100%; padding: 12px; margin-top: 8px; }
         .btn-end { background: var(--accent-red); color: #d00; width: 100%; padding: 12px; margin-top: 8px; }
-
+        
+        .history-section { margin-top: 40px; padding: 20px; background: white; border-radius: 20px; border: 1px solid #eee; }
+        .history-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        .history-table th { background: #f8f9fa; padding: 12px; text-align: left; border-bottom: 2px solid #eee; font-size: 0.9em; }
+        .history-table td { padding: 12px; border-bottom: 1px solid #eee; font-size: 0.85em; }
+        
         #qr-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 9999; justify-content: center; align-items: center; }
         .modal-content { background: white; padding: 25px; border-radius: 25px; text-align: center; }
     </style>
@@ -56,73 +51,63 @@
 
     <div id="left-sidebar-container">
         <div class="queue-split-area">
-            <div class="side-panel" id="panel-fifo">
-                <h3>👥 คิวรอ</h3>
+            <div class="side-panel">
+                <h3>👥 คิวรอ (FIFO)</h3>
                 <div id="checkin-list" class="list-box"></div>
-                <button id="confirmBtn" class="btn-primary" style="width:100%; padding:14px; margin-top:10px; font-size:1.1em;">
-                    ยืนยันลงสนาม (0)
-                </button>
+                <button id="confirmBtn" class="btn-primary" style="width:100%; padding:14px; margin-top:10px; font-size:1.1em;">ยืนยันลงสนาม (0)</button>
             </div>
-
-            <div class="side-panel" id="panel-queue" style="background: #fffdf5;">
+            <div class="side-panel" style="background: #fffdf5;">
                 <h3>⏳ คิวกลาง</h3>
                 <div id="queue-list" class="list-box"></div>
             </div>
         </div>
-
         <div style="padding: 15px; background: #f9f9f9; border-top: 1px solid #eee;">
-            <h4 style="margin: 0 0 8px 0;">📋 วางรายชื่อจาก LINE (ตัดเลขให้อัตโนมัติ)</h4>
-            <textarea id="bulk-paste-input" rows="4" placeholder="1. ตุ่ม&#10;2. ปอง&#10;3. กัส" 
-                style="width: 100%; border-radius: 8px; border: 1px solid #ddd; padding: 10px; font-size: 0.9em; resize: none;"></textarea>
-            <button onclick="importBulkPlayers()" class="btn-bulk" style="width: 100%; padding: 12px; margin-top: 8px; font-weight: bold;">
-                🚀 นำเข้ารายชื่อทั้งหมด
-            </button>
+            <textarea id="bulk-paste-input" rows="3" placeholder="วางรายชื่อจาก LINE ที่นี่..." style="width: 100%; border-radius: 8px; border: 1px solid #ddd; padding: 10px; font-size: 0.9em; resize: none;"></textarea>
+            <button onclick="importBulkPlayers()" style="width: 100%; padding: 10px; margin-top: 5px; background: #6f42c1; color: white;">🚀 นำเข้ารายชื่อ</button>
         </div>
     </div>
 
     <div class="panel-main">
-        <div style="display:flex; gap:12px; margin-bottom:20px; align-items: center; flex-wrap: wrap;">
+        <div style="display:flex; gap:12px; margin-bottom:20px; align-items: center;">
             <button onclick="createSession()" style="background: #4caf50; color: white; padding: 12px 20px;">🚀 เปิดก๊วนใหม่</button>
             <button onclick="addNewCourt()" style="background: #2196f3; color: white; padding: 12px 20px;">➕ เพิ่มสนาม</button>
-            <button onclick="terminateSession()" style="background: #ff4d4f; color: white; padding: 12px 20px;">🏁 จบก๊วน</button>
-            <div id="qrcode" onclick="expandQR()" style="margin-left: auto; cursor: zoom-in; background: white; padding: 5px; border-radius: 8px; border: 1px solid #ddd;"></div>
+            <button onclick="terminateSession()" style="background: #ff4d4f; color: white; padding: 12px 20px;">🏁 จบก๊วน & ส่งสรุป</button>
+            <div id="qrcode" onclick="expandQR()" style="margin-left: auto; cursor: zoom-in;"></div>
         </div>
-        <div id="empty-msg" style="text-align:center; color:#999; margin-top:100px;">ยังไม่มีสนาม กด "เพิ่มสนาม"</div>
+
+        <div id="empty-msg" style="text-align:center; color:#999; margin-top:50px;">ยังไม่มีสนาม กด "เพิ่มสนาม"</div>
         <div class="courts-wrapper" id="main-grid"></div>
+
+        <div class="history-section">
+            <h3>📜 ประวัติการแข่งวันนี้</h3>
+            <table class="history-table">
+                <thead>
+                    <tr><th>#</th><th>สนาม</th><th>คู่แข่งขัน</th><th>เวลาจบ</th></tr>
+                </thead>
+                <tbody id="match-history-list"></tbody>
+            </table>
+        </div>
     </div>
 
-    <div id="qr-overlay" onclick="this.style.display='none'"><div class="modal-content"><h2>Scan to Register!</h2><div id="qr-big" style="display:flex; justify-content:center; margin:20px 0;"></div><p id="sid-text"></p></div></div>
+    <div id="qr-overlay" onclick="this.style.display='none'"><div class="modal-content"><h2>Scan QR!</h2><div id="qr-big" style="display:flex; justify-content:center; margin:20px 0;"></div><p id="sid-text"></p></div></div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { 
-            getFirestore, collection, doc, setDoc, onSnapshot, query, 
-            orderBy, updateDoc, writeBatch, increment 
-        } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, doc, setDoc, onSnapshot, query, orderBy, updateDoc, writeBatch, increment } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        const firebaseConfig = { 
-            apiKey: "AIzaSyDQbnx83sbs1sO4xsuLUV50uxbBinr2VtY", 
-            authDomain: "earlybird-queue.firebaseapp.com", 
-            projectId: "earlybird-queue", 
-            storageBucket: "earlybird-queue.firebasestorage.app", 
-            messagingSenderId: "310694006567", 
-            appId: "1:310694006567:web:f56fc19ed03b81bf8c2302" 
-        };
+        const firebaseConfig = { apiKey: "AIzaSyDQbnx83sbs1sO4xsuLUV50uxbBinr2VtY", authDomain: "earlybird-queue.firebaseapp.com", projectId: "earlybird-queue", storageBucket: "earlybird-queue.firebasestorage.app", messagingSenderId: "310694006567", appId: "1:310694006567:web:f56fc19ed03b81bf8c2302" };
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        let selectedSlots = [null, null, null, null], 
-            currentSessionId = localStorage.getItem('last_sid') || "", 
-            lastSnapshotData = [], 
-            middleQueue = [], 
-            nextCourtNumber = 1;
+        let selectedSlots = [null, null, null, null], currentSessionId = localStorage.getItem('last_sid') || "", lastSnapshotData = [], middleQueue = [], nextCourtNumber = 1;
 
         window.onload = () => {
             if (currentSessionId) {
                 generateQR(currentSessionId);
                 listenToAttendance();
-                const savedQueue = localStorage.getItem(`queue_${currentSessionId}`);
-                if(savedQueue) { middleQueue = JSON.parse(savedQueue); renderMiddleQueue(); }
+                listenToMatches();
+                const sq = localStorage.getItem(`queue_${currentSessionId}`);
+                if(sq) { middleQueue = JSON.parse(sq); renderMiddleQueue(); }
                 loadCourtsFromLocal();
             }
             new Sortable(document.getElementById('main-grid'), { animation: 150, handle: '.court-header', onEnd: saveCourtsToLocal });
@@ -130,119 +115,44 @@
 
         // --- Session Management ---
         window.createSession = async () => {
-            if(currentSessionId && !confirm("เปิดก๊วนใหม่? ข้อมูลเดิมจะถูกล้าง")) return;
-            const sid = "GS" + Date.now().toString().slice(-6); 
-            await setDoc(doc(db, "sessions", sid), { status: "active", created_at: Date.now(), middle_queue: [], live_courts: [] });
-            localStorage.setItem('last_sid', sid);
-            location.reload(); 
+            if(currentSessionId && !confirm("เริ่มก๊วนใหม่? ข้อมูลปัจจุบันจะถูกเคลียร์")) return;
+            const sid = "GS" + Date.now().toString().slice(-6);
+            await setDoc(doc(db, "sessions", sid), { status: "active", created_at: Date.now() });
+            localStorage.setItem('last_sid', sid); location.reload();
         };
 
-        /*window.terminateSession = async () => {
-            if (!confirm("จบก๊วนนี้?")) return;
-            const sid = localStorage.getItem('last_sid');
-            if (sid) {
-                await updateDoc(doc(db, "sessions", sid), { status: "closed", closed_at: Date.now(), live_courts: [], middle_queue: [] });
-                alert("จบก๊วนเรียบร้อย");
-            }
-        };*/
         window.terminateSession = async () => {
-            const sid = localStorage.getItem('last_sid');
-            if (!sid || lastSnapshotData.length === 0) return alert("ไม่พบข้อมูลก๊วนที่เปิดอยู่");
-
-            // --- 1. เริ่มการคำนวณสรุปผลยอดของวันนี้ ---
-            let totalMembers = lastSnapshotData.length;
-            let totalShuttle = 0;
-            let totalIncome = 0;
-            let totalExtra = 0;
-            let totalDiscount = 0;
-
+            if (lastSnapshotData.length === 0) return alert("ไม่มีข้อมูลสมาชิก");
+            const baseRate = 150; // ปรับค่าสนามพื้นฐานที่นี่
+            let totalShuttle = 0, totalExtra = 0, totalDiscount = 0;
             lastSnapshotData.forEach(p => {
-                const d = p.data;
-                totalShuttle += (d.shuttle_used || 0);
-                // สมมติค่าสนาม/ค่าลูกพื้นฐาน (ปรับตัวเลขตามก๊วนคุณได้เลยครับ)
-                // หรือถ้าคุณเก็บยอดจ่ายจริงไว้ใน is_paid_amount ให้ดึงตัวเลขนั้นมาแทน
-                totalExtra += (d.extra_cost || 0);
-                totalDiscount += (d.discount || 0);
-                totalIncome += (p.paid_amount || 0);
-                
-                // ถ้าจ่ายแล้ว (is_paid) เราจะนับเป็นรายได้
-                // ในที่นี้ถ้าคุณมีระบบคำนวณเงินโอน/เงินสด ให้ดึงจากฟิลด์ที่เก็บยอดเงินครับ
-                if (d.is_paid) {
-                    // ตัวอย่าง: ยอดเงินรวม = (ค่าเฉลี่ยที่ระบบคิด) + extra - discount
-                    // แต่เพื่อให้แม่นยำที่สุด ผมแนะนำให้คุณมีฟิลด์ยอดเงินที่จ่ายจริงครับ
-                }
+                totalShuttle += (p.data.shuttle_used || 0);
+                totalExtra += (p.data.extra_cost || 0);
+                totalDiscount += (p.data.discount || 0);
             });
+            const netTotal = (lastSnapshotData.length * baseRate) + totalExtra - totalDiscount;
+            const report = `📊 สรุปก๊วนวันนี้\n----------------\n👥 สมาชิก: ${lastSnapshotData.length} คน\n🏸 ลูกแบด: ${totalShuttle} ลูก\n💰 ยอดเพิ่ม: ${totalExtra} บ.\n💸 ส่วนลด: ${totalDiscount} บ.\n----------------\n💵 ยอดรวมสุทธิ: ${netTotal.toLocaleString()} บาท`;
 
-            // --- 2. สร้าง Format ข้อความสำหรับส่ง LINE ---
-            const reportDate = new Date().toLocaleDateString('th-TH', { 
-                year: 'numeric', month: 'long', day: 'numeric' 
-            });
-            // สร้างข้อความสรุป
-            const summaryMsg = `
-        📊 สรุปภาพรวมก๊วนวันนี้ (${reportDate}) : 
-        ----------------------------
-        👥 สมาชิกทั้งหมด: ${totalMembers} คน
-        🏸 ใช้ลูกแบดรวม: ${totalShuttle / 4} ลูก
-        💸 ยอดเงินทั้งหมด (Total): ${totalIncome} บาท
-        💰 ยอดเงินเพิ่ม (Extra): ${totalExtra} บาท
-        💸 ยอดส่วนลด (Discount): ${totalDiscount} บาท
-        ----------------------------
-        ยืนยันการจบก๊วนและล้างหน้าจอหรือไม่?
-            `;
-
-            if (!confirm(summaryMsg + "\n\n⚠️ กดตกลงเพื่อคัดลอกรายงาน และจบก๊วนทันที")) return;
-
-            // --- 2. ดำเนินการปิดก๊วนบน Firebase ---
-            try {
-                // คัดลอกลง Clipboard
-                await navigator.clipboard.writeText(summaryText);
-                // อัปเดต Firebase
-                await updateDoc(doc(db, "sessions", sid), { 
-                    status: "closed",
-                    closed_at: Date.now(),
-                    summary: {
-                        members_count: totalMembers,
-                        shuttle_total: totalShuttle,
-                        income_total: totalIncome,
-                        extra_total: totalExtra,
-                        discount_total: totalDiscount
-                    },
-                    live_courts: [], 
-                    middle_queue: [] 
-                });
-                
-                // ล้างข้อมูลในเครื่องแอดมิน
-                localStorage.removeItem(`courts_${sid}`);
-                localStorage.removeItem(`queue_${sid}`);
-                
-                alert("🏁 จบก๊วนเรียบร้อย! ระบบบันทึกสรุปยอดไว้แล้ว");
-                location.reload(); // รีเฟรชเพื่อเริ่มใหม่
-            } catch (e) {
-                console.error("Error closing session: ", e);
-                alert("เกิดข้อผิดพลาดในการปิดก๊วน");
+            if (confirm(report + "\n\nกดตกลงเพื่อ Copy รายงานและจบก๊วน")) {
+                await navigator.clipboard.writeText(report);
+                await updateDoc(doc(db, "sessions", currentSessionId), { status: "closed", summary: report });
+                localStorage.removeItem(`courts_${currentSessionId}`);
+                localStorage.removeItem(`queue_${currentSessionId}`);
+                alert("คัดลอกรายงานแล้ว! นำไปวางใน LINE ได้เลย"); location.reload();
             }
         };
 
-        // --- Core Sync Logic ---
+        // --- Core Functions ---
         async function saveCourtsToLocal() {
             if(!currentSessionId) return;
             const courts = [];
             document.querySelectorAll('.court-card').forEach(card => {
                 const slots = [];
-                card.querySelectorAll('.slot').forEach(s => slots.push({ 
-                    uid: s.dataset.uid || null, 
-                    html: s.innerHTML, 
-                    occupied: s.classList.contains('occupied') 
-                }));
-                const shuttleVal = document.getElementById(`shuttle-${card.id}`)?.innerText || "1";
-                courts.push({ 
-                    id: card.id, courtNum: card.querySelector('select').value, 
-                    status: document.getElementById(`status-${card.id}`).innerText, 
-                    playing: card.classList.contains('playing'), shuttle: shuttleVal, slots 
-                });
+                card.querySelectorAll('.slot').forEach(s => slots.push({ uid: s.dataset.uid || null, html: s.innerHTML, occupied: s.classList.contains('occupied') }));
+                courts.push({ id: card.id, courtNum: card.querySelector('select').value, status: document.getElementById(`status-${card.id}`).innerText, playing: card.classList.contains('playing'), shuttle: document.getElementById(`shuttle-${card.id}`).innerText, slots });
             });
             localStorage.setItem(`courts_${currentSessionId}`, JSON.stringify(courts));
-            await updateDoc(doc(db, "sessions", currentSessionId), { live_courts: courts, middle_queue: middleQueue });
+            await updateDoc(doc(db, "sessions", currentSessionId), { live_courts: courts });
         }
 
         function loadCourtsFromLocal() {
@@ -254,68 +164,66 @@
             nextCourtNumber = courts.length > 0 ? Math.max(...courts.map(c => parseInt(c.courtNum))) + 1 : 1;
         }
 
-        // --- UI Rendering ---
         function renderCourtUI(c) {
-            const opts = Array.from({length:20}, (_, i) => `<option value="${i+1}" ${i+1==c.courtNum?'selected':''}>สนาม ${i+1}</option>`).join('');
-            const html = `
-                <div class="court-card ${c.playing?'playing':''}" id="${c.id}">
-                    <div class="court-header" style="cursor:grab; background:#f8f9fa; margin:-15px -15px 10px -15px; padding:10px 15px; border-radius:15px 15px 0 0; display:flex; justify-content:space-between;">
-                        <select onchange="saveCourtsToLocal()">${opts}</select>
-                        <button onclick="this.closest('.court-card').remove(); saveCourtsToLocal();" style="color:red; background:none;">ลบ</button>
+            const opts = Array.from({length:10}, (_, i) => `<option value="${i+1}" ${i+1==c.courtNum?'selected':''}>สนาม ${i+1}</option>`).join('');
+            const html = `<div class="court-card ${c.playing?'playing':''}" id="${c.id}">
+                <div class="court-header" style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                    <select onchange="saveCourtsToLocal()">${opts}</select>
+                    <button onclick="this.closest('.court-card').remove(); saveCourtsToLocal();" style="color:red; background:none;">ลบ</button>
+                </div>
+                <div id="status-${c.id}" style="font-size:0.8em; font-weight:bold; color:#666; margin-bottom:5px;">${c.status}</div>
+                <div style="display:flex; gap:8px;">
+                    <div style="flex:1; background:var(--team-a); padding:5px; border-radius:10px;">
+                        <div class="slot ${c.slots[0].occupied?'occupied':''}" data-uid="${c.slots[0].uid||''}" onclick="assignSlot(this, '${c.id}')">${c.slots[0].html}</div>
+                        <div class="slot ${c.slots[1].occupied?'occupied':''}" data-uid="${c.slots[1].uid||''}" onclick="assignSlot(this, '${c.id}')">${c.slots[1].html}</div>
                     </div>
-                    <div style="font-size:0.85em; margin-bottom:10px; font-weight:bold; color:#666;"><span id="status-${c.id}">${c.status}</span></div>
-                    <div style="display:flex; gap:10px;">
-                        <div style="flex:1; background:var(--team-a); padding:8px; border-radius:15px;">
-                            <div class="slot ${c.slots[0].occupied?'occupied':''}" data-uid="${c.slots[0].uid||''}" onclick="assignSlot(this, '${c.id}')">${c.slots[0].html}</div>
-                            <div class="slot ${c.slots[1].occupied?'occupied':''}" data-uid="${c.slots[1].uid||''}" onclick="assignSlot(this, '${c.id}')">${c.slots[1].html}</div>
-                        </div>
-                        <div style="flex:1; background:var(--team-b); padding:8px; border-radius:15px;">
-                            <div class="slot ${c.slots[2].occupied?'occupied':''}" data-uid="${c.slots[2].uid||''}" onclick="assignSlot(this, '${c.id}')">${c.slots[2].html}</div>
-                            <div class="slot ${c.slots[3].occupied?'occupied':''}" data-uid="${c.slots[3].uid||''}" onclick="assignSlot(this, '${c.id}')">${c.slots[3].html}</div>
-                        </div>
+                    <div style="flex:1; background:var(--team-b); padding:5px; border-radius:10px;">
+                        <div class="slot ${c.slots[2].occupied?'occupied':''}" data-uid="${c.slots[2].uid||''}" onclick="assignSlot(this, '${c.id}')">${c.slots[2].html}</div>
+                        <div class="slot ${c.slots[3].occupied?'occupied':''}" data-uid="${c.slots[3].uid||''}" onclick="assignSlot(this, '${c.id}')">${c.slots[3].html}</div>
                     </div>
-                    <div style="display:flex; align-items:center; justify-content:center; gap:10px; margin:10px 0; background:#f9f9f9; padding:8px; border-radius:12px;">
-                        <span>🏸:</span><button onclick="changeShuttle('${c.id}', -1)">-</button><b id="shuttle-${c.id}">${c.shuttle || 1}</b><button onclick="changeShuttle('${c.id}', 1)">+</button>
-                    </div>
-                    <button id="btn-start-${c.id}" class="btn-start" style="display:${c.playing?'none':'block'}" onclick="startMatch('${c.id}')">▶️ เริ่มเกม</button>
-                    <button id="btn-end-${c.id}" class="btn-end" style="display:${c.playing?'block':'none'}" onclick="handleEndGame('${c.id}')">⏹️ จบเกม</button>
-                </div>`;
+                </div>
+                <div style="text-align:center; margin:8px 0; font-size:0.9em;">🏸 <button onclick="changeShuttle('${c.id}',-1)">-</button> <b id="shuttle-${c.id}">${c.shuttle||1}</b> <button onclick="changeShuttle('${c.id}',1)">+</button></div>
+                <button id="btn-start-${c.id}" class="btn-start" style="display:${c.playing?'none':'block'}" onclick="startMatch('${c.id}')">▶️ เริ่มเกม</button>
+                <button id="btn-end-${c.id}" class="btn-end" style="display:${c.playing?'block':'none'}" onclick="handleEndGame('${c.id}')">⏹️ จบเกม</button>
+            </div>`;
             document.getElementById('main-grid').insertAdjacentHTML('beforeend', html);
         }
 
         window.addNewCourt = () => {
             document.getElementById('empty-msg').style.display = 'none';
-            const id = `court-${Date.now()}`;
+            const id = `c-${Date.now()}`;
             renderCourtUI({ id, courtNum: nextCourtNumber++, status: "🟢 ว่าง", shuttle: "1", playing: false, slots: [{html:"ว่าง",occupied:false},{html:"ว่าง",occupied:false},{html:"ว่าง",occupied:false},{html:"ว่าง",occupied:false}] });
             saveCourtsToLocal();
         };
 
-        // --- Game Controls ---
+        // --- Game Logic ---
         window.assignSlot = async (el, courtId) => {
             const sIdx = selectedSlots.findIndex(p => p !== null);
-            if (sIdx === -1 && el.dataset.uid) {
-                if(confirm("เอาออก?")) {
-                    await updateDoc(doc(db, `sessions/${currentSessionId}/attendance`, el.dataset.uid), { is_playing: false });
-                    el.innerText = "ว่าง"; el.classList.remove('occupied'); delete el.dataset.uid;
+            const oldUid = el.dataset.uid;
+            const batch = writeBatch(db);
+
+            if (sIdx === -1 && oldUid) {
+                if(confirm("เอาออกจากสนาม?")) {
+                    batch.update(doc(db, `sessions/${currentSessionId}/attendance`, oldUid), { is_playing: false });
+                    await batch.commit(); el.innerText = "ว่าง"; el.classList.remove('occupied'); delete el.dataset.uid;
                     saveCourtsToLocal(); renderFIFO();
                 } return;
             }
             if (sIdx !== -1) {
-                const p = selectedSlots[sIdx];
-                await updateDoc(doc(db, `sessions/${currentSessionId}/attendance`, p.id), { is_playing: true });
-                const pData = lastSnapshotData.find(d => d.id === p.id);
-                el.innerHTML = `<span class="skill-dot lvl-${pData?.data?.skill_level || 'yellow'}"></span> ${p.name}`;
+                if (oldUid) batch.update(doc(db, `sessions/${currentSessionId}/attendance`, oldUid), { is_playing: false });
+                batch.update(doc(db, `sessions/${currentSessionId}/attendance`, selectedSlots[sIdx].id), { is_playing: true });
+                await batch.commit();
+                const p = lastSnapshotData.find(d => d.id === selectedSlots[sIdx].id);
+                el.innerHTML = `<span class="skill-dot lvl-${p.data.skill_level}"></span> ${p.data.display_name}`;
                 el.dataset.uid = p.id; el.classList.add('occupied');
-                selectedSlots[sIdx] = null; 
-                saveCourtsToLocal(); renderFIFO();
+                selectedSlots[sIdx] = null; saveCourtsToLocal(); renderFIFO();
             }
         };
 
         window.startMatch = (id) => {
             const card = document.getElementById(id);
-            if(card.querySelectorAll('.slot.occupied').length === 0) return alert("เลือกคนก่อน!");
-            card.classList.add('playing');
-            document.getElementById(`status-${id}`).innerText = "🎾 กำลังแข่ง";
+            if(card.querySelectorAll('.occupied').length === 0) return alert("ยังไม่มีคนในสนาม");
+            card.classList.add('playing'); document.getElementById(`status-${id}`).innerText = "🎾 กำลังแข่ง";
             document.getElementById(`btn-start-${id}`).style.display = "none";
             document.getElementById(`btn-end-${id}`).style.display = "block";
             saveCourtsToLocal();
@@ -323,142 +231,113 @@
 
         window.handleEndGame = async (id) => {
             const card = document.getElementById(id);
-            const occupied = card.querySelectorAll('.occupied');
-            const shuttleCount = parseInt(document.getElementById(`shuttle-${id}`).innerText) || 0;
+            const players = Array.from(card.querySelectorAll('.slot')).map(s => s.innerText.replace('ว่าง','').trim() || "-");
             const batch = writeBatch(db);
-            occupied.forEach(s => {
-                batch.update(doc(db, `sessions/${currentSessionId}/attendance`, s.dataset.uid), { 
-                    is_playing: false, last_match_end: Date.now(), 
-                    games_played: increment(1), shuttle_used: increment(shuttleCount) 
-                });
+            
+            // บันทึกประวัติ
+            const mRef = doc(collection(db, `sessions/${currentSessionId}/matches`));
+            batch.set(mRef, { court: card.querySelector('select').value, teamA: [players[0], players[1]], teamB: [players[2], players[3]], timestamp: Date.now() });
+
+            const sUsed = parseInt(document.getElementById(`shuttle-${id}`).innerText);
+            card.querySelectorAll('.occupied').forEach(s => {
+                batch.update(doc(db, `sessions/${currentSessionId}/attendance`, s.dataset.uid), { is_playing: false, last_match_end: Date.now(), games_played: increment(1), shuttle_used: increment(sUsed) });
                 s.innerText = "ว่าง"; s.classList.remove('occupied'); delete s.dataset.uid;
             });
             await batch.commit();
-            card.classList.remove('playing');
-            document.getElementById(`status-${id}`).innerText = "🟢 ว่าง";
+            card.classList.remove('playing'); document.getElementById(`status-${id}`).innerText = "🟢 ว่าง";
             document.getElementById(`shuttle-${id}`).innerText = "1";
             document.getElementById(`btn-start-${id}`).style.display = "block";
             document.getElementById(`btn-end-${id}`).style.display = "none";
             saveCourtsToLocal(); renderFIFO(); checkAndFillEmptyCourts();
         };
 
-        // --- Queue & FIFO ---
+        // --- Queue System ---
         function renderFIFO() {
-            const list = document.getElementById('checkin-list'); 
-            list.innerHTML = "";
+            const list = document.getElementById('checkin-list'); list.innerHTML = "";
             const midIds = new Set(middleQueue.flatMap(q => q.slots.filter(s => s).map(s => s.id)));
-            lastSnapshotData.forEach(player => {
-                const { id, data } = player;
-                if (!data.is_playing && !midIds.has(id) && !data.is_paid) {
-                    const idx = selectedSlots.findIndex(p => p?.id === id);
+            lastSnapshotData.forEach(p => {
+                if (!p.data.is_playing && !midIds.has(p.id)) {
+                    const selIdx = selectedSlots.findIndex(s => s?.id === p.id);
                     const div = document.createElement('div');
-                    div.className = "player-item " + (idx > -1 ? (idx < 2 ? 'sel-a' : 'sel-b') : '');
-                    div.innerHTML = `<span class="skill-dot lvl-${data.skill_level || 'yellow'}"></span> <span style="margin-left:10px">${data.display_name} (${data.games_played || 0})</span>`;
+                    div.className = "player-item " + (selIdx > -1 ? (selIdx < 2 ? 'sel-a' : 'sel-b') : '');
+                    div.innerHTML = `<span class="skill-dot lvl-${p.data.skill_level}"></span> <span style="margin-left:8px">${p.data.display_name} (${p.data.games_played||0})</span>`;
                     div.onclick = () => {
-                        const sIdx = selectedSlots.findIndex(p => p?.id === id);
-                        if(sIdx > -1) selectedSlots[sIdx] = null;
-                        else { const f = selectedSlots.indexOf(null); if(f > -1) selectedSlots[f] = {id, name: data.display_name}; }
+                        const idx = selectedSlots.findIndex(s => s?.id === p.id);
+                        if(idx > -1) selectedSlots[idx] = null;
+                        else { const f = selectedSlots.indexOf(null); if(f > -1) selectedSlots[f] = {id: p.id, name: p.data.display_name}; }
                         renderFIFO(); updateBtn();
                     };
                     list.appendChild(div);
                 }
             });
             updateBtn();
-        } 
+        }
 
         function renderMiddleQueue() {
-            const list = document.getElementById('queue-list'); 
-            list.innerHTML = "";
+            const list = document.getElementById('queue-list'); list.innerHTML = "";
             middleQueue.forEach((q, i) => {
-                const div = document.createElement('div'); 
-                div.className = "player-item"; div.style.flexDirection = "column";
-                div.innerHTML = `<div style="font-size:0.7em; color:#999;">คิวที่ ${i+1}</div>
-                    <div style="display:flex; gap:5px; width:100%; margin-top:5px;">
-                        <div style="flex:1; background:var(--team-a); padding:5px; border-radius:5px; font-size:0.75em; text-align:center;">${q.slots[0]?.name || '-'}<br>${q.slots[1]?.name || '-'}</div>
-                        <div style="flex:1; background:var(--team-b); padding:5px; border-radius:5px; font-size:0.75em; text-align:center;">${q.slots[2]?.name || '-'}<br>${q.slots[3]?.name || '-'}</div>
-                    </div>`;
-                div.onclick = () => { 
-                    selectedSlots = [...q.slots]; 
-                    middleQueue.splice(i, 1); 
-                    localStorage.setItem(`queue_${currentSessionId}`, JSON.stringify(middleQueue)); 
-                    saveCourtsToLocal(); renderMiddleQueue(); renderFIFO(); 
-                };
+                const div = document.createElement('div'); div.className = "player-item"; div.style.fontSize = "0.8em";
+                div.innerHTML = `Q${i+1}: ${q.slots[0]?.name||'-'}+${q.slots[1]?.name||'-'} VS ${q.slots[2]?.name||'-'}+${q.slots[3]?.name||'-'}`;
+                div.onclick = () => { selectedSlots = [...q.slots]; middleQueue.splice(i, 1); saveQueue(); renderMiddleQueue(); renderFIFO(); };
                 list.appendChild(div);
             });
         }
 
         document.getElementById('confirmBtn').onclick = () => {
-            if(!selectedSlots.filter(p => p).length) return;
+            if(!selectedSlots.filter(s => s).length) return;
             middleQueue.push({slots: [...selectedSlots]});
-            selectedSlots = [null,null,null,null]; 
-            localStorage.setItem(`queue_${currentSessionId}`, JSON.stringify(middleQueue));
-            saveCourtsToLocal(); renderFIFO(); renderMiddleQueue(); checkAndFillEmptyCourts();
+            selectedSlots = [null,null,null,null]; saveQueue(); renderFIFO(); renderMiddleQueue(); checkAndFillEmptyCourts();
         };
 
         async function checkAndFillEmptyCourts() {
             const empty = Array.from(document.querySelectorAll('.court-card')).find(c => !c.classList.contains('playing') && c.querySelectorAll('.occupied').length === 0);
             if(empty && middleQueue.length > 0 && middleQueue[0].slots.filter(s=>s).length === 4) {
-                const group = middleQueue.shift();
-                const batch = writeBatch(db);
-                const slots = empty.querySelectorAll('.slot');
-                group.slots.forEach((p, i) => {
+                const q = middleQueue.shift(); const batch = writeBatch(db); const slots = empty.querySelectorAll('.slot');
+                q.slots.forEach((p, i) => {
                     batch.update(doc(db, `sessions/${currentSessionId}/attendance`, p.id), { is_playing: true });
-                    const pData = lastSnapshotData.find(d => d.id === p.id);
-                    slots[i].innerHTML = `<span class="skill-dot lvl-${pData?.data?.skill_level || 'yellow'}"></span> ${p.name}`;
+                    const pd = lastSnapshotData.find(d => d.id === p.id);
+                    slots[i].innerHTML = `<span class="skill-dot lvl-${pd.data.skill_level}"></span> ${p.name}`;
                     slots[i].dataset.uid = p.id; slots[i].classList.add('occupied');
                 });
-                await batch.commit(); 
-                localStorage.setItem(`queue_${currentSessionId}`, JSON.stringify(middleQueue));
-                renderMiddleQueue(); renderFIFO(); saveCourtsToLocal();
+                await batch.commit(); saveQueue(); renderMiddleQueue(); renderFIFO(); saveCourtsToLocal();
             }
         }
 
-        // --- Utils & Bulk Import ---
-        function listenToAttendance() { 
-            onSnapshot(query(collection(db, `sessions/${currentSessionId}/attendance`), orderBy("last_match_end", "asc")), snap => { 
-                lastSnapshotData = snap.docs.map(d => ({ id: d.id, data: d.data() })); 
-                renderFIFO(); 
-            }); 
+        // --- Database Listeners ---
+        function listenToAttendance() {
+            onSnapshot(query(collection(db, `sessions/${currentSessionId}/attendance`), orderBy("last_match_end", "asc")), snap => {
+                lastSnapshotData = snap.docs.map(d => ({ id: d.id, data: d.data() })); renderFIFO();
+            });
         }
 
+        function listenToMatches() {
+            onSnapshot(query(collection(db, `sessions/${currentSessionId}/matches`), orderBy("timestamp", "desc")), snap => {
+                const list = document.getElementById('match-history-list'); list.innerHTML = "";
+                snap.docs.forEach((doc, i) => {
+                    const m = doc.data(); const time = new Date(m.timestamp).toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});
+                    list.insertAdjacentHTML('beforeend', `<tr><td>${snap.size-i}</td><td>${m.court}</td><td>${m.teamA[0]},${m.teamA[1]} <b>vs</b> ${m.teamB[0]},${m.teamB[1]}</td><td>${time}</td></tr>`);
+                });
+            });
+        }
+
+        // --- Helper ---
         window.importBulkPlayers = async () => {
             const input = document.getElementById('bulk-paste-input');
-            const rawText = input.value.trim();
-            if (!rawText || !currentSessionId) return alert("กรุณาวางรายชื่อและเปิดก๊วนก่อน");
-            const lines = rawText.split('\n');
-            const players = lines.map(line => line.replace(/^\d+\.\s*/, '').trim()).filter(n => n.length > 0);
-            if (players.length === 0) return;
-            if (!confirm(`นำเข้า ${players.length} คน?`)) return;
-            const batch = writeBatch(db);
-            const now = Date.now();
-            players.forEach((name, i) => {
-                const customId = "m_" + now + "_" + Math.random().toString(36).substr(2, 5);
-                const existing = lastSnapshotData.find(p => p.data.display_name === name);
-                batch.set(doc(db, `sessions/${currentSessionId}/attendance`, customId), {
-                    id: customId, display_name: name, skill_level: existing ? (existing.data.skill_level || "yellow") : "yellow",
-                    is_paid: false, is_playing: false, games_played: 0, shuttle_used: 0,
-                    last_match_end: now + (i * 1000), checkin_at: now, type: "manual"
-                });
+            const lines = input.value.trim().split('\n').map(l => l.replace(/^\d+\.\s*/, '').trim()).filter(n => n);
+            if(!lines.length) return;
+            const batch = writeBatch(db); const now = Date.now();
+            lines.forEach((name, i) => {
+                const id = "m_" + now + i;
+                batch.set(doc(db, `sessions/${currentSessionId}/attendance`, id), { id, display_name: name, skill_level: "yellow", is_playing: false, games_played: 0, shuttle_used: 0, last_match_end: now + i, checkin_at: now });
             });
             await batch.commit(); input.value = "";
         };
 
-        window.changeShuttle = (id, v) => { 
-            const el = document.getElementById(`shuttle-${id}`); 
-            let val = parseInt(el.innerText) + v; 
-            if(val >= 0) { el.innerText = val; saveCourtsToLocal(); } 
-        };
-        window.updateBtn = () => { document.getElementById('confirmBtn').innerText = `ยืนยันลงสนาม (${selectedSlots.filter(p=>p).length})`; };
-        window.generateQR = (id) => { 
-            document.getElementById("qrcode").innerHTML = ""; 
-            new QRCode(document.getElementById("qrcode"), { text: `https://early-bird-queue.vercel.app/index.html?session=${id}`, width: 50, height: 50 }); 
-        };
-        window.expandQR = () => { 
-            document.getElementById('qr-big').innerHTML = ""; 
-            new QRCode(document.getElementById('qr-big'), { text: `https://early-bird-queue.vercel.app/profile.html?session=${currentSessionId}`, width: 250, height: 250 }); 
-            document.getElementById('sid-text').innerText = "Session ID: " + currentSessionId;
-            document.getElementById('qr-overlay').style.display = 'flex'; 
-        };
+        const saveQueue = () => localStorage.setItem(`queue_${currentSessionId}`, JSON.stringify(middleQueue));
+        window.changeShuttle = (id, v) => { const el = document.getElementById(`shuttle-${id}`); let n = parseInt(el.innerText)+v; if(n>0) { el.innerText=n; saveCourtsToLocal(); } };
+        window.updateBtn = () => { document.getElementById('confirmBtn').innerText = `ยืนยันลงสนาม (${selectedSlots.filter(s=>s).length})`; };
+        window.generateQR = (id) => { document.getElementById("qrcode").innerHTML = ""; new QRCode(document.getElementById("qrcode"), { text: `https://early-bird-queue.vercel.app/index.html?session=${id}`, width: 50, height: 50 }); };
+        window.expandQR = () => { document.getElementById('qr-big').innerHTML = ""; new QRCode(document.getElementById('qr-big'), { text: `https://early-bird-queue.vercel.app/profile.html?session=${currentSessionId}`, width: 200, height: 200 }); document.getElementById('sid-text').innerText = "Session ID: " + currentSessionId; document.getElementById('qr-overlay').style.display = 'flex'; };
     </script>
 </body>
 </html>
