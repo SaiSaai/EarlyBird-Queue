@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Badminton Admin - Advanced Highlight</title>
+    <title>Badminton Admin - Fix & Clean</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
         :root { 
@@ -15,45 +14,48 @@
         * { box-sizing: border-box; font-family: 'Kanit', sans-serif; }
         body { background-color: var(--primary-bg); margin: 0; display: flex; height: 100vh; overflow: hidden; }
         
-        /* --- Sidebar ระบบหุบอ้าแยกอิสระ --- */
+        /* --- Sidebar --- */
         #left-sidebar-container { 
             width: 350px; height: 100vh; display: flex; flex-direction: column; 
-            background: #fff; border-right: 2px solid #eee; flex-shrink: 0; transition: width 0.3s;
+            background: #fff; border-right: 1px solid #eee; flex-shrink: 0;
         }
-        .side-section { display: flex; flex-direction: column; border-bottom: 2px solid #eee; transition: flex 0.3s ease; overflow: hidden; }
-        .side-section.collapsed { flex: 0 0 50px !important; } /* หุบเหลือแค่หัวข้อ */
+        .side-section { display: flex; flex-direction: column; border-bottom: 1px solid #eee; transition: flex 0.3s ease; overflow: hidden; }
+        .side-section.collapsed { flex: 0 0 50px !important; }
         
         .section-header { 
             padding: 12px 15px; background: #f8f9fa; cursor: pointer; 
             display: flex; justify-content: space-between; align-items: center; font-weight: bold;
-            border-bottom: 1px solid #ddd;
         }
         .section-content { flex: 1; overflow-y: auto; padding: 10px; }
         .side-section.collapsed .section-content { display: none; }
 
-        /* --- ระบบ Highlight แยกสีทีม --- */
-        .name-tag { padding: 2px 6px; border-radius: 6px; transition: 0.2s; cursor: pointer; border: 1px solid transparent; }
-        /* ไฮไลต์ทีม A (ฟ้า) */
-        .hi-team-a { background-color: var(--team-a) !important; color: #000 !important; font-weight: bold; border-color: #0056b3; box-shadow: 0 0 8px rgba(162,210,255,0.8); }
-        /* ไฮไลต์ทีม B (เขียว) */
-        .hi-team-b { background-color: var(--team-b) !important; color: #000 !important; font-weight: bold; border-color: #28a745; box-shadow: 0 0 8px rgba(185,251,192,0.8); }
+        /* --- Buttons (No Border) --- */
+        button { 
+            cursor: pointer; border: none !important; outline: none;
+            font-family: 'Kanit'; font-weight: 600; border-radius: 10px; transition: 0.2s; 
+        }
+        button:active { transform: scale(0.98); }
 
-        /* --- UI Elements --- */
+        /* --- Highlight --- */
+        .name-tag { padding: 2px 6px; border-radius: 6px; cursor: pointer; border: none; }
+        .hi-team-a { background-color: var(--team-a) !important; color: #000 !important; font-weight: bold; box-shadow: 0 0 8px rgba(162,210,255,0.8); }
+        .hi-team-b { background-color: var(--team-b) !important; color: #000 !important; font-weight: bold; box-shadow: 0 0 8px rgba(185,251,192,0.8); }
+
+        /* --- Items --- */
         .panel-main { flex: 1; padding: 20px; overflow-y: auto; }
-        .list-box { height: 100%; border: 1px solid #ddd; border-radius: 10px; padding: 5px; background: #fafafa; }
+        .list-box { height: 100%; border: 1px solid #eee; border-radius: 10px; padding: 5px; background: #fafafa; }
         .player-item { padding: 10px; margin-bottom: 8px; border-radius: 10px; border: 2px solid #eee; background: white; cursor: pointer; display: flex; align-items: center; font-weight: bold; font-size: 0.9em; }
-        .skill-dot { width: 12px; height: 12px; border-radius: 50%; margin-right: 8px; border: 1px solid rgba(0,0,0,0.1); }
+        .skill-dot { width: 12px; height: 12px; border-radius: 50%; margin-right: 8px; border: 1px solid rgba(0,0,0,0.05); }
         .lvl-yellow { background: var(--v-yellow); } .lvl-green { background: var(--v-green); } .lvl-blue { background: var(--v-blue); } .lvl-red { background: var(--v-red); } .lvl-black { background: var(--v-black); }
-        
-        .sel-a { border-color: var(--team-a); background: #e7f3ff; } 
-        .sel-b { border-color: var(--team-b); background: #f0fff4; }
+        .sel-a { border-color: var(--team-a); background: #e7f3ff; } .sel-b { border-color: var(--team-b); background: #f0fff4; }
 
         .courts-wrapper { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; }
         .court-card { background: white; border-radius: 15px; padding: 12px; border-top: 8px solid #ccc; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
         .court-card.playing { border-top-color: #4caf50; background: var(--playing-bg); }
         .slot { background: white; padding: 8px; border-radius: 8px; font-size: 0.85em; border: 1px dashed #ccc; margin-bottom: 5px; cursor: pointer; min-height: 40px; display: flex; align-items: center; }
+        .slot.occupied { border-style: solid; border-color: #eee; }
 
-        .history-table { width: 100%; border-collapse: collapse; background: white; border-radius: 10px; overflow: hidden; }
+        .history-table { width: 100%; border-collapse: collapse; background: white; }
         .history-table td { padding: 10px; border-bottom: 1px solid #eee; font-size: 0.85em; }
     </style>
 </head>
@@ -61,51 +63,33 @@
 
     <div id="left-sidebar-container">
         <div id="sec-fifo" class="side-section" style="flex: 2;">
-            <div class="section-header" onclick="toggleSection('sec-fifo')">
-                <span>👥 คิวรอ</span>
-                <span class="arrow">▼</span>
-            </div>
+            <div class="section-header" onclick="toggleSection('sec-fifo')"><span>👥 คิวรอ</span><span class="arrow">▼</span></div>
             <div class="section-content">
                 <div id="checkin-list" class="list-box"></div>
-                <button id="confirmBtn" style="width:100%; padding:12px; margin-top:10px; background:#007bff; color:white; border:none; border-radius:8px; font-weight:bold;">ลงสนาม (0)</button>
+                <button id="confirmBtn" style="width:100%; padding:12px; margin-top:10px; background:#007bff; color:white;">ลงสนาม (0)</button>
             </div>
         </div>
-
         <div id="sec-middle" class="side-section" style="flex: 1;">
-            <div class="section-header" onclick="toggleSection('sec-middle')">
-                <span>⏳ คิวกลาง</span>
-                <span class="arrow">▼</span>
-            </div>
-            <div class="section-content">
-                <div id="queue-list" class="list-box"></div>
-            </div>
+            <div class="section-header" onclick="toggleSection('sec-middle')"><span>⏳ คิวกลาง</span><span class="arrow">▼</span></div>
+            <div class="section-content"><div id="queue-list" class="list-box"></div></div>
         </div>
-
         <div style="padding: 10px; background: #f9f9f9;">
-            <textarea id="bulk-paste-input" rows="1" placeholder="วางชื่อจาก LINE..." style="width: 100%; border-radius: 8px; padding: 5px; font-size: 0.8em;"></textarea>
-            <button onclick="importBulkPlayers()" style="width: 100%; padding: 8px; margin-top: 5px; background: #6f42c1; color: white; border:none; border-radius:8px; width:100%;">🚀 นำเข้าชื่อ</button>
+            <textarea id="bulk-paste-input" rows="1" placeholder="วางชื่อ..." style="width:100%; border-radius:8px; padding:5px; border:1px solid #ddd;"></textarea>
+            <button onclick="importBulkPlayers()" style="width:100%; padding:8px; margin-top:5px; background:#6f42c1; color:white;">🚀 นำเข้า</button>
         </div>
     </div>
 
     <div class="panel-main">
-        <div style="display:flex; gap:10px; margin-bottom:20px; align-items: center;">
-            <button onclick="createSession()" style="background: #4caf50; color: white; padding: 10px 15px;">🚀 เปิดก๊วน</button>
-            <button onclick="addNewCourt()" style="background: #2196f3; color: white; padding: 10px 15px;">➕ เพิ่มสนาม</button>
-            <button onclick="terminateSession()" style="background: #ff4d4f; color: white; padding: 10px 15px;">🏁 จบก๊วน</button>
-            <div id="qrcode" onclick="expandQR()" style="margin-left: auto; cursor: zoom-in;"></div>
+        <div style="display:flex; gap:10px; margin-bottom:20px;">
+            <button onclick="createSession()" style="background:#4caf50; color:white; padding:10px 15px;">🚀 เปิดก๊วน</button>
+            <button onclick="addNewCourt()" style="background:#2196f3; color:white; padding:10px 15px;">➕ เพิ่มสนาม</button>
+            <div id="qrcode" style="margin-left:auto;"></div>
         </div>
-
         <div id="main-grid" class="courts-wrapper"></div>
-
-        <div style="margin-top: 40px;">
-            <h3 style="border-left: 5px solid orange; padding-left: 10px;">📜 ประวัติการแข่งวันนี้</h3>
-            <table class="history-table">
-                <tbody id="match-history-list"></tbody>
-            </table>
+        <div style="margin-top:40px;"><h3 style="border-left:5px solid orange; padding-left:10px;">📜 ประวัติการแข่ง</h3>
+            <table class="history-table"><tbody id="match-history-list"></tbody></table>
         </div>
     </div>
-
-    <div id="qr-overlay" onclick="this.style.display='none'"><div class="modal-content"><h2>Scan QR!</h2><div id="qr-big"></div></div></div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -117,79 +101,30 @@
 
         let selectedSlots = [null, null, null, null], currentSessionId = localStorage.getItem('last_sid') || "", lastSnapshotData = [], middleQueue = [], nextCourtNumber = 1;
 
-        // --- ระบบหุบอ้าแยกอิสระ ---
-        window.toggleSection = (id) => {
-            const el = document.getElementById(id);
-            el.classList.toggle('collapsed');
-            el.querySelector('.arrow').innerText = el.classList.contains('collapsed') ? "▶" : "▼";
-        };
+        window.toggleSection = (id) => { const el = document.getElementById(id); el.classList.toggle('collapsed'); el.querySelector('.arrow').innerText = el.classList.contains('collapsed') ? "▶" : "▼"; };
 
-        // --- ระบบ Highlight แยกทีม A/B ---
         window.updateMatchHighlights = () => {
-            // ล้างไฮไลต์เก่า
-            document.querySelectorAll('.name-tag').forEach(tag => {
-                tag.classList.remove('hi-team-a', 'hi-team-b');
-            });
-
-            // ไฮไลต์คนในทีม A (Slot 0, 1)
-            selectedSlots.slice(0, 2).forEach(p => {
-                if (p) document.querySelectorAll('.name-tag').forEach(tag => {
-                    if (tag.innerText.trim() === p.name) tag.classList.add('hi-team-a');
-                });
-            });
-
-            // ไฮไลต์คนในทีม B (Slot 2, 3)
-            selectedSlots.slice(2, 4).forEach(p => {
-                if (p) document.querySelectorAll('.name-tag').forEach(tag => {
-                    if (tag.innerText.trim() === p.name) tag.classList.add('hi-team-b');
-                });
-            });
+            document.querySelectorAll('.name-tag').forEach(tag => tag.classList.remove('hi-team-a', 'hi-team-b'));
+            selectedSlots.slice(0, 2).forEach(p => { if (p) document.querySelectorAll('.name-tag').forEach(tag => { if (tag.innerText.trim() === p.name) tag.classList.add('hi-team-a'); }); });
+            selectedSlots.slice(2, 4).forEach(p => { if (p) document.querySelectorAll('.name-tag').forEach(tag => { if (tag.innerText.trim() === p.name) tag.classList.add('hi-team-b'); }); });
         };
 
-        window.onload = () => {
-            if (currentSessionId) {
-                listenToAttendance(); listenToMatches();
-                const sq = localStorage.getItem(`queue_${currentSessionId}`);
-                if(sq) { middleQueue = JSON.parse(sq); renderMiddleQueue(); }
-                loadCourtsFromLocal();
-            }
-        };
+        window.onload = () => { if (currentSessionId) { listenToAttendance(); listenToMatches(); loadCourtsFromLocal(); const sq = localStorage.getItem(`queue_${currentSessionId}`); if(sq) { middleQueue = JSON.parse(sq); renderMiddleQueue(); } } };
 
-        function listenToAttendance() {
-            onSnapshot(query(collection(db, `sessions/${currentSessionId}/attendance`), orderBy("last_match_end", "asc")), snap => {
-                lastSnapshotData = snap.docs.map(d => ({ id: d.id, data: d.data() })); renderFIFO();
-            });
-        }
-
-        function listenToMatches() {
-            onSnapshot(query(collection(db, `sessions/${currentSessionId}/matches`), orderBy("timestamp", "desc")), snap => {
-                const list = document.getElementById('match-history-list'); list.innerHTML = "";
-                snap.docs.forEach((doc, i) => {
-                    const m = doc.data();
-                    const row = `<tr>
-                        <td width="30">#${snap.size-i}</td>
-                        <td width="60">สนาม ${m.court}</td>
-                        <td>
-                            <span class="name-tag">${m.teamA[0]}</span>, <span class="name-tag">${m.teamA[1]}</span>
-                            <b style="color:#ccc; margin:0 5px;">VS</b>
-                            <span class="name-tag">${m.teamB[0]}</span>, <span class="name-tag">${m.teamB[1]}</span>
-                        </td>
-                    </tr>`;
-                    list.insertAdjacentHTML('beforeend', row);
-                });
-                updateMatchHighlights();
-            });
-        }
+        function listenToAttendance() { onSnapshot(query(collection(db, `sessions/${currentSessionId}/attendance`), orderBy("last_match_end", "asc")), snap => { lastSnapshotData = snap.docs.map(d => ({ id: d.id, data: d.data() })); renderFIFO(); }); }
+        function listenToMatches() { onSnapshot(query(collection(db, `sessions/${currentSessionId}/matches`), orderBy("timestamp", "desc")), snap => { const list = document.getElementById('match-history-list'); list.innerHTML = ""; snap.docs.forEach((doc, i) => { const m = doc.data(); list.insertAdjacentHTML('beforeend', `<tr><td width="30">#${snap.size-i}</td><td width="60">สนาม ${m.court}</td><td><span class="name-tag">${m.teamA[0]}</span>, <span class="name-tag">${m.teamA[1]}</span> <b style="color:#ccc;">VS</b> <span class="name-tag">${m.teamB[0]}</span>, <span class="name-tag">${m.teamB[1]}</span></td></tr>`); }); updateMatchHighlights(); }); }
 
         window.renderFIFO = () => {
             const list = document.getElementById('checkin-list'); list.innerHTML = "";
             const midIds = new Set(middleQueue.flatMap(q => q.slots.filter(s => s).map(s => s.id)));
+            const playingIds = new Set(); document.querySelectorAll('.slot.occupied').forEach(s => playingIds.add(s.dataset.uid));
+
             lastSnapshotData.forEach(p => {
-                if (!p.data.is_playing && !midIds.has(p.id)) {
+                if (!p.data.is_playing && !midIds.has(p.id) && !playingIds.has(p.id)) {
                     const selIdx = selectedSlots.findIndex(s => s?.id === p.id);
                     const div = document.createElement('div');
                     div.className = "player-item " + (selIdx > -1 ? (selIdx < 2 ? 'sel-a' : 'sel-b') : '');
-                    div.innerHTML = `<span class="skill-dot lvl-${p.data.skill_level}"></span> <span>${p.data.display_name} (${p.data.games_played||0})</span>`;
+                    div.innerHTML = `<span class="skill-dot lvl-${p.data.skill_level}"></span> <span>${p.data.display_name}</span>`;
                     div.onclick = () => {
                         const idx = selectedSlots.findIndex(s => s?.id === p.id);
                         if(idx > -1) selectedSlots[idx] = null;
@@ -202,24 +137,38 @@
             updateBtn();
         };
 
-        // --- Logic พื้นฐาน ---
-        window.createSession = async () => { if(!confirm("เริ่มก๊วนใหม่?")) return; const sid = "GS" + Date.now().toString().slice(-6); await setDoc(doc(db,"sessions",sid),{status:"active",created_at:Date.now()}); localStorage.setItem('last_sid',sid); location.reload(); };
-        window.addNewCourt = () => { const id=`c-${Date.now()}`; renderCourtUI({id,courtNum:nextCourtNumber++,status:"🟢 ว่าง",shuttle:"1",playing:false,slots:[{html:"ว่าง"},{html:"ว่าง"},{html:"ว่าง"},{html:"ว่าง"}]}); saveCourtsToLocal(); };
-        window.handleEndGame = async (id) => {
-            const card=document.getElementById(id); const players=Array.from(card.querySelectorAll('.slot')).map(s=>s.innerText.replace('ว่าง','').trim()||"-");
-            const batch=writeBatch(db); const mRef=doc(collection(db,`sessions/${currentSessionId}/matches`));
-            batch.set(mRef,{court:card.querySelector('select').value,teamA:[players[0],players[1]],teamB:[players[2],players[3]],timestamp:Date.now()});
-            card.querySelectorAll('.occupied').forEach(s=>{ batch.update(doc(db,`sessions/${currentSessionId}/attendance`,s.dataset.uid),{is_playing:false,last_match_end:Date.now(),games_played:increment(1)}); });
-            await batch.commit(); location.reload(); 
-        };
         window.assignSlot = async (el, courtId) => {
-            const sIdx = selectedSlots.findIndex(p => p !== null); if(sIdx === -1) return;
-            const batch = writeBatch(db); batch.update(doc(db, `sessions/${currentSessionId}/attendance`, selectedSlots[sIdx].id), { is_playing: true });
-            await batch.commit(); selectedSlots[sIdx] = null; saveCourtsToLocal(); renderFIFO();
+            const sIdx = selectedSlots.findIndex(p => p !== null);
+            if (sIdx === -1 && el.dataset.uid) { // เอาคนออก
+                const uid = el.dataset.uid;
+                await updateDoc(doc(db, `sessions/${currentSessionId}/attendance`, uid), { is_playing: false });
+                el.innerText = "ว่าง"; el.classList.remove('occupied'); delete el.dataset.uid;
+                renderFIFO(); saveCourtsToLocal(); return;
+            }
+            if (sIdx !== -1) { // เอาคนลงสนาม
+                const p = lastSnapshotData.find(d => d.id === selectedSlots[sIdx].id);
+                el.innerHTML = `<span class="skill-dot lvl-${p.data.skill_level}"></span> ${p.data.display_name}`;
+                el.dataset.uid = p.id; el.classList.add('occupied');
+                await updateDoc(doc(db, `sessions/${currentSessionId}/attendance`, p.id), { is_playing: true });
+                selectedSlots[sIdx] = null;
+                renderFIFO(); updateBtn(); saveCourtsToLocal(); updateMatchHighlights();
+            }
         };
+
+        window.handleEndGame = async (id) => {
+            const card = document.getElementById(id); const slots = card.querySelectorAll('.slot.occupied');
+            if (slots.length === 0) return;
+            const names = Array.from(card.querySelectorAll('.slot')).map(s => s.innerText.trim() || "-");
+            const batch = writeBatch(db);
+            batch.set(doc(collection(db, `sessions/${currentSessionId}/matches`)), { court: card.querySelector('select').value, teamA: [names[0], names[1]], teamB: [names[2], names[3]], timestamp: Date.now() });
+            slots.forEach(s => { batch.update(doc(db, `sessions/${currentSessionId}/attendance`, s.dataset.uid), { is_playing: false, last_match_end: Date.now(), games_played: increment(1) }); s.innerText = "ว่าง"; s.classList.remove('occupied'); delete s.dataset.uid; });
+            await batch.commit(); saveCourtsToLocal(); renderFIFO();
+        };
+
+        window.addNewCourt = () => { renderCourtUI({id:`c-${Date.now()}`,courtNum:nextCourtNumber++,slots:[{html:"ว่าง"},{html:"ว่าง"},{html:"ว่าง"},{html:"ว่าง"}]}); saveCourtsToLocal(); };
         function renderCourtUI(c) {
-            const html = `<div class="court-card ${c.playing?'playing':''}" id="${c.id}">
-                <div style="display:flex; justify-content:space-between; margin-bottom:10px;"><select onchange="saveCourtsToLocal()">${Array.from({length:10},(_,i)=>`<option value="${i+1}" ${i+1==c.courtNum?'selected':''}>สนาม ${i+1}</option>`).join('')}</select><button onclick="this.closest('.court-card').remove();saveCourtsToLocal();">❌</button></div>
+            const html = `<div class="court-card" id="${c.id}">
+                <div style="display:flex; justify-content:space-between; margin-bottom:10px;"><select onchange="saveCourtsToLocal()">${Array.from({length:10},(_,i)=>`<option value="${i+1}" ${i+1==c.courtNum?'selected':''}>สนาม ${i+1}</option>`).join('')}</select><button onclick="this.closest('.court-card').remove();saveCourtsToLocal();" style="color:red; background:none;">❌</button></div>
                 <div style="display:flex; gap:5px;">
                     <div style="flex:1; background:var(--team-a); padding:5px; border-radius:8px;">
                         <div class="slot ${c.slots[0].occupied?'occupied':''}" data-uid="${c.slots[0].uid||''}" onclick="assignSlot(this,'${c.id}')">${c.slots[0].html}</div>
@@ -230,15 +179,17 @@
                         <div class="slot ${c.slots[3].occupied?'occupied':''}" data-uid="${c.slots[3].uid||''}" onclick="assignSlot(this,'${c.id}')">${c.slots[3].html}</div>
                     </div>
                 </div>
-                <button style="width:100%; margin-top:10px; background:#ff4d4f; color:white; padding:8px; border-radius:8px;" onclick="handleEndGame('${c.id}')">⏹️ จบเกม</button>
+                <button style="width:100%; margin-top:10px; background:#ff4d4f; color:white; padding:8px;" onclick="handleEndGame('${c.id}')">⏹️ จบเกม</button>
             </div>`;
             document.getElementById('main-grid').insertAdjacentHTML('beforeend', html);
         }
-        async function saveCourtsToLocal() { const courts=[]; document.querySelectorAll('.court-card').forEach(card=>{ const slots=[]; card.querySelectorAll('.slot').forEach(s=>slots.push({uid:s.dataset.uid||null,html:s.innerHTML,occupied:s.classList.contains('occupied')})); courts.push({id:card.id,courtNum:card.querySelector('select').value,slots}); }); localStorage.setItem(`courts_${currentSessionId}`, JSON.stringify(courts)); await updateDoc(doc(db,`sessions/${currentSessionId}`),{live_courts:courts}); }
+
+        async function saveCourtsToLocal() { const courts=[]; document.querySelectorAll('.court-card').forEach(card=>{ const slots=[]; card.querySelectorAll('.slot').forEach(s=>slots.push({uid:s.dataset.uid||null,html:s.innerHTML,occupied:s.classList.contains('occupied')})); courts.push({id:card.id,courtNum:card.querySelector('select').value,slots}); }); localStorage.setItem(`courts_${currentSessionId}`, JSON.stringify(courts)); }
         function loadCourtsFromLocal() { const data=localStorage.getItem(`courts_${currentSessionId}`); if(!data) return; JSON.parse(data).forEach(c=>renderCourtUI(c)); }
         function renderMiddleQueue() { const list=document.getElementById('queue-list'); list.innerHTML=""; middleQueue.forEach((q,i)=>{ const div=document.createElement('div'); div.className="player-item"; div.innerHTML=`Q${i+1}: ${q.slots.filter(s=>s).map(s=>s.name).join(' & ')}`; div.onclick=()=>{selectedSlots=[...q.slots]; middleQueue.splice(i,1); renderMiddleQueue(); renderFIFO(); updateMatchHighlights();}; list.appendChild(div); }); }
-        document.getElementById('confirmBtn').onclick=()=>{ if(!selectedSlots.filter(s=>s).length) return; middleQueue.push({slots:[...selectedSlots]}); selectedSlots=[null,null,null,null]; renderMiddleQueue(); renderFIFO(); updateMatchHighlights(); };
+        document.getElementById('confirmBtn').onclick=()=>{ if(!selectedSlots.filter(s=>s).length) return; middleQueue.push({slots:[...selectedSlots]}); selectedSlots=[null,null,null,null]; renderMiddleQueue(); renderFIFO(); localStorage.setItem(`queue_${currentSessionId}`, JSON.stringify(middleQueue)); };
         window.updateBtn = () => { document.getElementById('confirmBtn').innerText = `ลงสนาม (${selectedSlots.filter(s=>s).length})`; };
+        window.createSession = async () => { if(!confirm("เริ่มก๊วน?")) return; const sid="GS"+Date.now().toString().slice(-6); await setDoc(doc(db,"sessions",sid),{status:"active",created_at:Date.now()}); localStorage.setItem('last_sid',sid); location.reload(); };
         window.importBulkPlayers = async () => { const input = document.getElementById('bulk-paste-input'); const lines = input.value.trim().split('\n').filter(n=>n); const batch=writeBatch(db); lines.forEach((name,i)=>{ const id="m_"+Date.now()+i; batch.set(doc(db,`sessions/${currentSessionId}/attendance`,id),{id,display_name:name,skill_level:"green",is_playing:false,games_played:0,last_match_end:Date.now()+i}); }); await batch.commit(); input.value=""; };
     </script>
 </body>
