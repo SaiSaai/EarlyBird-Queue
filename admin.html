@@ -9,16 +9,53 @@
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
         :root { 
+            --sidebar-width: 320px; /* ลดความกว้างลงเพื่อให้เหลือพื้นที่สนาม */
             --primary-bg: #fdfcf0; --team-a: #a2d2ff; --team-b: #b9fbc0; --accent-red: #ffcfd2; --playing-bg: #f0fff4; 
             --v-yellow: #FFD700; --v-green: #00C853; --v-blue: #2962FF; --v-red: #D50000; --v-black: #000000;
         }
         * { box-sizing: border-box; font-family: 'Kanit', sans-serif; }
-        body { background-color: var(--primary-bg); margin: 0; display: flex; height: 100vh; overflow: hidden; }
+        body { 
+            background-color: var(--primary-bg); 
+            margin: 0; 
+            display: flex; 
+            height: 100vh; 
+            overflow: hidden; /* ล็อกหน้าจอไม่ให้ Scroll ทั้งหน้า */
+        }
         
-        #left-sidebar-container { width: 580px; height: 100vh; display: flex; flex-direction: column; background: #fff; border-right: 2px solid #eee; flex-shrink: 0; }
-        .queue-split-area { display: flex; flex: 1; min-height: 0; border-bottom: 2px solid #eee; }
-        .side-panel { flex: 1; display: flex; flex-direction: column; padding: 15px; overflow: hidden; }
-        .panel-main { flex: 1; padding: 15px; overflow-y: auto; position: relative; }
+        /* ปรับ Sidebar เป็นแนวตั้งแทน */
+        #left-sidebar-container { 
+            width: var(--sidebar-width); 
+            height: 100vh; 
+            display: flex; 
+            flex-direction: column; 
+            background: #fff; 
+            border-right: 2px solid #eee; 
+            flex-shrink: 0; 
+        }
+        .queue-split-area { 
+            display: flex; 
+            flex-direction: column; /* เปลี่ยนจาก row เป็น column */
+            flex: 1; 
+            min-height: 0; 
+        }
+        .side-panel { 
+            flex: 1; 
+            display: flex; 
+            flex-direction: column; 
+            padding: 10px; /* ลด padding */
+            overflow: hidden; 
+        }
+
+        .side-panel h3 { font-size: 1em; margin: 5px 0; }
+        /* พื้นที่หลักทางขวา */
+        .panel-main { 
+            flex: 1; 
+            padding: 15px; 
+            overflow-y: auto; /* ให้ Scroll เฉพาะฝั่งขวา */
+            display: flex; 
+            flex-direction: column; 
+            gap: 15px;
+        }
         .list-box { flex: 1; border: 1px solid #ddd; border-radius: 12px; overflow-y: auto; padding: 10px; background: #fafafa; }
         
         .player-item { padding: 10px; margin-bottom: 8px; border-radius: 10px; border: 2px solid #eee; background: white; cursor: pointer; font-weight: bold; display: flex; align-items: center; transition: 0.2s; }
@@ -27,7 +64,12 @@
         .lvl-yellow { background: var(--v-yellow); } .lvl-green { background: var(--v-green); } .lvl-blue { background: var(--v-blue); } .lvl-red { background: var(--v-red); } .lvl-black { background: var(--v-black); }
         .sel-a { border-color: var(--team-a); background: #e7f3ff; } .sel-b { border-color: var(--team-b); background: #f0fff4; }
 
-        .courts-wrapper { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; padding-bottom: 40px; }
+        /* ปรับ Grid สนามให้เล็กลงหน่อยเพื่อประหยัดพื้นที่ */
+        .courts-wrapper { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); 
+            gap: 10px; 
+        }
         .court-card { background: white; border-radius: 20px; padding: 15px; box-shadow: 0 8px 15px rgba(0,0,0,0.05); border-top: 10px solid #ccc; }
         .court-card.playing { border-top-color: #4caf50; background: var(--playing-bg); }
         .slot { background: white; padding: 10px; border-radius: 8px; font-size: 0.85em; font-weight: bold; border: 1px dashed #ccc; cursor: pointer; display: flex; align-items: center; gap: 8px; min-height: 42px; margin-bottom: 5px; overflow: hidden; }
@@ -38,17 +80,26 @@
         .btn-start { background: #4caf50; color: white; width: 100%; padding: 12px; margin-top: 8px; }
         .btn-end { background: var(--accent-red); color: #d00; width: 100%; padding: 12px; margin-top: 8px; }
         
-        .history-section { margin-top: 40px; padding: 20px; background: white; border-radius: 20px; border: 1px solid #eee; }
+        /* ปรับตารางประวัติให้กะทัดรัด */
+        .history-section { 
+            margin-top: 10px; 
+            padding: 15px; 
+            flex-shrink: 0; /* ไม่ให้ส่วนประวัติโดนบีบจนหาย */
+        }
         .history-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        .history-table th { background: #f8f9fa; padding: 12px; text-align: left; border-bottom: 2px solid #eee; font-size: 0.9em; }
-        .history-table td { padding: 12px; border-bottom: 1px solid #eee; font-size: 0.85em; }
+        .history-table td, .history-table th { 
+            padding: 8px 5px; 
+            font-size: 0.8em; 
+        }
         
         /* สไตล์เพิ่มเติมสำหรับตารางประวัติ */
         .badge-court {
             background: #444; color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.8em;
         }
-        .team-pill {
-            padding: 4px 10px; border-radius: 8px; font-weight: 600; display: inline-block;
+        /* ชื่อทีมในประวัติให้เล็กลงเล็กน้อยแต่ยังอ่านง่าย */
+        .team-pill { 
+            padding: 2px 6px; 
+            font-size: 0.85em; 
         }
         .team-a-pill { background-color: var(--team-a); color: #004085; }
         .team-b-pill { background-color: var(--team-b); color: #09440c; }
@@ -63,18 +114,18 @@
 
     <div id="left-sidebar-container">
         <div class="queue-split-area">
-            <div class="side-panel">
+            <div class="side-panel" style="border-bottom: 1px solid #eee;">
                 <h3>👥 คิวรอ (FIFO)</h3>
                 <div id="checkin-list" class="list-box"></div>
-                <button id="confirmBtn" class="btn-primary" style="width:100%; padding:14px; margin-top:10px; font-size:1.1em;">ยืนยันลงสนาม (0)</button>
+                <button id="confirmBtn" class="btn-primary" style="width:100%; padding:14px; margin-top:8px; font-size:1em;">ยืนยันลงสนาม (0)</button>
             </div>
             <div class="side-panel" style="background: #fffdf5;">
                 <h3>⏳ คิวกลาง</h3>
                 <div id="queue-list" class="list-box"></div>
             </div>
         </div>
-        <div style="padding: 15px; background: #f9f9f9; border-top: 1px solid #eee;">
-            <textarea id="bulk-paste-input" rows="3" placeholder="วางรายชื่อจาก LINE ที่นี่..." style="width: 100%; border-radius: 8px; border: 1px solid #ddd; padding: 10px; font-size: 0.9em; resize: none;"></textarea>
+        <div style="padding: 10px; background: #f9f9f9; border-top: 1px solid #eee;">
+            <textarea id="bulk-paste-input" rows="2" placeholder="วางรายชื่อที่นี่..." style="width: 100%; border-radius: 8px; border: 1px solid #ddd; padding: 10px; font-size: 0.8em; resize: none;"></textarea>
             <button onclick="importBulkPlayers()" style="width: 100%; padding: 10px; margin-top: 5px; background: #6f42c1; color: white;">🚀 นำเข้ารายชื่อ</button>
         </div>
     </div>
