@@ -315,24 +315,41 @@
         };
 
         // --- Queue System ---
-        // --- ส่วนที่ 1: แก้ไขฟังก์ชัน renderFIFO เพื่อไม่ให้บัคสีหาย ---
+        // --- ส่วนที่ 1: แก้ไขฟังก์ชัน renderFIFO เพื่อจัดการชื่อซ้ำและแสดงจำนวนเกม ---
         window.renderFIFO = () => {
             const list = document.getElementById('checkin-list'); 
             list.innerHTML = "";
             
+            // 1. รวบรวม ID ของคนที่ "ถูกเลือกอยู่" ทั้งใน selectedSlots และใน middleQueue (คิวกลาง)
+            // เพื่อเอาไปกรองออก ไม่ให้ชื่อปรากฏซ้ำในคิวรอ
+            const selectedIds = selectedSlots.filter(s => s).map(s => s.id);
+            const inMiddleQueueIds = middleQueue.flatMap(q => q.slots.filter(s => s).map(s => s.id));
+            const excludedIds = [...selectedIds, ...inMiddleQueueIds];
+
             lastSnapshotData.forEach(p => {
-                if (!p.data.is_playing) {
+                // เงื่อนไข: ต้องไม่กำลังแข่ง (is_playing) และไม่อยู่ในรายชื่อที่ถูกเลือก/คิวกลาง (excludedIds)
+                // ยกเว้น! ถ้าคนนั้นถูกเลือกอยู่ใน selectedSlots "ปัจจุบัน" ให้แสดงออกมาเพื่อให้กดเอาออกได้ (มีสีไฮไลต์)
+                const isCurrentlySelected = selectedIds.includes(p.id);
+
+                if (!p.data.is_playing && (!excludedIds.includes(p.id) || isCurrentlySelected)) {
                     const selIdx = selectedSlots.findIndex(s => s?.id === p.id);
                     const div = document.createElement('div');
                     
-                    // แก้บัค: ใส่คลาสสี sel-a หรือ sel-b กลับเข้าไปที่คิวรอ
                     let selectClass = "";
                     if (selIdx !== -1) {
                         selectClass = (selIdx < 2) ? " sel-a" : " sel-b";
                     }
                     
+                    // ดึงจำนวนเกม (ถ้าไม่มีให้เป็น 0)
+                    const games = p.data.games_played || 0;
+
                     div.className = "player-item" + selectClass;
-                    div.innerHTML = `<span class="skill-dot lvl-${p.data.skill_level}"></span> <span>${p.data.display_name}</span>`;
+                    // เพิ่ม (G: ${games}) ต่อท้ายชื่อ
+                    div.innerHTML = `
+                        <span class="skill-dot lvl-${p.data.skill_level}"></span> 
+                        <span style="flex:1; margin-left:8px;">${p.data.display_name}</span>
+                        <span style="font-size:0.8em; color:#666;">(${games})</span>
+                    `;
                     
                     div.onclick = () => {
                         const idx = selectedSlots.findIndex(s => s?.id === p.id);
@@ -346,7 +363,6 @@
                         }
                         renderFIFO(); 
                         updateBtn();
-                        // สั่ง Update ไฮไลต์ในประวัติทุกครั้งที่มีการเปลี่ยนตัวเลือก
                         highlightInHistory(); 
                     };
                     list.appendChild(div);
