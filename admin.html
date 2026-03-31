@@ -43,6 +43,18 @@
         .history-table th { background: #f8f9fa; padding: 12px; text-align: left; border-bottom: 2px solid #eee; font-size: 0.9em; }
         .history-table td { padding: 12px; border-bottom: 1px solid #eee; font-size: 0.85em; }
         
+        /* สไตล์เพิ่มเติมสำหรับตารางประวัติ */
+        .badge-court {
+            background: #444; color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.8em;
+        }
+        .team-pill {
+            padding: 4px 10px; border-radius: 8px; font-weight: 600; display: inline-block;
+        }
+        .team-a-pill { background-color: var(--team-a); color: #004085; }
+        .team-b-pill { background-color: var(--team-b); color: #09440c; }
+        .vs-text { margin: 0 10px; font-weight: bold; color: #999; font-style: italic; }
+        .game-no { font-weight: bold; color: #666; }
+
         #qr-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 9999; justify-content: center; align-items: center; }
         .modal-content { background: white; padding: 25px; border-radius: 25px; text-align: center; }
     </style>
@@ -312,10 +324,34 @@
 
         function listenToMatches() {
             onSnapshot(query(collection(db, `sessions/${currentSessionId}/matches`), orderBy("timestamp", "desc")), snap => {
-                const list = document.getElementById('match-history-list'); list.innerHTML = "";
+                const list = document.getElementById('match-history-list');
+                list.innerHTML = "";
+                
+                // ใช้ snap.size เพื่อหาจำนวนเกมทั้งหมดและนับถอยหลัง
+                const totalMatches = snap.size;
+
                 snap.docs.forEach((doc, i) => {
-                    const m = doc.data(); const time = new Date(m.timestamp).toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});
-                    list.insertAdjacentHTML('beforeend', `<tr><td>${snap.size-i}</td><td>${m.court}</td><td>${m.teamA[0]},${m.teamA[1]} <b>vs</b> ${m.teamB[0]},${m.teamB[1]}</td><td>${time}</td></tr>`);
+                    const m = doc.data();
+                    const time = new Date(m.timestamp).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+                    const gameNumber = totalMatches - i; // เกมที่ 1 จะอยู่ล่างสุด เกมล่าสุดอยู่บนสุด
+
+                    const row = `
+                        <tr>
+                            <td class="game-no">เกมที่ ${gameNumber}</td>
+                            <td><span class="badge-court">สนาม ${m.court}</span></td>
+                            <td>
+                                <div class="team-pill team-a-pill">
+                                    ${m.teamA[0]} + ${m.teamA[1]}
+                                </div>
+                                <span class="vs-text">VS</span>
+                                <div class="team-pill team-b-pill">
+                                    ${m.teamB[0]} + ${m.teamB[1]}
+                                </div>
+                            </td>
+                            <td style="color: #999;">${time}</td>
+                        </tr>
+                    `;
+                    list.insertAdjacentHTML('beforeend', row);
                 });
             });
         }
