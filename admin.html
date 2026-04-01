@@ -382,7 +382,9 @@
                     div.className = "player-item" + selectClass;
                     // เพิ่ม (G: ${games}) ต่อท้ายชื่อ
                     div.innerHTML = `
-                        <span class="skill-dot lvl-${p.data.skill_level}"></span> 
+                        <span class="skill-dot lvl-${p.data.skill_level}" 
+                        onclick="event.stopPropagation(); promptChangeSkill('${p.id}', '${p.data.display_name}')" 
+                        style="cursor:pointer;"></span> 
                         <span style="flex:1; margin-left:8px;">${p.data.display_name}</span>
                         <span style="font-size:0.8em; color:#666;">(${games})</span>
                     `;
@@ -438,6 +440,15 @@
             });
         };
 
+        window.promptChangeSkill = async (uid, name) => {
+            const newSkill = prompt(`เปลี่ยนระดับของ ${name} (yellow, green, blue, red):`, getSkillFromName(name));
+            if (newSkill && ['yellow', 'green', 'blue', 'red'].includes(newSkill.toLowerCase())) {
+                await changePlayerSkill(uid, name, newSkill.toLowerCase());
+            } else if (newSkill) {
+                alert("กรุณาใส่สี: yellow, green, blue หรือ red");
+            }
+        };
+        
         window.renderMiddleQueue = () => {
             const list = document.getElementById('queue-list'); 
             list.innerHTML = "";
@@ -582,7 +593,7 @@
             
             alert(`จำระดับของ ${name} เป็นสี ${newSkill} แล้ว!`);
         };
-        
+
         // --- Helper ---
         window.importBulkPlayers = async () => {
             const input = document.getElementById('bulk-paste-input');
@@ -621,4 +632,4 @@
 
     </script>
 </body>
-</html>>
+</html>
