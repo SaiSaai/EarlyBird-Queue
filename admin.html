@@ -553,17 +553,64 @@
             });
         };
 
+        // ดึงข้อมูล "สมุดรายชื่อ" จากเครื่อง
+        const getMasterList = () => JSON.parse(localStorage.getItem('player_master_list') || "{}");
+
+        // บันทึก/อัปเดตสีของชื่อนั้นๆ ลงในสมุดรายชื่อ
+        const updateMasterSkill = (name, skill) => {
+            const master = getMasterList();
+            master[name.trim()] = skill;
+            localStorage.setItem('player_master_list', JSON.stringify(master));
+        };
+
+        // เช็กว่าชื่อนี้เคยมีสีอะไร ถ้าไม่มีให้คืนค่า 'yellow'
+        const getSkillFromName = (name) => {
+            const master = getMasterList();
+            return master[name.trim()] || 'yellow';
+        };
+
+        
+        // ตัวอย่าง: ถ้าคุณมีฟังก์ชันเปลี่ยนระดับฝีมือ
+        window.changePlayerSkill = async (uid, name, newSkill) => {
+            // 1. อัปเดตใน Firebase (ของปัจจุบัน)
+            await updateDoc(doc(db, `sessions/${currentSessionId}/attendance`, uid), {
+                skill_level: newSkill
+            });
+            
+            // 2. ✨ สั่งให้จำไว้ใช้ในครั้งหน้าด้วย!
+            updateMasterSkill(name, newSkill);
+            
+            alert(`จำระดับของ ${name} เป็นสี ${newSkill} แล้ว!`);
+        };
+        
         // --- Helper ---
         window.importBulkPlayers = async () => {
             const input = document.getElementById('bulk-paste-input');
             const lines = input.value.trim().split('\n').map(l => l.replace(/^\d+\.\s*/, '').trim()).filter(n => n);
             if(!lines.length) return;
-            const batch = writeBatch(db); const now = Date.now();
+            
+            const batch = writeBatch(db); 
+            const now = Date.now();
+
             lines.forEach((name, i) => {
                 const id = "m_" + now + i;
-                batch.set(doc(db, `sessions/${currentSessionId}/attendance`, id), { id, display_name: name, skill_level: "yellow", is_playing: false, games_played: 0, shuttle_used: 0, last_match_end: now + i, checkin_at: now });
+                // ✨ จุดที่แก้: ไปดึงสีที่เคยจำไว้มาใช้ ถ้าไม่เจอจะเป็นสีเหลือง (yellow)
+                const rememberedSkill = getSkillFromName(name);
+                
+                batch.set(doc(db, `sessions/${currentSessionId}/attendance`, id), { 
+                    id, 
+                    display_name: name, 
+                    skill_level: rememberedSkill, // ใช้สีที่จำได้
+                    is_playing: false, 
+                    games_played: 0, 
+                    shuttle_used: 0, 
+                    last_match_end: now + i, 
+                    checkin_at: now 
+                });
             });
-            await batch.commit(); input.value = "";
+            
+            await batch.commit(); 
+            input.value = "";
         };
 
         const saveQueue = () => localStorage.setItem(`queue_${currentSessionId}`, JSON.stringify(middleQueue));
@@ -571,6 +618,7 @@
         window.updateBtn = () => { document.getElementById('confirmBtn').innerText = `ยืนยันลงสนาม (${selectedSlots.filter(s=>s).length})`; };
         window.generateQR = (id) => { document.getElementById("qrcode").innerHTML = ""; new QRCode(document.getElementById("qrcode"), { text: `https://early-bird-queue.vercel.app/index.html?session=${id}`, width: 50, height: 50 }); };
         window.expandQR = () => { document.getElementById('qr-big').innerHTML = ""; new QRCode(document.getElementById('qr-big'), { text: `https://early-bird-queue.vercel.app/profile.html?session=${currentSessionId}`, width: 200, height: 200 }); document.getElementById('sid-text').innerText = "Session ID: " + currentSessionId; document.getElementById('qr-overlay').style.display = 'flex'; };
+
     </script>
 </body>
 </html>>
