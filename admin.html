@@ -239,7 +239,7 @@
                 totalDiscount += (p.data.discount || 0);
             });
             const netTotal = (lastSnapshotData.length * baseRate) + totalExtra - totalDiscount;
-            const report = `📊 สรุปก๊วนวันนี้\n----------------\n👥 สมาชิก: ${lastSnapshotData.length} คน\n🏸 ลูกแบด: ${totalShuttle} ลูก\n💰 ยอดเพิ่ม: ${totalExtra} บ.\n💸 ส่วนลด: ${totalDiscount} บ.\n----------------\n💵 ยอดรวมสุทธิ: ${netTotal.toLocaleString()} บาท`;
+            const report = `📊 สรุปก๊วนวันนี้\n----------------\n👥 สมาชิก: ${lastSnapshotData.length} คน\n🏸 ลูกแบด: ${totalShuttle/4} ลูก\n💰 ยอดเพิ่ม: ${totalExtra} บ.\n💸 ส่วนลด: ${totalDiscount} บ.\n----------------\n💵 ยอดรวมสุทธิ: ${netTotal.toLocaleString()} บาท`;
 
             if (confirm(report + "\n\nกดตกลงเพื่อ Copy รายงานและจบก๊วน")) {
                 await navigator.clipboard.writeText(report);
@@ -522,7 +522,17 @@
         // --- Database Listeners ---
         function listenToAttendance() {
             onSnapshot(query(collection(db, `sessions/${currentSessionId}/attendance`), orderBy("last_match_end", "asc")), snap => {
-                lastSnapshotData = snap.docs.map(d => ({ id: d.id, data: d.data() })); renderFIFO();
+                lastSnapshotData = snap.docs.map(d => ({ id: d.id, data: d.data() }));
+                
+                // ✨ เพิ่มบรรทัดนี้: ทุกครั้งที่ข้อมูลใน Firebase เปลี่ยน (เช่น หน้า Member เปลี่ยนสี)
+                // ให้หน้า Admin อัปเดต "สมุดรายชื่อ" ในเครื่องตัวเองทันที
+                lastSnapshotData.forEach(p => {
+                    if (p.data.display_name && p.data.skill_level) {
+                        updateMasterSkill(p.data.display_name, p.data.skill_level);
+                    }
+                });
+
+                renderFIFO();
             });
         }
 
@@ -579,17 +589,18 @@
 
         // บันทึก/อัปเดตสีของชื่อนั้นๆ ลงในสมุดรายชื่อ
         const updateMasterSkill = (name, skill) => {
+            if (!name) return; // กันพัง
             const master = getMasterList();
-            master[name.trim()] = skill;
+            master[name.toString().trim()] = skill; // trim ชื่อทิ้งช่องว่างเสมอ
             localStorage.setItem('player_master_list', JSON.stringify(master));
         };
 
         // เช็กว่าชื่อนี้เคยมีสีอะไร ถ้าไม่มีให้คืนค่า 'yellow'
         const getSkillFromName = (name) => {
+            if (!name) return 'yellow';
             const master = getMasterList();
-            return master[name.trim()] || 'yellow';
+            return master[name.toString().trim()] || 'yellow';
         };
-
         
         // ตัวอย่าง: ถ้าคุณมีฟังก์ชันเปลี่ยนระดับฝีมือ
         window.changePlayerSkill = async (uid, name, newSkill) => {
