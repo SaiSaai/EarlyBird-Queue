@@ -222,6 +222,15 @@
 
         window.terminateSession = async () => {
             if (lastSnapshotData.length === 0) return alert("ไม่มีข้อมูลสมาชิก");
+
+            // --- ✨ ส่วนที่เพิ่ม: สั่งให้จำสีของทุกคนที่มีอยู่ในก๊วนตอนนี้ลง Master List ---
+            lastSnapshotData.forEach(p => {
+                if (p.data.display_name && p.data.skill_level) {
+                    updateMasterSkill(p.data.display_name, p.data.skill_level);
+                }
+            });
+            // -----------------------------------------------------------
+
             const baseRate = 150; // ปรับค่าสนามพื้นฐานที่นี่
             let totalShuttle = 0, totalExtra = 0, totalDiscount = 0;
             lastSnapshotData.forEach(p => {
@@ -237,7 +246,8 @@
                 await updateDoc(doc(db, "sessions", currentSessionId), { status: "closed", summary: report });
                 localStorage.removeItem(`courts_${currentSessionId}`);
                 localStorage.removeItem(`queue_${currentSessionId}`);
-                alert("คัดลอกรายงานแล้ว! นำไปวางใน LINE ได้เลย"); location.reload();
+                alert("บันทึกระดับฝีมือทุกคนและคัดลอกรายงานแล้ว!");
+                location.reload();
             }
         };
 
@@ -448,7 +458,7 @@
                 alert("กรุณาใส่สี: yellow, green, blue หรือ red");
             }
         };
-        
+
         window.renderMiddleQueue = () => {
             const list = document.getElementById('queue-list'); 
             list.innerHTML = "";
