@@ -159,9 +159,19 @@
                 alert(`⚠️ ไม่สามารถเก็บเงิน ${player.display_name} ได้\nเนื่องจากยัง "${busyStatus}" กรุณารอให้จบเกมหรือเอาออกจากคิวก่อน`);
                 return;
             }
+            await updateDoc(doc(db, `sessions/${sessionId}/attendance`, id), { is_paid: status });
         }
-        
-        await updateDoc(doc(db, `sessions/${sessionId}/attendance`, id), { is_paid: status });
+        // 2. ถ้ากด "ยกเลิก" (เปลี่ยนจากจ่ายแล้ว กลับมาเป็น "ยังไม่จ่าย")
+        else {
+            const now = Date.now(); // สร้างเวลาปัจจุบันขึ้นมา
+            await updateDoc(doc(db, `sessions/${sessionId}/attendance`, id), { 
+                is_paid: false,
+                // ✨ เพิ่ม 2 บรรทัดนี้ เพื่อให้เวลาเช็คอินเป็น "ล่าสุด" 
+                // ชื่อจะกระเด้งไปอยู่ "ล่างสุด" ของคิวในหน้าจัดทีมทันที
+                checkin_at: now,
+                //last_match_end: now 
+            });
+        }        
     };
 
     // --- ส่วนแสดงผลและการคำนวณ (เหมือนเดิม) ---
