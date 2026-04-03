@@ -188,7 +188,18 @@
             return;
         }
         list.innerHTML = "";
-        const sortedMembers = [...members].sort((a, b) => (a.is_paid === b.is_paid) ? 0 : a.is_paid ? 1 : -1);
+        //const sortedMembers = [...members].sort((a, b) => (a.is_paid === b.is_paid) ? 0 : a.is_paid ? 1 : -1);
+
+        // --- แก้ไขการเรียงลำดับตรงนี้ ---
+        const sortedMembers = [...members].sort((a, b) => {
+            // 1. เรียงตามสถานะการจ่ายเงิน (false ขึ้นก่อน true)
+            if (a.is_paid !== b.is_paid) {
+                return a.is_paid ? 1 : -1;
+            }
+            // 2. ถ้าสถานะเหมือนกัน ให้เรียงชื่อตาม ก-ฮ
+            return (a.display_name || "").localeCompare((b.display_name || ""), 'th');
+        });
+        // ----------------------------
 
         sortedMembers.forEach(m => {
             const tr = document.createElement('tr');
