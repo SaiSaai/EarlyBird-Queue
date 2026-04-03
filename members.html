@@ -236,6 +236,35 @@
         }, 800);
         calculateAll();
     };
+
+    window.markAsPaid = async (uid, name) => {
+        // 1. เช็คว่าคนนี้อยู่ในสนาม (lastSnapshotData เก็บข้อมูล Real-time อยู่แล้ว)
+        const player = lastSnapshotData.find(p => p.id === uid);
+        
+        if (!player) return;
+
+        // 2. เช็คเงื่อนไข: ต้องไม่เล่นอยู่ (is_playing)
+        if (player.data.is_playing) {
+            alert(`ไม่สามารถแจ้งจ่ายเงินได้ เนื่องจาก ${name} กำลังอยู่ในสนามครับ`);
+            return;
+        }
+
+        // 3. เช็คเงื่อนไข: ต้องไม่อยู่ในคิวกลาง (middleQueue)
+        const inMiddleQueue = middleQueue.some(q => q.slots.some(s => s && s.id === uid));
+        if (inMiddleQueue) {
+            alert(`ไม่สามารถแจ้งจ่ายเงินได้ เนื่องจาก ${name} อยู่ในคิวรอลงสนาม (Q) กรุณาดึงออกก่อนครับ`);
+            return;
+        }
+
+        // 4. ถ้าผ่านเงื่อนไข ให้ Update Firebase เป็นจ่ายแล้ว
+        if (confirm(`ยืนยันการจ่ายเงินของ ${name}? (ชื่อจะออกจากคิวทันที)`)) {
+            await updateDoc(doc(db, `sessions/${currentSessionId}/attendance`, uid), {
+                is_paid: true,
+                is_playing: false // เผื่อไว้กันพลาด
+            });
+            alert(`บันทึกการจ่ายเงินของ ${name} เรียบร้อย`);
+        }
+    };
 </script>
 </body>
 </html>

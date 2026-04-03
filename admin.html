@@ -377,7 +377,7 @@
                 // ยกเว้น! ถ้าคนนั้นถูกเลือกอยู่ใน selectedSlots "ปัจจุบัน" ให้แสดงออกมาเพื่อให้กดเอาออกได้ (มีสีไฮไลต์)
                 const isCurrentlySelected = selectedIds.includes(p.id);
 
-                if (!p.data.is_playing && (!excludedIds.includes(p.id) || isCurrentlySelected)) {
+                if (!p.data.is_paid && !p.data.is_playing && (!excludedIds.includes(p.id) || isCurrentlySelected)) {
                     const selIdx = selectedSlots.findIndex(s => s?.id === p.id);
                     const div = document.createElement('div');
                     
