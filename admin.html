@@ -546,11 +546,10 @@
                     const m = doc.data();
                     const time = new Date(m.timestamp).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
                     const gameNumber = snap.size - i;
-
+//<td><span class="badge-court">สนาม ${m.court}</span></td>
                     const row = `
                         <tr>
                             <td class="game-no">เกมที่ ${gameNumber}</td>
-                            <td><span class="badge-court">สนาม ${m.court}</span></td>
                             <td>
                                 <div class="team-group">
                                     <span class="team-pill team-a-pill clickable-name" onclick="highlightName('${m.teamA[0]}')">${m.teamA[0]}</span> + 
