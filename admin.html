@@ -179,38 +179,114 @@
 
         let selectedSlots = [null, null, null, null], currentSessionId = localStorage.getItem('last_sid') || "", lastSnapshotData = [], middleQueue = [], nextCourtNumber = 1;
 
+        // --- 1. ปรับปรุงการโหลดข้อมูลเริ่มต้นใน window.onload ---
         window.onload = () => {
             if (currentSessionId) {
                 generateQR(currentSessionId);
                 listenToAttendance();
                 listenToMatches();
-                const sq = localStorage.getItem(`queue_${currentSessionId}`);
-                if(sq) { middleQueue = JSON.parse(sq); renderMiddleQueue(); }
-                loadCourtsFromLocal();
+                listenToSessionData(); // ✨ ฟังก์ชันใหม่สำหรับฟังข้อมูล คิว และ สนาม
+                // ลบส่วนที่ดึงจาก LocalStorage ออก เพราะเราจะใช้ listenToSessionData แทน
             }
             
-            // --- 1. สำหรับสลับที่สนาม (อันเดิม) ---
-                new Sortable(document.getElementById('main-grid'), { 
-                    animation: 150, 
-                    handle: '.court-header', 
-                    onEnd: saveCourtsToLocal 
-                });
+            new Sortable(document.getElementById('main-grid'), { 
+                animation: 150, 
+                handle: '.court-header', 
+                onEnd: saveCourtsToCloud // ✨ เปลี่ยนชื่อฟังก์ชัน
+            });
 
-                // --- 2. สำหรับสลับคิวกลาง (อันใหม่ที่เพิ่มเข้าไป) ---
-                new Sortable(document.getElementById('queue-list'), {
-                    animation: 150,
-                    //handle: '.drag-icon', // ลากได้เฉพาะตรงไอคอน ⠿
-                    ghostClass: 'sortable-ghost',
-                    onEnd: (evt) => {
-                        // ดึงข้อมูลออกมาจากตำแหน่งเดิม แล้วไปวางตำแหน่งใหม่ใน Array
-                        const item = middleQueue.splice(evt.oldIndex, 1)[0];
-                        middleQueue.splice(evt.newIndex, 0, item);
-                        
-                        saveQueue();        // บันทึกลงเครื่อง
-                        renderMiddleQueue(); // วาดเลข Q1, Q2 ใหม่ให้ถูกต้อง
-                    }
+            new Sortable(document.getElementById('queue-list'), {
+                animation: 150,
+                ghostClass: 'sortable-ghost',
+                onEnd: (evt) => {
+                    const item = middleQueue.splice(evt.oldIndex, 1)[0];
+                    middleQueue.splice(evt.newIndex, 0, item);
+                    saveQueue(); // ฟังก์ชันนี้จะอัปเดตขึ้น Firebase
+                    renderMiddleQueue();
+                }
+            });
+        };
+
+        // --- 2. ฟังก์ชันใหม่สำหรับ Sync ข้อมูล คิว และ สนาม แบบ Real-time ---
+        function listenToSessionData() {
+            onSnapshot(doc(db, "sessions", currentSessionId), (snap) => {
+                const data = snap.data();
+                if (!data) return;
+
+                // Sync คิวกลาง
+                if (data.middle_queue) {
+                    middleQueue = data.middle_queue;
+                    renderMiddleQueue();
+                }
+
+                // Sync ข้อมูลสนาม (เฉพาะกรณีที่เครื่องนี้ไม่ได้เป็นคนแก้เอง หรือเปิดมาครั้งแรก)
+                if (data.live_courts) {
+                    // เคลียร์สนามเก่าแล้ววาดใหม่ตาม Cloud
+                    document.getElementById('main-grid').innerHTML = '<div id="empty-msg" class="empty-msg" style="display:none">ไม่มีสนามที่กำลังใช้งาน</div>';
+                    data.live_courts.forEach(c => renderCourtUI(c));
+                    nextCourtNumber = data.live_courts.length > 0 ? Math.max(...data.live_courts.map(c => parseInt(c.courtNum))) + 1 : 1;
+                }
+            });
+        }
+
+        // --- 3. เปลี่ยน saveQueue ให้ส่งขึ้น Cloud ---
+        const saveQueue = async () => {
+            if(!currentSessionId) return;
+            try {
+                await updateDoc(doc(db, "sessions", currentSessionId), {
+                    middle_queue: middleQueue
                 });
-            };
+            } catch (e) {
+                console.error("Error saving queue:", e);
+            }
+        };
+
+        // --- 4. เปลี่ยนการบันทึกสนามให้ส่งขึ้น Cloud (แทน saveCourtsToLocal) ---
+        async function saveCourtsToCloud() {
+            if(!currentSessionId) return;
+            const courts = [];
+            document.querySelectorAll('.court-card').forEach(card => {
+                const slots = [];
+                card.querySelectorAll('.slot').forEach(s => slots.push({ 
+                    uid: s.dataset.uid || null, 
+                    html: s.innerHTML, 
+                    occupied: s.classList.contains('occupied') 
+                }));
+                courts.push({ 
+                    id: card.id, 
+                    courtNum: card.querySelector('select').value, 
+                    status: document.getElementById(`status-${card.id}`).innerText, 
+                    playing: card.classList.contains('playing'), 
+                    shuttle: document.getElementById(`shuttle-${card.id}`).innerText, 
+                    slots 
+                });
+            });
+            
+            try {
+                await updateDoc(doc(db, "sessions", currentSessionId), { 
+                    live_courts: courts 
+                });
+            } catch (e) {
+                console.error("Error saving courts:", e);
+            }
+        }
+
+        // --- 5. แก้ไขฟังก์ชันอื่นๆ ที่เคยเรียก saveCourtsToLocal ให้เรียก saveCourtsToCloud แทน ---
+        window.addNewCourt = () => {
+            document.getElementById('empty-msg').style.display = 'none';
+            const id = `c-${Date.now()}`;
+            renderCourtUI({ id, courtNum: nextCourtNumber++, status: "🟢 ว่าง", shuttle: "1", playing: false, slots: [{html:"ว่าง",occupied:false},{html:"ว่าง",occupied:false},{html:"ว่าง",occupied:false},{html:"ว่าง",occupied:false}] });
+            saveCourtsToCloud(); // ✨ เปลี่ยน
+        };
+
+        window.changeShuttle = (id, v) => { 
+            const el = document.getElementById(`shuttle-${id}`); 
+            let n = parseInt(el.innerText)+v; 
+            if(n>0) { 
+                el.innerText=n; 
+                saveCourtsToCloud(); // ✨ เปลี่ยน
+            } 
+        };
 
         // --- Session Management ---
         window.createSession = async () => {
@@ -298,12 +374,12 @@
             document.getElementById('main-grid').insertAdjacentHTML('beforeend', html);
         }
 
-        window.addNewCourt = () => {
+        /*window.addNewCourt = () => {
             document.getElementById('empty-msg').style.display = 'none';
             const id = `c-${Date.now()}`;
             renderCourtUI({ id, courtNum: nextCourtNumber++, status: "🟢 ว่าง", shuttle: "1", playing: false, slots: [{html:"ว่าง",occupied:false},{html:"ว่าง",occupied:false},{html:"ว่าง",occupied:false},{html:"ว่าง",occupied:false}] });
             saveCourtsToLocal();
-        };
+        };*/
 
         // --- Game Logic ---
         window.assignSlot = async (el, courtId) => {
@@ -645,8 +721,8 @@
             input.value = "";
         };
 
-        const saveQueue = () => localStorage.setItem(`queue_${currentSessionId}`, JSON.stringify(middleQueue));
-        window.changeShuttle = (id, v) => { const el = document.getElementById(`shuttle-${id}`); let n = parseInt(el.innerText)+v; if(n>0) { el.innerText=n; saveCourtsToLocal(); } };
+        //const saveQueue = () => localStorage.setItem(`queue_${currentSessionId}`, JSON.stringify(middleQueue));
+        //window.changeShuttle = (id, v) => { const el = document.getElementById(`shuttle-${id}`); let n = parseInt(el.innerText)+v; if(n>0) { el.innerText=n; saveCourtsToLocal(); } };
         window.updateBtn = () => { document.getElementById('confirmBtn').innerText = `ยืนยันลงสนาม (${selectedSlots.filter(s=>s).length})`; };
         window.generateQR = (id) => { document.getElementById("qrcode").innerHTML = ""; new QRCode(document.getElementById("qrcode"), { text: `https://early-bird-queue.vercel.app/index.html?session=${id}`, width: 50, height: 50 }); };
         window.expandQR = () => { document.getElementById('qr-big').innerHTML = ""; new QRCode(document.getElementById('qr-big'), { text: `https://early-bird-queue.vercel.app/profile.html?session=${currentSessionId}`, width: 200, height: 200 }); document.getElementById('sid-text').innerText = "Session ID: " + currentSessionId; document.getElementById('qr-overlay').style.display = 'flex'; };
