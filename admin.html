@@ -418,19 +418,6 @@
             }
         };
 
-        // --- Core Functions ---
-        /*async function saveCourtsToLocal() {
-            if(!currentSessionId) return;
-            const courts = [];
-            document.querySelectorAll('.court-card').forEach(card => {
-                const slots = [];
-                card.querySelectorAll('.slot').forEach(s => slots.push({ uid: s.dataset.uid || null, html: s.innerHTML, occupied: s.classList.contains('occupied') }));
-                courts.push({ id: card.id, courtNum: card.querySelector('select').value, status: document.getElementById(`status-${card.id}`).innerText, playing: card.classList.contains('playing'), shuttle: document.getElementById(`shuttle-${card.id}`).innerText, slots });
-            });
-            localStorage.setItem(`courts_${currentSessionId}`, JSON.stringify(courts));
-            await updateDoc(doc(db, "sessions", currentSessionId), { live_courts: courts });
-        }*/
-
         function loadCourtsFromLocal() {
             const data = localStorage.getItem(`courts_${currentSessionId}`);
             if(!data) return;
@@ -464,13 +451,6 @@
             </div>`;
             document.getElementById('main-grid').insertAdjacentHTML('beforeend', html);
         }
-
-        /*window.addNewCourt = () => {
-            document.getElementById('empty-msg').style.display = 'none';
-            const id = `c-${Date.now()}`;
-            renderCourtUI({ id, courtNum: nextCourtNumber++, status: "🟢 ว่าง", shuttle: "1", playing: false, slots: [{html:"ว่าง",occupied:false},{html:"ว่าง",occupied:false},{html:"ว่าง",occupied:false},{html:"ว่าง",occupied:false}] });
-            saveCourtsToLocal();
-        };*/
 
         // --- Game Logic ---
         window.assignSlot = async (el, courtId) => {
@@ -673,18 +653,60 @@
         };
 
         async function checkAndFillEmptyCourts() {
-            const empty = Array.from(document.querySelectorAll('.court-card')).find(c => !c.classList.contains('playing') && c.querySelectorAll('.occupied').length === 0);
-            if(empty && middleQueue.length > 0 && middleQueue[0].slots.filter(s=>s).length === 4) {
-                const q = middleQueue.shift(); const batch = writeBatch(db); const slots = empty.querySelectorAll('.slot');
-                q.slots.forEach((p, i) => {
-                    batch.update(doc(db, `sessions/${currentSessionId}/attendance`, p.id), { is_playing: true });
-                    const pd = lastSnapshotData.find(d => d.id === p.id);
-                    slots[i].innerHTML = `<span class="skill-dot lvl-${pd.data.skill_level}"></span> ${p.name}`;
-                    slots[i].dataset.uid = p.id; slots[i].classList.add('occupied');
-                });
-                await batch.commit(); saveQueue(); renderMiddleQueue(); renderFIFO(); saveCourtsToCloud();
+        // 1. หาสนามที่ว่าง (ไม่มีคนเล่นอยู่ และไม่มีคนจองใน slot)
+        const empty = Array.from(document.querySelectorAll('.court-card')).find(c => 
+            !c.classList.contains('playing') && 
+            Array.from(c.querySelectorAll('.slot')).every(s => !s.dataset.uid)
+        );
+
+        // 2. ถ้ามีสนามว่าง และมีคิวรอที่จัดครบ 4 คนแล้ว
+        if(empty && middleQueue.length > 0 && middleQueue[0].slots.filter(s => s).length === 4) {
+            const q = middleQueue.shift(); // ดึงคิวแรกออกมา
+            const batch = writeBatch(db);
+
+            // เตรียมข้อมูล slots ใหม่เพื่อส่งขึ้น Cloud
+            const updatedSlots = q.slots.map(p => {
+                const pd = lastSnapshotData.find(d => d.id === p.id);
+                const skill = pd ? pd.data.skill_level : 'yellow';
+                
+                // อัปเดตสถานะคนเล่นใน Attendance
+                batch.update(doc(db, `sessions/${currentSessionId}/attendance`, p.id), { is_playing: true });
+
+                return {
+                    uid: p.id,
+                    html: `<span class="skill-dot lvl-${skill}"></span> ${p.name}`,
+                    occupied: true
+                };
+            });
+
+            try {
+                // 3. อัปเดตคิวกลางที่เหลือกลับขึ้น Cloud
+                batch.update(doc(db, "sessions", currentSessionId), { middle_queue: middleQueue });
+                
+                // 4. บันทึกข้อมูลสนามนี้ลงใน live_courts บน Cloud
+                // เราต้องดึงข้อมูล live_courts ปัจจุบันมาแก้เฉพาะสนามที่ว่างนี้
+                const sessionSnap = await getDoc(doc(db, "sessions", currentSessionId));
+                const liveCourts = sessionSnap.data().live_courts || [];
+                
+                const courtIndex = liveCourts.findIndex(c => c.id === empty.id);
+                if (courtIndex !== -1) {
+                    liveCourts[courtIndex].slots = updatedSlots;
+                    liveCourts[courtIndex].status = "🟢 พร้อมเริ่มเกม";
+                    batch.update(doc(db, "sessions", currentSessionId), { live_courts: liveCourts });
+                }
+
+                await batch.commit();
+                
+                // ไม่ต้องสั่งวาด UI เองที่นี่! 
+                // เพราะ onSnapshot ใน listenToSessionData จะเห็นการเปลี่ยนแปลงแล้ววาดให้เองทุกเครื่อง
+                renderMiddleQueue(); 
+                renderFIFO();
+                
+            } catch (e) {
+                console.error("Error filling empty court:", e);
             }
         }
+    }
 
         // --- Database Listeners ---
         function listenToAttendance() {
@@ -812,8 +834,6 @@
             input.value = "";
         };
 
-        //const saveQueue = () => localStorage.setItem(`queue_${currentSessionId}`, JSON.stringify(middleQueue));
-        //window.changeShuttle = (id, v) => { const el = document.getElementById(`shuttle-${id}`); let n = parseInt(el.innerText)+v; if(n>0) { el.innerText=n; saveCourtsToLocal(); } };
         window.updateBtn = () => { document.getElementById('confirmBtn').innerText = `ยืนยันลงสนาม (${selectedSlots.filter(s=>s).length})`; };
         window.generateQR = (id) => { document.getElementById("qrcode").innerHTML = ""; new QRCode(document.getElementById("qrcode"), { text: `https://early-bird-queue.vercel.app/index.html?session=${id}`, width: 50, height: 50 }); };
         window.expandQR = () => { document.getElementById('qr-big').innerHTML = ""; new QRCode(document.getElementById('qr-big'), { text: `https://early-bird-queue.vercel.app/index.html?session=${currentSessionId}`, width: 200, height: 200 }); document.getElementById('sid-text').innerText = "Session ID: " + currentSessionId; document.getElementById('qr-overlay').style.display = 'flex'; };
