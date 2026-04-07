@@ -209,6 +209,8 @@
 
         // --- 2. ฟังก์ชันใหม่สำหรับ Sync ข้อมูล คิว และ สนาม แบบ Real-time ---
         function listenToSessionData() {
+            if (!currentSessionId) return;
+            
             onSnapshot(doc(db, "sessions", currentSessionId), (snap) => {
                 const data = snap.data();
                 if (!data) return;
@@ -219,16 +221,93 @@
                     renderMiddleQueue();
                 }
 
-                // Sync ข้อมูลสนาม (เฉพาะกรณีที่เครื่องนี้ไม่ได้เป็นคนแก้เอง หรือเปิดมาครั้งแรก)
+                // Sync ข้อมูลสนามแบบ Smart Update
                 if (data.live_courts) {
-                    // เคลียร์สนามเก่าแล้ววาดใหม่ตาม Cloud
-                    document.getElementById('main-grid').innerHTML = '<div id="empty-msg" class="empty-msg" style="display:none">ไม่มีสนามที่กำลังใช้งาน</div>';
-                    data.live_courts.forEach(c => renderCourtUI(c));
-                    nextCourtNumber = data.live_courts.length > 0 ? Math.max(...data.live_courts.map(c => parseInt(c.courtNum))) + 1 : 1;
+                    const mainGrid = document.getElementById('main-grid');
+                    const cloudIds = data.live_courts.map(c => c.id);
+
+                    // ลบสนามที่ไม่มีใน Cloud ออก (เครื่องอื่นกดลบ)
+                    document.querySelectorAll('.court-card').forEach(card => {
+                        if (!cloudIds.includes(card.id)) card.remove();
+                    });
+
+                    // อัปเดตหรือเพิ่มสนามใหม่
+                    data.live_courts.forEach(c => {
+                        const existingCard = document.getElementById(c.id);
+                        if (existingCard) {
+                            // มีสนามเดิมอยู่แล้ว -> อัปเดตแค่ข้อมูลข้างใน (ไม่กระพริบ)
+                            updateExistingCourtUI(existingCard, c);
+                        } else {
+                            // เป็นสนามใหม่ที่เพิ่งเพิ่มเข้ามา -> วาดใหม่
+                            renderCourtUI(c);
+                            // ซ่อนข้อความ "ไม่มีสนาม" ถ้ามีสนามงอกออกมา
+                            document.getElementById('empty-msg').style.display = 'none';
+                        }
+                    });
+
+                    // ถ้าไม่มีสนามเลย ให้โชว์ข้อความว่างเปล่า
+                    if (data.live_courts.length === 0) {
+                        document.getElementById('empty-msg').style.display = 'block';
+                    }
+
+                    // อัปเดตตัวเลขสนามถัดไป
+                    nextCourtNumber = data.live_courts.length > 0 
+                        ? Math.max(...data.live_courts.map(c => parseInt(c.courtNum))) + 1 
+                        : 1;
                 }
             });
         }
 
+        // --- 2. ฟังก์ชันอัปเดตข้อมูลในสนามเดิม (ป้องกันการ Re-render ทั้งแผง) ---
+        function updateExistingCourtUI(card, data) {
+            // 1. อัปเดตสถานะตัวอักษร
+            const statusEl = document.getElementById(`status-${data.id}`);
+            if (statusEl && statusEl.innerText !== data.status) {
+                statusEl.innerText = data.status;
+            }
+
+            // 2. อัปเดตสถานะการเล่น (สีของการ์ด)
+            if (data.playing) {
+                card.classList.add('playing');
+            } else {
+                card.classList.remove('playing');
+            }
+
+            // 3. สลับปุ่ม เริ่ม/จบเกม
+            const btnStart = document.getElementById(`btn-start-${data.id}`);
+            const btnEnd = document.getElementById(`btn-end-${data.id}`);
+            if (btnStart) btnStart.style.display = data.playing ? 'none' : 'block';
+            if (btnEnd) btnEnd.style.display = data.playing ? 'block' : 'none';
+
+            // 4. อัปเดตจำนวนลูกแบด
+            const shuttleEl = document.getElementById(`shuttle-${data.id}`);
+            if (shuttleEl) shuttleEl.innerText = data.shuttle || 1;
+
+            // 5. อัปเดตรายชื่อใน Slot (เช็ก UID เพื่อความแม่นยำ)
+            const slots = card.querySelectorAll('.slot');
+            if (data.slots && slots.length === data.slots.length) {
+                data.slots.forEach((s, i) => {
+                    const currentSlot = slots[i];
+                    // อัปเดตเฉพาะเมื่อข้อมูลเปลี่ยน
+                    if (currentSlot.dataset.uid !== (s.uid || '')) {
+                        currentSlot.innerHTML = s.html;
+                        currentSlot.dataset.uid = s.uid || '';
+                        
+                        if (s.occupied) {
+                            currentSlot.classList.add('occupied');
+                        } else {
+                            currentSlot.classList.remove('occupied');
+                        }
+                    }
+                });
+            }
+            
+            // 6. อัปเดตเลขสนามใน Dropdown (ถ้าเครื่องอื่นเปลี่ยนเลขสนาม)
+            const select = card.querySelector('select');
+            if (select && select.value !== data.courtNum.toString()) {
+                select.value = data.courtNum;
+            }
+        }
         // --- 3. เปลี่ยน saveQueue ให้ส่งขึ้น Cloud ---
         const saveQueue = async () => {
             if(!currentSessionId) return;
@@ -328,7 +407,7 @@
         };
 
         // --- Core Functions ---
-        async function saveCourtsToLocal() {
+        /*async function saveCourtsToLocal() {
             if(!currentSessionId) return;
             const courts = [];
             document.querySelectorAll('.court-card').forEach(card => {
@@ -338,7 +417,7 @@
             });
             localStorage.setItem(`courts_${currentSessionId}`, JSON.stringify(courts));
             await updateDoc(doc(db, "sessions", currentSessionId), { live_courts: courts });
-        }
+        }*/
 
         function loadCourtsFromLocal() {
             const data = localStorage.getItem(`courts_${currentSessionId}`);
@@ -353,8 +432,8 @@
             const opts = Array.from({length:10}, (_, i) => `<option value="${i+1}" ${i+1==c.courtNum?'selected':''}>สนาม ${i+1}</option>`).join('');
             const html = `<div class="court-card ${c.playing?'playing':''}" id="${c.id}">
                 <div class="court-header" style="display:flex; justify-content:space-between; margin-bottom:10px;">
-                    <select onchange="saveCourtsToLocal()">${opts}</select>
-                    <button onclick="this.closest('.court-card').remove(); saveCourtsToLocal();" style="color:red; background:none;">ลบ</button>
+                    <select onchange="saveCourtsToCloud()">${opts}</select>
+                    <button onclick="this.closest('.court-card').remove(); saveCourtsToCloud();" style="color:red; background:none;">ลบ</button>
                 </div>
                 <div id="status-${c.id}" style="font-size:0.8em; font-weight:bold; color:#666; margin-bottom:5px;">${c.status}</div>
                 <div style="display:flex; gap:8px;">
@@ -391,7 +470,7 @@
                 if(confirm("เอาออกจากสนาม?")) {
                     batch.update(doc(db, `sessions/${currentSessionId}/attendance`, oldUid), { is_playing: false });
                     await batch.commit(); el.innerText = "ว่าง"; el.classList.remove('occupied'); delete el.dataset.uid;
-                    saveCourtsToLocal(); renderFIFO();
+                    saveCourtsToCloud(); renderFIFO();
                 } return;
             }
             if (sIdx !== -1) {
@@ -401,7 +480,7 @@
                 const p = lastSnapshotData.find(d => d.id === selectedSlots[sIdx].id);
                 el.innerHTML = `<span class="skill-dot lvl-${p.data.skill_level}"></span> ${p.data.display_name}`;
                 el.dataset.uid = p.id; el.classList.add('occupied');
-                selectedSlots[sIdx] = null; saveCourtsToLocal(); renderFIFO();
+                selectedSlots[sIdx] = null; saveCourtsToCloud(); renderFIFO();
             }
         };
 
@@ -411,7 +490,7 @@
             card.classList.add('playing'); document.getElementById(`status-${id}`).innerText = "🎾 กำลังแข่ง";
             document.getElementById(`btn-start-${id}`).style.display = "none";
             document.getElementById(`btn-end-${id}`).style.display = "block";
-            saveCourtsToLocal();
+            saveCourtsToCloud();
         };
 
         window.handleEndGame = async (id) => {
@@ -433,7 +512,7 @@
             document.getElementById(`shuttle-${id}`).innerText = "1";
             document.getElementById(`btn-start-${id}`).style.display = "block";
             document.getElementById(`btn-end-${id}`).style.display = "none";
-            saveCourtsToLocal(); renderFIFO(); checkAndFillEmptyCourts();
+            saveCourtsToCloud(); renderFIFO(); checkAndFillEmptyCourts();
         };
 
         // --- Queue System ---
@@ -591,7 +670,7 @@
                     slots[i].innerHTML = `<span class="skill-dot lvl-${pd.data.skill_level}"></span> ${p.name}`;
                     slots[i].dataset.uid = p.id; slots[i].classList.add('occupied');
                 });
-                await batch.commit(); saveQueue(); renderMiddleQueue(); renderFIFO(); saveCourtsToLocal();
+                await batch.commit(); saveQueue(); renderMiddleQueue(); renderFIFO(); saveCourtsToCloud();
             }
         }
 
