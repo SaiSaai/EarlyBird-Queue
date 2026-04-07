@@ -181,6 +181,18 @@
 
         // --- 1. ปรับปรุงการโหลดข้อมูลเริ่มต้นใน window.onload ---
         window.onload = () => {
+            // 1. เช็กก่อนว่ามี ID ใน URL ไหม ถ้ามีให้เอาอันนั้น
+            const urlParams = new URLSearchParams(window.location.search);
+            const sessionFromUrl = urlParams.get('session');
+            
+            if (sessionFromUrl) {
+                currentSessionId = sessionFromUrl;
+                localStorage.setItem('last_sid', currentSessionId); // จำไว้ใช้ครั้งหน้าด้วย
+            } else {
+                // ถ้าไม่มีใน URL ค่อยไปเอาจาก LocalStorage ของเดิม
+                currentSessionId = localStorage.getItem('last_sid') || "";
+            }
+
             if (currentSessionId) {
                 generateQR(currentSessionId);
                 listenToAttendance();
@@ -804,7 +816,7 @@
         //window.changeShuttle = (id, v) => { const el = document.getElementById(`shuttle-${id}`); let n = parseInt(el.innerText)+v; if(n>0) { el.innerText=n; saveCourtsToLocal(); } };
         window.updateBtn = () => { document.getElementById('confirmBtn').innerText = `ยืนยันลงสนาม (${selectedSlots.filter(s=>s).length})`; };
         window.generateQR = (id) => { document.getElementById("qrcode").innerHTML = ""; new QRCode(document.getElementById("qrcode"), { text: `https://early-bird-queue.vercel.app/index.html?session=${id}`, width: 50, height: 50 }); };
-        window.expandQR = () => { document.getElementById('qr-big').innerHTML = ""; new QRCode(document.getElementById('qr-big'), { text: `https://early-bird-queue.vercel.app/profile.html?session=${currentSessionId}`, width: 200, height: 200 }); document.getElementById('sid-text').innerText = "Session ID: " + currentSessionId; document.getElementById('qr-overlay').style.display = 'flex'; };
+        window.expandQR = () => { document.getElementById('qr-big').innerHTML = ""; new QRCode(document.getElementById('qr-big'), { text: `https://early-bird-queue.vercel.app/index.html?session=${currentSessionId}`, width: 200, height: 200 }); document.getElementById('sid-text').innerText = "Session ID: " + currentSessionId; document.getElementById('qr-overlay').style.display = 'flex'; };
 
     </script>
 </body>
