@@ -656,58 +656,72 @@
             selectedSlots = [null,null,null,null]; saveQueue(); renderFIFO(); renderMiddleQueue(); checkAndFillEmptyCourts();
         };
 
-        async function checkAndFillEmptyCourts() {
+       async function checkAndFillEmptyCourts() {
         // 1. หาสนามที่ว่าง (ไม่มีคนเล่นอยู่ และไม่มีคนจองใน slot)
         const empty = Array.from(document.querySelectorAll('.court-card')).find(c => 
             !c.classList.contains('playing') && 
             Array.from(c.querySelectorAll('.slot')).every(s => !s.dataset.uid)
         );
 
-        // 2. ถ้ามีสนามว่าง และมีคิวรอที่จัดครบ 4 คนแล้ว
+        // 2. ถ้ามีสนามว่าง และมีคิวรอที่จัดครบ 4 คนแล้ว (คนในคิวแรกต้องไม่เป็น null)
         if(empty && middleQueue.length > 0 && middleQueue[0].slots.filter(s => s).length === 4) {
-            const q = middleQueue.shift(); // ดึงคิวแรกออกมา
+            
+            const q = middleQueue.shift(); // ดึงคิวแรกออกมาจาก Array ในเครื่องก่อน
             const batch = writeBatch(db);
-
-            // เตรียมข้อมูล slots ใหม่เพื่อส่งขึ้น Cloud
-            const updatedSlots = q.slots.map(p => {
-                const pd = lastSnapshotData.find(d => d.id === p.id);
-                const skill = pd ? pd.data.skill_level : 'yellow';
-                
-                // อัปเดตสถานะคนเล่นใน Attendance
-                batch.update(doc(db, `sessions/${currentSessionId}/attendance`, p.id), { is_playing: true });
-
-                return {
-                    uid: p.id,
-                    html: `<span class="skill-dot lvl-${skill}"></span> ${p.name}`,
-                    occupied: true
-                };
-            });
+            const sessionRef = doc(db, "sessions", currentSessionId);
 
             try {
-                // 3. อัปเดตคิวกลางที่เหลือกลับขึ้น Cloud
-                batch.update(doc(db, "sessions", currentSessionId), { middle_queue: middleQueue });
+                // 3. ดึงข้อมูลล่าสุดจาก Cloud เพื่อป้องกันการเขียนทับสนามอื่นที่เครื่องอื่นอาจเพิ่งเพิ่ม
+                const sessionSnap = await getDoc(sessionRef);
+                if (!sessionSnap.exists()) return;
+
+                const data = sessionSnap.data();
+                let liveCourts = data.live_courts || [];
                 
-                // 4. บันทึกข้อมูลสนามนี้ลงใน live_courts บน Cloud
-                // เราต้องดึงข้อมูล live_courts ปัจจุบันมาแก้เฉพาะสนามที่ว่างนี้
-                const sessionSnap = await getDoc(doc(db, "sessions", currentSessionId));
-                const liveCourts = sessionSnap.data().live_courts || [];
-                
+                // หา Index ของสนามว่างนี้ในข้อมูลจาก Cloud
                 const courtIndex = liveCourts.findIndex(c => c.id === empty.id);
+                
                 if (courtIndex !== -1) {
+                    // 4. เตรียมข้อมูล Slots และอัปเดตสถานะคนเล่น
+                    const updatedSlots = q.slots.map(p => {
+                        const pd = lastSnapshotData.find(d => d.id === p.id);
+                        const skill = pd ? pd.data.skill_level : 'yellow';
+                        
+                        // สั่งให้ทุกคนในกลุ่มนี้มีสถานะ "กำลังเล่น"
+                        batch.update(doc(db, `sessions/${currentSessionId}/attendance`, p.id), { 
+                            is_playing: true 
+                        });
+
+                        return {
+                            uid: p.id,
+                            html: `<span class="skill-dot lvl-${skill}"></span> ${p.name}`,
+                            occupied: true
+                        };
+                    });
+
+                    // 5. อัปเดตข้อมูลสนามนั้นๆ
                     liveCourts[courtIndex].slots = updatedSlots;
                     liveCourts[courtIndex].status = "🟢 พร้อมเริ่มเกม";
-                    batch.update(doc(db, "sessions", currentSessionId), { live_courts: liveCourts });
-                }
+                    liveCourts[courtIndex].playing = false;
 
-                await batch.commit();
-                
-                // ไม่ต้องสั่งวาด UI เองที่นี่! 
-                // เพราะ onSnapshot ใน listenToSessionData จะเห็นการเปลี่ยนแปลงแล้ววาดให้เองทุกเครื่อง
-                renderMiddleQueue(); 
-                renderFIFO();
-                
+                    // 6. ส่งข้อมูลที่อัปเดตแล้วทั้งหมด (ทั้งสนามและคิวที่เหลือ) ขึ้น Cloud ในครั้งเดียว
+                    batch.update(sessionRef, { 
+                        live_courts: liveCourts,
+                        middle_queue: middleQueue 
+                    });
+
+                    await batch.commit();
+                    
+                    // 7. อัปเดต UI ส่วนของคิวในเครื่องตัวเอง (ส่วนสนามปล่อยให้ listenToSessionData จัดการ)
+                    renderMiddleQueue(); 
+                    renderFIFO();
+                    console.log(`เติมคนลงสนาม ${liveCourts[courtIndex].courtNum} เรียบร้อยแล้ว`);
+                }
             } catch (e) {
                 console.error("Error filling empty court:", e);
+                // กรณี Error ให้ดึงคิวกลับมาใส่ที่เดิมเพื่อป้องกันข้อมูลหาย
+                middleQueue.unshift(q); 
+                renderMiddleQueue();
             }
         }
     }
