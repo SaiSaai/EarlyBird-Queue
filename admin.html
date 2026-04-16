@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="th">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,106 +9,293 @@
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
-        :root { 
-            --sidebar-width: 320px; /* ลดความกว้างลงเพื่อให้เหลือพื้นที่สนาม */
-            --primary-bg: #fdfcf0; --team-a: #a2d2ff; --team-b: #b9fbc0; --accent-red: #ffcfd2; --playing-bg: #f0fff4; 
-            --v-yellow: #FFD700; --v-green: #00C853; --v-blue: #2962FF; --v-red: #D50000; --v-black: #000000;
-        }
-        * { box-sizing: border-box; font-family: 'Kanit', sans-serif; }
-        body { 
-            background-color: var(--primary-bg); 
-            margin: 0; 
-            display: flex; 
-            height: 100vh; 
-            overflow: hidden; /* ล็อกหน้าจอไม่ให้ Scroll ทั้งหน้า */
-        }
-        
-        /* ปรับ Sidebar เป็นแนวตั้งแทน */
-        #left-sidebar-container { 
-            width: var(--sidebar-width); 
-            height: 100vh; 
-            display: flex; 
-            flex-direction: column; 
-            background: #fff; 
-            border-right: 2px solid #eee; 
-            flex-shrink: 0; 
-        }
-        .queue-split-area { 
-            display: flex; 
-            flex-direction: column; /* เปลี่ยนจาก row เป็น column */
-            flex: 1; 
-            min-height: 0; 
-        }
-        .side-panel { 
-            flex: 1; 
-            display: flex; 
-            flex-direction: column; 
-            padding: 10px; /* ลด padding */
-            overflow: hidden; 
+        :root {
+            --sidebar-width: 320px;
+            /* ลดความกว้างลงเพื่อให้เหลือพื้นที่สนาม */
+            --primary-bg: #fdfcf0;
+            --team-a: #a2d2ff;
+            --team-b: #b9fbc0;
+            --accent-red: #ffcfd2;
+            --playing-bg: #f0fff4;
+            --v-yellow: #FFD700;
+            --v-green: #00C853;
+            --v-blue: #2962FF;
+            --v-red: #D50000;
+            --v-black: #000000;
         }
 
-        .side-panel h3 { font-size: 1em; margin: 5px 0; }
+        * {
+            box-sizing: border-box;
+            font-family: 'Kanit', sans-serif;
+        }
+
+        body {
+            background-color: var(--primary-bg);
+            margin: 0;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+            /* ล็อกหน้าจอไม่ให้ Scroll ทั้งหน้า */
+        }
+
+        /* ปรับ Sidebar เป็นแนวตั้งแทน */
+        #left-sidebar-container {
+            width: var(--sidebar-width);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background: #fff;
+            border-right: 2px solid #eee;
+            flex-shrink: 0;
+        }
+
+        .queue-split-area {
+            display: flex;
+            flex-direction: column;
+            /* เปลี่ยนจาก row เป็น column */
+            flex: 1;
+            min-height: 0;
+        }
+
+        .side-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 10px;
+            /* ลด padding */
+            overflow: hidden;
+        }
+
+        .side-panel h3 {
+            font-size: 1em;
+            margin: 5px 0;
+        }
+
         /* พื้นที่หลักทางขวา */
-        .panel-main { 
-            flex: 1; 
-            padding: 15px; 
-            overflow-y: auto; /* ให้ Scroll เฉพาะฝั่งขวา */
-            display: flex; 
-            flex-direction: column; 
+        .panel-main {
+            flex: 1;
+            padding: 15px;
+            overflow-y: auto;
+            /* ให้ Scroll เฉพาะฝั่งขวา */
+            display: flex;
+            flex-direction: column;
             gap: 15px;
         }
-        .list-box { flex: 1; border: 1px solid #ddd; border-radius: 12px; overflow-y: auto; padding: 10px; background: #fafafa; }
-        
-        .player-item { padding: 10px; margin-bottom: 8px; border-radius: 10px; border: 2px solid #eee; background: white; cursor: pointer; font-weight: bold; display: flex; align-items: center; transition: 0.2s; }
-        .player-item:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.05); }
-        .skill-dot { display: inline-block; width: 14px; height: 14px; border-radius: 50%; border: 1px solid rgba(0,0,0,0.2); flex-shrink: 0; }
-        .lvl-yellow { background: var(--v-yellow); } .lvl-green { background: var(--v-green); } .lvl-blue { background: var(--v-blue); } .lvl-red { background: var(--v-red); } .lvl-black { background: var(--v-black); }
-        .sel-a { border-color: var(--team-a); background: #e7f3ff; } .sel-b { border-color: var(--team-b); background: #f0fff4; }
+
+        .list-box {
+            flex: 1;
+            border: 1px solid #ddd;
+            border-radius: 12px;
+            overflow-y: auto;
+            padding: 10px;
+            background: #fafafa;
+        }
+
+        .player-item {
+            padding: 10px;
+            margin-bottom: 8px;
+            border-radius: 10px;
+            border: 2px solid #eee;
+            background: white;
+            cursor: pointer;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            transition: 0.2s;
+        }
+
+        .player-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .skill-dot {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            border: 1px solid rgba(0, 0, 0, 0.2);
+            flex-shrink: 0;
+        }
+
+        .lvl-yellow {
+            background: var(--v-yellow);
+        }
+
+        .lvl-green {
+            background: var(--v-green);
+        }
+
+        .lvl-blue {
+            background: var(--v-blue);
+        }
+
+        .lvl-red {
+            background: var(--v-red);
+        }
+
+        .lvl-black {
+            background: var(--v-black);
+        }
+
+        .sel-a {
+            border-color: var(--team-a);
+            background: #e7f3ff;
+        }
+
+        .sel-b {
+            border-color: var(--team-b);
+            background: #f0fff4;
+        }
 
         /* ปรับ Grid สนามให้เล็กลงหน่อยเพื่อประหยัดพื้นที่ */
-        .courts-wrapper { 
-            display: grid; 
-            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); 
-            gap: 10px; 
+        .courts-wrapper {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 10px;
         }
-        .court-card { background: white; border-radius: 20px; padding: 15px; box-shadow: 0 8px 15px rgba(0,0,0,0.05); border-top: 10px solid #ccc; }
-        .court-card.playing { border-top-color: #4caf50; background: var(--playing-bg); }
-        .slot { background: white; padding: 10px; border-radius: 8px; font-size: 1.3em; font-weight: bold; border: 1px dashed #ccc; cursor: pointer; display: flex; align-items: center; gap: 8px; min-height: 42px; margin-bottom: 5px; overflow: hidden; }
-        .slot.occupied { border-style: solid; border-color: rgba(0,0,0,0.1); }
 
-        button { cursor: pointer; border: none; font-family: 'Kanit'; font-weight: 600; border-radius: 10px; transition: 0.2s; }
-        .btn-primary { background: #007bff; color: white; }
-        .btn-start { background: #4caf50; color: white; width: 100%; padding: 12px; margin-top: 8px; }
-        .btn-end { background: var(--accent-red); color: #d00; width: 100%; padding: 12px; margin-top: 8px; }
-        
+        .court-card {
+            background: white;
+            border-radius: 20px;
+            padding: 15px;
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.05);
+            border-top: 10px solid #ccc;
+        }
+
+        .court-card.playing {
+            border-top-color: #4caf50;
+            background: var(--playing-bg);
+        }
+
+        .slot {
+            background: white;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 1.3em;
+            font-weight: bold;
+            border: 1px dashed #ccc;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-height: 42px;
+            margin-bottom: 5px;
+            overflow: hidden;
+        }
+
+        .slot.occupied {
+            border-style: solid;
+            border-color: rgba(0, 0, 0, 0.1);
+        }
+
+        button {
+            cursor: pointer;
+            border: none;
+            font-family: 'Kanit';
+            font-weight: 600;
+            border-radius: 10px;
+            transition: 0.2s;
+        }
+
+        .btn-primary {
+            background: #007bff;
+            color: white;
+        }
+
+        .btn-start {
+            background: #4caf50;
+            color: white;
+            width: 100%;
+            padding: 12px;
+            margin-top: 8px;
+        }
+
+        .btn-end {
+            background: var(--accent-red);
+            color: #d00;
+            width: 100%;
+            padding: 12px;
+            margin-top: 8px;
+        }
+
         /* ปรับตารางประวัติให้กะทัดรัด */
-        .history-section { 
-            margin-top: 10px; 
-            padding: 15px; 
-            flex-shrink: 0; /* ไม่ให้ส่วนประวัติโดนบีบจนหาย */
+        .history-section {
+            margin-top: 10px;
+            padding: 15px;
+            flex-shrink: 0;
+            /* ไม่ให้ส่วนประวัติโดนบีบจนหาย */
         }
-        .history-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        .history-table td, .history-table th { 
-            padding: 8px 5px; 
-            font-size: 0.8em; 
+
+        .history-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
         }
-        
+
+        .history-table td,
+        .history-table th {
+            padding: 8px 5px;
+            font-size: 0.8em;
+        }
+
         /* สไตล์เพิ่มเติมสำหรับตารางประวัติ */
         .badge-court {
-            background: #444; color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.8em;
+            background: #444;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
         }
-        /* ชื่อทีมในประวัติให้เล็กลงเล็กน้อยแต่ยังอ่านง่าย */
-        .team-pill { 
-            padding: 2px 6px; 
-            font-size: 1.3em; 
-        }
-        .team-a-pill { background-color: var(--team-a); color: #004085; }
-        .team-b-pill { background-color: var(--team-b); color: #09440c; }
-        .vs-text { margin: 0 10px; font-weight: bold; color: #999; font-style: italic; }
-        .game-no { font-weight: bold; color: #666; }
 
-        #qr-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 9999; justify-content: center; align-items: center; }
-        .modal-content { background: white; padding: 25px; border-radius: 25px; text-align: center; }
+        /* ชื่อทีมในประวัติให้เล็กลงเล็กน้อยแต่ยังอ่านง่าย */
+        .team-pill {
+            padding: 2px 6px;
+            font-size: 1.3em;
+        }
+
+        .team-a-pill {
+            background-color: var(--team-a);
+            color: #004085;
+        }
+
+        .team-b-pill {
+            background-color: var(--team-b);
+            color: #09440c;
+        }
+
+        .vs-text {
+            margin: 0 10px;
+            font-weight: bold;
+            color: #999;
+            font-style: italic;
+        }
+
+        .game-no {
+            font-weight: bold;
+            color: #666;
+        }
+
+        #qr-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 25px;
+            border-radius: 25px;
+            text-align: center;
+        }
+
         /* สไตล์ตอนกำลังลากคิว */
         .sortable-ghost {
             opacity: 0.4;
@@ -116,15 +304,18 @@
         }
 
         .drag-handle {
-            touch-action: none; /* สำคัญมากสำหรับ iPad เพื่อให้ลากได้ลื่นไม่ติด Scroll จอ */
+            touch-action: none;
+            /* สำคัญมากสำหรับ iPad เพื่อให้ลากได้ลื่นไม่ติด Scroll จอ */
             user-select: none;
         }
 
         #queue-list {
-            min-height: 50px; /* ให้มีพื้นที่เหลือพอให้ลากมาวางได้ */
+            min-height: 50px;
+            /* ให้มีพื้นที่เหลือพอให้ลากมาวางได้ */
         }
     </style>
 </head>
+
 <body>
 
     <div id="left-sidebar-container">
@@ -132,7 +323,8 @@
             <div class="side-panel" style="border-bottom: 1px solid #eee;">
                 <h3>👥 คิวรอ (FIFO)</h3>
                 <div id="checkin-list" class="list-box"></div>
-                <button id="confirmBtn" class="btn-primary" style="width:100%; padding:14px; margin-top:8px; font-size:1em;">ยืนยันลงสนาม (0)</button>
+                <button id="confirmBtn" class="btn-primary"
+                    style="width:100%; padding:14px; margin-top:8px; font-size:1em;">ยืนยันลงสนาม (0)</button>
             </div>
             <div class="side-panel" style="background: #fffdf5;">
                 <h3>⏳ คิวกลาง</h3>
@@ -140,16 +332,22 @@
             </div>
         </div>
         <div style="padding: 10px; background: #f9f9f9; border-top: 1px solid #eee;">
-            <textarea id="bulk-paste-input" rows="2" placeholder="วางรายชื่อที่นี่..." style="width: 100%; border-radius: 8px; border: 1px solid #ddd; padding: 10px; font-size: 0.8em; resize: none;"></textarea>
-            <button onclick="importBulkPlayers()" style="width: 100%; padding: 10px; margin-top: 5px; background: #6f42c1; color: white;">🚀 นำเข้ารายชื่อ</button>
+            <textarea id="bulk-paste-input" rows="2" placeholder="วางรายชื่อที่นี่..."
+                style="width: 100%; border-radius: 8px; border: 1px solid #ddd; padding: 10px; font-size: 0.8em; resize: none;"></textarea>
+            <button onclick="importBulkPlayers()"
+                style="width: 100%; padding: 10px; margin-top: 5px; background: #6f42c1; color: white;">🚀
+                นำเข้ารายชื่อ</button>
         </div>
     </div>
 
     <div class="panel-main">
         <div style="display:flex; gap:12px; margin-bottom:20px; align-items: center;">
-            <button onclick="createSession()" style="background: #4caf50; color: white; padding: 12px 20px;">🚀 เปิดก๊วนใหม่</button>
-            <button onclick="addNewCourt()" style="background: #2196f3; color: white; padding: 12px 20px;">➕ เพิ่มสนาม</button>
-            <button onclick="terminateSession()" style="background: #ff4d4f; color: white; padding: 12px 20px;">🏁 จบก๊วน & ส่งสรุป</button>
+            <button onclick="createSession()" style="background: #4caf50; color: white; padding: 12px 20px;">🚀
+                เปิดก๊วนใหม่</button>
+            <button onclick="addNewCourt()" style="background: #2196f3; color: white; padding: 12px 20px;">➕
+                เพิ่มสนาม</button>
+            <button onclick="terminateSession()" style="background: #ff4d4f; color: white; padding: 12px 20px;">🏁
+                จบก๊วน & ส่งสรุป</button>
             <div id="qrcode" onclick="expandQR()" style="margin-left: auto; cursor: zoom-in;"></div>
         </div>
 
@@ -160,701 +358,276 @@
             <h3>📜 ประวัติการแข่งวันนี้</h3>
             <table class="history-table">
                 <thead>
-                    <tr><th>#</th><th>คู่แข่งขัน</th><th>เวลาจบ</th></tr>
+                    <tr>
+                        <th>#</th>
+                        <th>คู่แข่งขัน</th>
+                        <th>เวลาจบ</th>
+                    </tr>
                 </thead>
                 <tbody id="match-history-list"></tbody>
             </table>
         </div>
     </div>
 
-    <div id="qr-overlay" onclick="this.style.display='none'"><div class="modal-content"><h2>Scan QR!</h2><div id="qr-big" style="display:flex; justify-content:center; margin:20px 0;"></div><p id="sid-text"></p></div></div>
+    <div id="qr-overlay" onclick="this.style.display='none'">
+        <div class="modal-content">
+            <h2>Scan QR!</h2>
+            <div id="qr-big" style="display:flex; justify-content:center; margin:20px 0;"></div>
+            <p id="sid-text"></p>
+        </div>
+    </div>
+
+    จาก chatgpt
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { 
-            getFirestore, collection, doc, setDoc, onSnapshot, query, orderBy, 
-            updateDoc, writeBatch, increment, getDoc // <--- เพิ่ม getDoc ตรงนี้
+        import {
+            getFirestore, collection, doc, setDoc, onSnapshot,
+            query, orderBy, updateDoc, runTransaction, writeBatch, increment
         } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = { apiKey: "AIzaSyDQbnx83sbs1sO4xsuLUV50uxbBinr2VtY", authDomain: "earlybird-queue.firebaseapp.com", projectId: "earlybird-queue", storageBucket: "earlybird-queue.firebasestorage.app", messagingSenderId: "310694006567", appId: "1:310694006567:web:f56fc19ed03b81bf8c2302" };
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        let selectedSlots = [null, null, null, null], currentSessionId = localStorage.getItem('last_sid') || "", lastSnapshotData = [], middleQueue = [], nextCourtNumber = 1;
+        // ---------------- STATE ----------------
+        let currentSessionId = localStorage.getItem('last_sid') || "";
+        let selectedSlots = [null, null, null, null];
+        let middleQueue = [];
+        let lastSnapshotData = [];
+        let unsubAttendance = null;
+        let unsubMatches = null;
 
-        // --- 1. ปรับปรุงการโหลดข้อมูลเริ่มต้นใน window.onload ---
+        // ---------------- INIT ----------------
         window.onload = () => {
-            // 1. เช็กก่อนว่ามี ID ใน URL ไหม ถ้ามีให้เอาอันนั้น
-            const urlParams = new URLSearchParams(window.location.search);
-            const sessionFromUrl = urlParams.get('session');
-            
-            if (sessionFromUrl) {
-                currentSessionId = sessionFromUrl;
-                localStorage.setItem('last_sid', currentSessionId); // จำไว้ใช้ครั้งหน้าด้วย
-            } else {
-                // ถ้าไม่มีใน URL ค่อยไปเอาจาก LocalStorage ของเดิม
-                currentSessionId = localStorage.getItem('last_sid') || "";
-            }
-
-            if (currentSessionId) {
-                generateQR(currentSessionId);
-                listenToAttendance();
-                listenToMatches();
-                listenToSessionData(); // ✨ ฟังก์ชันใหม่สำหรับฟังข้อมูล คิว และ สนาม
-                // ลบส่วนที่ดึงจาก LocalStorage ออก เพราะเราจะใช้ listenToSessionData แทน
-            }
-            
-            new Sortable(document.getElementById('main-grid'), { 
-                animation: 150, 
-                handle: '.court-header', 
-                onEnd: saveCourtsToCloud // ✨ เปลี่ยนชื่อฟังก์ชัน
-            });
-
-            new Sortable(document.getElementById('queue-list'), {
-                animation: 150,
-                ghostClass: 'sortable-ghost',
-                onEnd: (evt) => {
-                    const item = middleQueue.splice(evt.oldIndex, 1)[0];
-                    middleQueue.splice(evt.newIndex, 0, item);
-                    saveQueue(); // ฟังก์ชันนี้จะอัปเดตขึ้น Firebase
-                    renderMiddleQueue();
-                }
-            });
-        };
-
-        // --- 2. ฟังก์ชันใหม่สำหรับ Sync ข้อมูล คิว และ สนาม แบบ Real-time ---
-        function listenToSessionData() {
             if (!currentSessionId) return;
-            
-            onSnapshot(doc(db, "sessions", currentSessionId), (snap) => {
-                const data = snap.data();
-                if (!data) return;
 
-                // Sync คิวกลาง
-                if (data.middle_queue) {
-                    middleQueue = data.middle_queue;
-                    renderMiddleQueue();
-                }
-
-                // Sync ข้อมูลสนามแบบ Smart Update
-                if (data.live_courts) {
-                    const mainGrid = document.getElementById('main-grid');
-                    const cloudIds = data.live_courts.map(c => c.id);
-
-                    // ลบสนามที่ไม่มีใน Cloud ออก (เครื่องอื่นกดลบ)
-                    document.querySelectorAll('.court-card').forEach(card => {
-                        if (!cloudIds.includes(card.id)) card.remove();
-                    });
-
-                    // อัปเดตหรือเพิ่มสนามใหม่
-                    data.live_courts.forEach(c => {
-                        const existingCard = document.getElementById(c.id);
-                        if (existingCard) {
-                            // มีสนามเดิมอยู่แล้ว -> อัปเดตแค่ข้อมูลข้างใน (ไม่กระพริบ)
-                            updateExistingCourtUI(existingCard, c);
-                        } else {
-                            // เป็นสนามใหม่ที่เพิ่งเพิ่มเข้ามา -> วาดใหม่
-                            renderCourtUI(c);
-                            // ซ่อนข้อความ "ไม่มีสนาม" ถ้ามีสนามงอกออกมา
-                            document.getElementById('empty-msg').style.display = 'none';
-                        }
-                    });
-
-                    // ถ้าไม่มีสนามเลย ให้โชว์ข้อความว่างเปล่า
-                    if (data.live_courts.length === 0) {
-                        document.getElementById('empty-msg').style.display = 'block';
-                    }
-
-                    // อัปเดตตัวเลขสนามถัดไป
-                    nextCourtNumber = data.live_courts.length > 0 
-                        ? Math.max(...data.live_courts.map(c => parseInt(c.courtNum))) + 1 
-                        : 1;
-                }
-            });
-        }
-
-        // --- 2. ฟังก์ชันอัปเดตข้อมูลในสนามเดิม (ป้องกันการ Re-render ทั้งแผง) ---
-        function updateExistingCourtUI(card, data) {
-            // 1. อัปเดตสถานะตัวอักษร
-            const statusEl = document.getElementById(`status-${data.id}`);
-            if (statusEl && statusEl.innerText !== data.status) {
-                statusEl.innerText = data.status;
-            }
-
-            // 2. อัปเดตสถานะการเล่น (สีของการ์ด)
-            if (data.playing) {
-                card.classList.add('playing');
-            } else {
-                card.classList.remove('playing');
-            }
-
-            // 3. สลับปุ่ม เริ่ม/จบเกม
-            const btnStart = document.getElementById(`btn-start-${data.id}`);
-            const btnEnd = document.getElementById(`btn-end-${data.id}`);
-            if (btnStart) btnStart.style.display = data.playing ? 'none' : 'block';
-            if (btnEnd) btnEnd.style.display = data.playing ? 'block' : 'none';
-
-            // 4. อัปเดตจำนวนลูกแบด
-            const shuttleEl = document.getElementById(`shuttle-${data.id}`);
-            if (shuttleEl) shuttleEl.innerText = data.shuttle || 1;
-
-            // 5. อัปเดตรายชื่อใน Slot (เช็ก UID เพื่อความแม่นยำ)
-            const slots = card.querySelectorAll('.slot');
-            if (data.slots && slots.length === data.slots.length) {
-                data.slots.forEach((s, i) => {
-                    const currentSlot = slots[i];
-                    // อัปเดตเฉพาะเมื่อข้อมูลเปลี่ยน
-                    if (currentSlot.dataset.uid !== (s.uid || '')) {
-                        currentSlot.innerHTML = s.html;
-                        currentSlot.dataset.uid = s.uid || '';
-                        
-                        if (s.occupied) {
-                            currentSlot.classList.add('occupied');
-                        } else {
-                            currentSlot.classList.remove('occupied');
-                        }
-                    }
-                });
-            }
-            
-            // 6. อัปเดตเลขสนามใน Dropdown (ถ้าเครื่องอื่นเปลี่ยนเลขสนาม)
-            const select = card.querySelector('select');
-            if (select && select.value !== data.courtNum.toString()) {
-                select.value = data.courtNum;
-            }
-        }
-        // --- 3. เปลี่ยน saveQueue ให้ส่งขึ้น Cloud ---
-        const saveQueue = async () => {
-            if(!currentSessionId) return;
-            try {
-                await updateDoc(doc(db, "sessions", currentSessionId), {
-                    middle_queue: middleQueue
-                });
-            } catch (e) {
-                console.error("Error saving queue:", e);
-            }
+            generateQR(currentSessionId);
+            loadLocal();
+            attachListeners();
         };
 
-        // --- 4. เปลี่ยนการบันทึกสนามให้ส่งขึ้น Cloud (แทน saveCourtsToLocal) ---
-        async function saveCourtsToCloud() {
-            if(!currentSessionId) return;
-            const courts = [];
-            document.querySelectorAll('.court-card').forEach(card => {
-                const slots = [];
-                card.querySelectorAll('.slot').forEach(s => slots.push({ 
-                    uid: s.dataset.uid || null, 
-                    html: s.innerHTML, 
-                    occupied: s.classList.contains('occupied') 
-                }));
-                courts.push({ 
-                    id: card.id, 
-                    courtNum: card.querySelector('select').value, 
-                    status: document.getElementById(`status-${card.id}`).innerText, 
-                    playing: card.classList.contains('playing'), 
-                    shuttle: document.getElementById(`shuttle-${card.id}`).innerText, 
-                    slots 
-                });
-            });
-            
-            try {
-                await updateDoc(doc(db, "sessions", currentSessionId), { 
-                    live_courts: courts 
-                });
-            } catch (e) {
-                console.error("Error saving courts:", e);
-            }
-        }
-
-        // --- 5. แก้ไขฟังก์ชันอื่นๆ ที่เคยเรียก saveCourtsToLocal ให้เรียก saveCourtsToCloud แทน ---
-        window.addNewCourt = () => {
-            document.getElementById('empty-msg').style.display = 'none';
-            const id = `c-${Date.now()}`;
-            renderCourtUI({ id, courtNum: nextCourtNumber++, status: "🟢 ว่าง", shuttle: "1", playing: false, slots: [{html:"ว่าง",occupied:false},{html:"ว่าง",occupied:false},{html:"ว่าง",occupied:false},{html:"ว่าง",occupied:false}] });
-            saveCourtsToCloud(); // ✨ เปลี่ยน
+        // ---------------- STORAGE ----------------
+        const saveLocal = () => {
+            localStorage.setItem(`ebq_queue_${currentSessionId}`, JSON.stringify(middleQueue));
         };
 
-        window.changeShuttle = (id, v) => { 
-            const el = document.getElementById(`shuttle-${id}`); 
-            let n = parseInt(el.innerText)+v; 
-            if(n>0) { 
-                el.innerText=n; 
-                saveCourtsToCloud(); // ✨ เปลี่ยน
-            } 
+        const loadLocal = () => {
+            const q = localStorage.getItem(`ebq_queue_${currentSessionId}`);
+            if (q) middleQueue = JSON.parse(q);
+            renderMiddleQueue();
         };
 
-        // --- Session Management ---
+        // ---------------- SESSION ----------------
         window.createSession = async () => {
-            if(currentSessionId && !confirm("เริ่มก๊วนใหม่? ข้อมูลปัจจุบันจะถูกเคลียร์")) return;
             const sid = "GS" + Date.now().toString().slice(-6);
             await setDoc(doc(db, "sessions", sid), { status: "active", created_at: Date.now() });
-            localStorage.setItem('last_sid', sid); location.reload();
+            localStorage.setItem('last_sid', sid);
+            location.reload();
         };
 
-        window.terminateSession = async () => {
-            if (lastSnapshotData.length === 0) return alert("ไม่มีข้อมูลสมาชิก");
+        // ---------------- LISTENERS ----------------
+        function attachListeners() {
+            if (unsubAttendance) unsubAttendance();
+            if (unsubMatches) unsubMatches();
 
-            // --- ✨ ส่วนที่เพิ่ม: สั่งให้จำสีของทุกคนที่มีอยู่ในก๊วนตอนนี้ลง Master List ---
-            lastSnapshotData.forEach(p => {
-                if (p.data.display_name && p.data.skill_level) {
-                    updateMasterSkill(p.data.display_name, p.data.skill_level);
+            unsubAttendance = onSnapshot(
+                query(collection(db, `sessions/${currentSessionId}/attendance`), orderBy("last_match_end", "asc")),
+                snap => {
+                    lastSnapshotData = snap.docs.map(d => ({ id: d.id, data: d.data() }));
+                    renderFIFO();
                 }
-            });
-            // -----------------------------------------------------------
+            );
 
-            const baseRate = 150; // ปรับค่าสนามพื้นฐานที่นี่
-            let totalShuttle = 0, totalExtra = 0, totalDiscount = 0;
-            lastSnapshotData.forEach(p => {
-                totalShuttle += (p.data.shuttle_used || 0);
-                totalExtra += (p.data.extra_cost || 0);
-                totalDiscount += (p.data.discount || 0);
-            });
-            const netTotal = (lastSnapshotData.length * baseRate) + totalExtra - totalDiscount;
-            const report = `📊 สรุปก๊วนวันนี้\n----------------\n👥 สมาชิก: ${lastSnapshotData.length} คน\n🏸 ลูกแบด: ${totalShuttle/4} ลูก\n💰 ยอดเพิ่ม: ${totalExtra} บ.\n💸 ส่วนลด: ${totalDiscount} บ.\n----------------\n💵 ยอดรวมสุทธิ: ${netTotal.toLocaleString()} บาท`;
-
-            if (confirm(report + "\n\nกดตกลงเพื่อ Copy รายงานและจบก๊วน")) {
-                await navigator.clipboard.writeText(report);
-                await updateDoc(doc(db, "sessions", currentSessionId), { status: "closed", summary: report });
-                localStorage.removeItem(`courts_${currentSessionId}`);
-                localStorage.removeItem(`queue_${currentSessionId}`);
-                alert("บันทึกระดับฝีมือทุกคนและคัดลอกรายงานแล้ว!");
-                location.reload();
-            }
-        };
-
-        function loadCourtsFromLocal() {
-            const data = localStorage.getItem(`courts_${currentSessionId}`);
-            if(!data) return;
-            const courts = JSON.parse(data);
-            if(courts.length > 0) document.getElementById('empty-msg').style.display = 'none';
-            courts.forEach(c => renderCourtUI(c));
-            nextCourtNumber = courts.length > 0 ? Math.max(...courts.map(c => parseInt(c.courtNum))) + 1 : 1;
+            unsubMatches = onSnapshot(
+                query(collection(db, `sessions/${currentSessionId}/matches`), orderBy("timestamp", "desc")),
+                snap => renderMatches(snap)
+            );
         }
 
-        function renderCourtUI(c) {
-            const opts = Array.from({length:10}, (_, i) => `<option value="${i+1}" ${i+1==c.courtNum?'selected':''}>สนาม ${i+1}</option>`).join('');
-            const html = `<div class="court-card ${c.playing?'playing':''}" id="${c.id}">
-                <div class="court-header" style="display:flex; justify-content:space-between; margin-bottom:10px;">
-                    <select onchange="saveCourtsToCloud()">${opts}</select>
-                    <button onclick="this.closest('.court-card').remove(); saveCourtsToCloud();" style="color:red; background:none;">ลบ</button>
-                </div>
-                <div id="status-${c.id}" style="font-size:0.8em; font-weight:bold; color:#666; margin-bottom:5px;">${c.status}</div>
-                <div style="display:flex; gap:8px;">
-                    <div style="flex:1; background:var(--team-a); padding:5px; border-radius:10px;">
-                        <div class="slot ${c.slots[0].occupied?'occupied':''}" data-uid="${c.slots[0].uid||''}" onclick="assignSlot(this, '${c.id}')">${c.slots[0].html}</div>
-                        <div class="slot ${c.slots[1].occupied?'occupied':''}" data-uid="${c.slots[1].uid||''}" onclick="assignSlot(this, '${c.id}')">${c.slots[1].html}</div>
-                    </div>
-                    <div style="flex:1; background:var(--team-b); padding:5px; border-radius:10px;">
-                        <div class="slot ${c.slots[2].occupied?'occupied':''}" data-uid="${c.slots[2].uid||''}" onclick="assignSlot(this, '${c.id}')">${c.slots[2].html}</div>
-                        <div class="slot ${c.slots[3].occupied?'occupied':''}" data-uid="${c.slots[3].uid||''}" onclick="assignSlot(this, '${c.id}')">${c.slots[3].html}</div>
-                    </div>
-                </div>
-                <div style="text-align:center; margin:8px 0; font-size:0.9em;">🏸 <button onclick="changeShuttle('${c.id}',-1)">-</button> <b id="shuttle-${c.id}">${c.shuttle||1}</b> <button onclick="changeShuttle('${c.id}',1)">+</button></div>
-                <button id="btn-start-${c.id}" class="btn-start" style="display:${c.playing?'none':'block'}" onclick="startMatch('${c.id}')">▶️ เริ่มเกม</button>
-                <button id="btn-end-${c.id}" class="btn-end" style="display:${c.playing?'block':'none'}" onclick="handleEndGame('${c.id}')">⏹️ จบเกม</button>
-            </div>`;
-            document.getElementById('main-grid').insertAdjacentHTML('beforeend', html);
-        }
-
-        // --- Game Logic ---
-        window.assignSlot = async (el, courtId) => {
-            const sIdx = selectedSlots.findIndex(p => p !== null);
-            const oldUid = el.dataset.uid;
-            const batch = writeBatch(db);
-
-            if (sIdx === -1 && oldUid) {
-                if(confirm("เอาออกจากสนาม?")) {
-                    batch.update(doc(db, `sessions/${currentSessionId}/attendance`, oldUid), { is_playing: false });
-                    await batch.commit(); el.innerText = "ว่าง"; el.classList.remove('occupied'); delete el.dataset.uid;
-                    saveCourtsToCloud(); renderFIFO();
-                } return;
-            }
-            if (sIdx !== -1) {
-                if (oldUid) batch.update(doc(db, `sessions/${currentSessionId}/attendance`, oldUid), { is_playing: false });
-                batch.update(doc(db, `sessions/${currentSessionId}/attendance`, selectedSlots[sIdx].id), { is_playing: true });
-                await batch.commit();
-                const p = lastSnapshotData.find(d => d.id === selectedSlots[sIdx].id);
-                el.innerHTML = `<span class="skill-dot lvl-${p.data.skill_level}"></span> ${p.data.display_name}`;
-                el.dataset.uid = p.id; el.classList.add('occupied');
-                selectedSlots[sIdx] = null; saveCourtsToCloud(); renderFIFO();
-            }
+        window.onbeforeunload = () => {
+            if (unsubAttendance) unsubAttendance();
+            if (unsubMatches) unsubMatches();
         };
 
-        window.startMatch = (id) => {
-            const card = document.getElementById(id);
-            if(card.querySelectorAll('.occupied').length === 0) return alert("ยังไม่มีคนในสนาม");
-            card.classList.add('playing'); document.getElementById(`status-${id}`).innerText = "🎾 กำลังแข่ง";
-            document.getElementById(`btn-start-${id}`).style.display = "none";
-            document.getElementById(`btn-end-${id}`).style.display = "block";
-            saveCourtsToCloud();
+        // ---------------- SAFE TEXT ----------------
+        const safeText = (str) => {
+            const div = document.createElement("div");
+            div.textContent = str || "";
+            return div.innerHTML;
         };
 
-        window.handleEndGame = async (id) => {
-            const card = document.getElementById(id);
-            const players = Array.from(card.querySelectorAll('.slot')).map(s => s.innerText.replace('ว่าง','').trim() || "-");
-            const batch = writeBatch(db);
-            
-            // บันทึกประวัติ
-            const mRef = doc(collection(db, `sessions/${currentSessionId}/matches`));
-            batch.set(mRef, { court: card.querySelector('select').value, teamA: [players[0], players[1]], teamB: [players[2], players[3]], timestamp: Date.now() });
-
-            const sUsed = parseInt(document.getElementById(`shuttle-${id}`).innerText);
-            card.querySelectorAll('.occupied').forEach(s => {
-                batch.update(doc(db, `sessions/${currentSessionId}/attendance`, s.dataset.uid), { is_playing: false, last_match_end: Date.now(), games_played: increment(1), shuttle_used: increment(sUsed) });
-                s.innerText = "ว่าง"; s.classList.remove('occupied'); delete s.dataset.uid;
-            });
-            await batch.commit();
-            card.classList.remove('playing'); document.getElementById(`status-${id}`).innerText = "🟢 ว่าง";
-            document.getElementById(`shuttle-${id}`).innerText = "1";
-            document.getElementById(`btn-start-${id}`).style.display = "block";
-            document.getElementById(`btn-end-${id}`).style.display = "none";
-            saveCourtsToCloud(); renderFIFO(); checkAndFillEmptyCourts();
-        };
-
-        // --- Queue System ---
-        // --- ส่วนที่ 1: แก้ไขฟังก์ชัน renderFIFO เพื่อจัดการชื่อซ้ำและแสดงจำนวนเกม ---
+        // ---------------- FIFO ----------------
         window.renderFIFO = () => {
-            const list = document.getElementById('checkin-list'); 
+            const list = document.getElementById('checkin-list');
             list.innerHTML = "";
-            
-            // 1. รวบรวม ID ของคนที่ "ถูกเลือกอยู่" ทั้งใน selectedSlots และใน middleQueue (คิวกลาง)
-            // เพื่อเอาไปกรองออก ไม่ให้ชื่อปรากฏซ้ำในคิวรอ
-            const selectedIds = selectedSlots.filter(s => s).map(s => s.id);
-            const inMiddleQueueIds = middleQueue.flatMap(q => q.slots.filter(s => s).map(s => s.id));
-            const excludedIds = [...selectedIds, ...inMiddleQueueIds];
+
+            const selectedIds = new Set(selectedSlots.filter(s => s).map(s => s.id));
+            const queueIds = new Set(middleQueue.flatMap(q => q.slots.map(s => s?.id)));
 
             lastSnapshotData.forEach(p => {
-                // เงื่อนไข: ต้องไม่กำลังแข่ง (is_playing) และไม่อยู่ในรายชื่อที่ถูกเลือก/คิวกลาง (excludedIds)
-                // ยกเว้น! ถ้าคนนั้นถูกเลือกอยู่ใน selectedSlots "ปัจจุบัน" ให้แสดงออกมาเพื่อให้กดเอาออกได้ (มีสีไฮไลต์)
-                const isCurrentlySelected = selectedIds.includes(p.id);
+                const d = p.data;
+                if (d.is_playing || d.is_paid) return;
 
-                if (!p.data.is_paid && !p.data.is_playing && (!excludedIds.includes(p.id) || isCurrentlySelected)) {
-                    const selIdx = selectedSlots.findIndex(s => s?.id === p.id);
-                    const div = document.createElement('div');
-                    
-                    let selectClass = "";
-                    if (selIdx !== -1) {
-                        selectClass = (selIdx < 2) ? " sel-a" : " sel-b";
-                    }
-                    
-                    // ดึงจำนวนเกม (ถ้าไม่มีให้เป็น 0)
-                    const games = p.data.games_played || 0;
+                if (queueIds.has(p.id) && !selectedIds.has(p.id)) return;
 
-                    div.className = "player-item" + selectClass;
-                    // เพิ่ม (G: ${games}) ต่อท้ายชื่อ
-                    div.innerHTML = `
-                        <span class="skill-dot lvl-${p.data.skill_level}" 
-                        onclick="event.stopPropagation(); promptChangeSkill('${p.id}', '${p.data.display_name}')" 
-                        style="cursor:pointer;"></span> 
-                        <span style="flex:1; margin-left:8px;">${p.data.display_name}</span>
-                        <span style="font-size:0.8em; color:#666;">(${games})</span>
-                    `;
-                    
-                    div.onclick = () => {
-                        const idx = selectedSlots.findIndex(s => s?.id === p.id);
-                        if(idx > -1) {
-                            selectedSlots[idx] = null;
-                        } else {
-                            const f = selectedSlots.indexOf(null);
-                            if(f > -1) {
-                                selectedSlots[f] = {id: p.id, name: p.data.display_name};
-                            }
-                        }
-                        renderFIFO(); 
-                        updateBtn();
-                        highlightInHistory(); 
-                    };
-                    list.appendChild(div);
-                }
-            });
-        };
+                const div = document.createElement('div');
+                div.className = "player-item";
 
-        // --- ส่วนที่ 2: ฟังก์ชัน Highlight ประวัติแบบ Multi-Selection แยกสีทีม ---
-        window.highlightInHistory = () => {
-            // 1. ล้างไฮไลต์เก่าทั้งหมดในตารางประวัติก่อน
-            document.querySelectorAll('.clickable-name').forEach(el => {
-                el.style.backgroundColor = ""; 
-                el.style.border = "none";
-                el.style.boxShadow = "none";
-                el.style.transform = "scale(1)";
-            });
+                const games = d.games_played || 0;
 
-            // 2. วนลูปเช็กชื่อจาก selectedSlots ทั้ง 4 ช่อง
-            selectedSlots.forEach((slot, index) => {
-                if (slot && slot.name) {
-                    const searchName = slot.name.trim();
-                    // กำหนดสีตามทีม: ช่อง 0,1 คือทีม A (น้ำเงิน) | ช่อง 2,3 คือทีม B (เขียว)
-                    const highlightColor = (index < 2) ? "#007bff" : "#28a745"; 
-                    const bgColor = (index < 2) ? "#e7f3ff" : "#f0fff4";
-
-                    // 3. ค้นหาชื่อที่ตรงกันในตารางประวัติ
-                    document.querySelectorAll('.clickable-name').forEach(el => {
-                        if (el.innerText.trim() === searchName) {
-                            el.style.border = `2px solid ${highlightColor}`;
-                            el.style.backgroundColor = bgColor;
-                            el.style.boxShadow = `0 0 8px ${highlightColor}66`; // ใส่ Glow อ่อนๆ
-                            el.style.transform = "scale(1.05)"; // ขยายขนาดเล็กน้อยให้เด่น
-                            el.style.transition = "0.2s";
-                        }
-                    });
-                }
-            });
-        };
-
-        window.promptChangeSkill = async (uid, name) => {
-            const newSkill = prompt(`เปลี่ยนระดับของ ${name} (yellow, green, blue, red):`, getSkillFromName(name));
-            if (newSkill && ['yellow', 'green', 'blue', 'red'].includes(newSkill.toLowerCase())) {
-                await changePlayerSkill(uid, name, newSkill.toLowerCase());
-            } else if (newSkill) {
-                alert("กรุณาใส่สี: yellow, green, blue หรือ red");
-            }
-        };
-
-        window.renderMiddleQueue = () => {
-            const list = document.getElementById('queue-list'); 
-            list.innerHTML = "";
-            
-            middleQueue.forEach((q, i) => {
-                const div = document.createElement('div'); 
-                div.className = "player-item drag-handle"; // เพิ่ม class สำหรับลาก
-                div.style.fontSize = "0.85em";
-                div.style.cursor = "grab";
-                div.dataset.index = i; // เก็บ index ไว้ใช้อ้างอิง
-
-                // สร้างข้อความรายชื่อในคิว (ทีม A vs ทีม B)
-                const p = q.slots;
                 div.innerHTML = `
-                    <div style="display:flex; justify-content:space-between; width:100%; align-items:center;">
-                        <span>
-                            <b style="color:#555;">Q${i+1}:</b> 
-                            ${p[0]?.name || '-'}+${p[1]?.name || '-'} 
-                            <span style="color:#f44336; font-weight:bold;"> VS </span> 
-                            ${p[2]?.name || '-'}+${p[3]?.name || '-'}
-                        </span>
-                        <span style="color:#ccc;">⠿</span> 
-                    </div>
-                `;
+        <span class="skill-dot lvl-${d.skill_level}"></span>
+        <span style="flex:1">${safeText(d.display_name)}</span>
+        <span>(${games})</span>
+        `;
 
-                // คลิกเพื่อดึงกลับมาแก้ไข (Optional: ถ้าลากแล้วไม่อยากให้คลิกโดนง่ายๆ ให้ใช้ double click แทนได้ครับ)
-                div.onclick = () => { 
-                    //if(confirm("ดึงคิวนี้กลับมาแก้ไข?")) {
-                        selectedSlots = [...q.slots]; 
-                        middleQueue.splice(i, 1); 
-                        saveQueue(); 
-                        renderMiddleQueue(); 
-                        renderFIFO(); 
-                        updateBtn();
-                    //}
-                };
+                div.onclick = () => toggleSelect(p);
+
                 list.appendChild(div);
             });
         };
 
-        document.getElementById('confirmBtn').onclick = () => {
-            if(!selectedSlots.filter(s => s).length) return;
-            middleQueue.push({slots: [...selectedSlots]});
-            selectedSlots = [null,null,null,null]; saveQueue(); renderFIFO(); renderMiddleQueue(); checkAndFillEmptyCourts();
-        };
+        function toggleSelect(player) {
+            const idx = selectedSlots.findIndex(s => s?.id === player.id);
 
-       async function checkAndFillEmptyCourts() {
-        // 1. หาสนามที่ว่าง (ไม่มีคนเล่นอยู่ และไม่มีคนจองใน slot)
-        const empty = Array.from(document.querySelectorAll('.court-card')).find(c => 
-            !c.classList.contains('playing') && 
-            Array.from(c.querySelectorAll('.slot')).every(s => !s.dataset.uid)
-        );
-
-        // 2. ถ้ามีสนามว่าง และมีคิวรอที่จัดครบ 4 คนแล้ว (คนในคิวแรกต้องไม่เป็น null)
-        if(empty && middleQueue.length > 0 && middleQueue[0].slots.filter(s => s).length === 4) {
-            
-            const q = middleQueue.shift(); // ดึงคิวแรกออกมาจาก Array ในเครื่องก่อน
-            const batch = writeBatch(db);
-            const sessionRef = doc(db, "sessions", currentSessionId);
-
-            try {
-                // 3. ดึงข้อมูลล่าสุดจาก Cloud เพื่อป้องกันการเขียนทับสนามอื่นที่เครื่องอื่นอาจเพิ่งเพิ่ม
-                const sessionSnap = await getDoc(sessionRef);
-                if (!sessionSnap.exists()) return;
-
-                const data = sessionSnap.data();
-                let liveCourts = data.live_courts || [];
-                
-                // หา Index ของสนามว่างนี้ในข้อมูลจาก Cloud
-                const courtIndex = liveCourts.findIndex(c => c.id === empty.id);
-                
-                if (courtIndex !== -1) {
-                    // 4. เตรียมข้อมูล Slots และอัปเดตสถานะคนเล่น
-                    const updatedSlots = q.slots.map(p => {
-                        const pd = lastSnapshotData.find(d => d.id === p.id);
-                        const skill = pd ? pd.data.skill_level : 'yellow';
-                        
-                        // สั่งให้ทุกคนในกลุ่มนี้มีสถานะ "กำลังเล่น"
-                        batch.update(doc(db, `sessions/${currentSessionId}/attendance`, p.id), { 
-                            is_playing: true 
-                        });
-
-                        return {
-                            uid: p.id,
-                            html: `<span class="skill-dot lvl-${skill}"></span> ${p.name}`,
-                            occupied: true
-                        };
-                    });
-
-                    // 5. อัปเดตข้อมูลสนามนั้นๆ
-                    liveCourts[courtIndex].slots = updatedSlots;
-                    liveCourts[courtIndex].status = "🟢 พร้อมเริ่มเกม";
-                    liveCourts[courtIndex].playing = false;
-
-                    // 6. ส่งข้อมูลที่อัปเดตแล้วทั้งหมด (ทั้งสนามและคิวที่เหลือ) ขึ้น Cloud ในครั้งเดียว
-                    batch.update(sessionRef, { 
-                        live_courts: liveCourts,
-                        middle_queue: middleQueue 
-                    });
-
-                    await batch.commit();
-                    
-                    // 7. อัปเดต UI ส่วนของคิวในเครื่องตัวเอง (ส่วนสนามปล่อยให้ listenToSessionData จัดการ)
-                    renderMiddleQueue(); 
-                    renderFIFO();
-                    console.log(`เติมคนลงสนาม ${liveCourts[courtIndex].courtNum} เรียบร้อยแล้ว`);
+            if (idx !== -1) {
+                selectedSlots[idx] = null;
+            } else {
+                const empty = selectedSlots.findIndex(s => s === null);
+                if (empty !== -1) {
+                    selectedSlots[empty] = { id: player.id, name: player.data.display_name };
                 }
-            } catch (e) {
-                console.error("Error filling empty court:", e);
-                // กรณี Error ให้ดึงคิวกลับมาใส่ที่เดิมเพื่อป้องกันข้อมูลหาย
-                middleQueue.unshift(q); 
-                renderMiddleQueue();
             }
-        }
-    }
 
-        // --- Database Listeners ---
-        function listenToAttendance() {
-            onSnapshot(query(collection(db, `sessions/${currentSessionId}/attendance`), orderBy("last_match_end", "asc")), snap => {
-                lastSnapshotData = snap.docs.map(d => ({ id: d.id, data: d.data() }));
-                
-                // ✨ เพิ่มบรรทัดนี้: ทุกครั้งที่ข้อมูลใน Firebase เปลี่ยน (เช่น หน้า Member เปลี่ยนสี)
-                // ให้หน้า Admin อัปเดต "สมุดรายชื่อ" ในเครื่องตัวเองทันที
-                lastSnapshotData.forEach(p => {
-                    if (p.data.display_name && p.data.skill_level) {
-                        updateMasterSkill(p.data.display_name, p.data.skill_level);
-                    }
-                });
-
-                renderFIFO();
-            });
+            renderFIFO();
+            updateBtn();
         }
 
-        // --- ส่วนที่ 3: ปรับปรุง listenToMatches เล็กน้อย (เพื่อให้แน่ใจว่าโหลดข้อมูลใหม่แล้วไฮไลต์ยังอยู่) ---
-        function listenToMatches() {
-            onSnapshot(query(collection(db, `sessions/${currentSessionId}/matches`), orderBy("timestamp", "desc")), snap => {
-                const list = document.getElementById('match-history-list');
-                list.innerHTML = "";
-                
-                snap.docs.forEach((doc, i) => {
-                    const m = doc.data();
-                    const time = new Date(m.timestamp).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
-                    const gameNumber = snap.size - i;
-//<td><span class="badge-court">สนาม ${m.court}</span></td>
-                    const row = `
-                        <tr>
-                            <td class="game-no">เกมที่ ${gameNumber}</td>
-                            <td>
-                                <div class="team-group">
-                                    <span class="team-pill team-a-pill clickable-name" onclick="highlightName('${m.teamA[0]}')">${m.teamA[0]}</span> + 
-                                    <span class="team-pill team-a-pill clickable-name" onclick="highlightName('${m.teamA[1]}')">${m.teamA[1]}</span>
-                                    <span class="vs-text">VS</span>
-                                    <span class="team-pill team-b-pill clickable-name" onclick="highlightName('${m.teamB[0]}')">${m.teamB[0]}</span> + 
-                                    <span class="team-pill team-b-pill clickable-name" onclick="highlightName('${m.teamB[1]}')">${m.teamB[1]}</span>
-                                </div>
-                            </td>
-                            <td style="color: #888; font-size: 0.8em; text-align: right;">${time} น.</td>
-                        </tr>
-                    `;
-                    list.insertAdjacentHTML('beforeend', row);
+        // ---------------- CONFIRM → QUEUE ----------------
+        document.getElementById('confirmBtn').onclick = () => {
+            if (selectedSlots.filter(s => s).length !== 4) return;
+
+            middleQueue.push({ slots: [...selectedSlots] });
+            selectedSlots = [null, null, null, null];
+
+            saveLocal();
+            renderMiddleQueue();
+            renderFIFO();
+
+            autoFillCourt(); // 🔥 auto flow
+        };
+
+        // ---------------- AUTO FILL ----------------
+        async function autoFillCourt() {
+            const emptyCourt = document.querySelector('.court-card:not(.playing)');
+            if (!emptyCourt) return;
+
+            if (!middleQueue.length) return;
+
+            const q = middleQueue.shift();
+            const slots = emptyCourt.querySelectorAll('.slot');
+
+            await runTransaction(db, async (tx) => {
+                q.slots.forEach((p, i) => {
+                    tx.update(doc(db, `sessions/${currentSessionId}/attendance`, p.id), {
+                        is_playing: true
+                    });
+
+                    slots[i].innerHTML = safeText(p.name);
+                    slots[i].classList.add('occupied');
+                    slots[i].dataset.uid = p.id;
                 });
-                // เมื่อข้อมูลประวัติโหลดเสร็จ ให้คงไฮไลต์ปัจจุบันไว้
-                highlightInHistory(); 
+            });
+
+            saveLocal();
+            renderMiddleQueue();
+        }
+
+        // ---------------- MATCH END ----------------
+        window.handleEndGame = async (id) => {
+            const card = document.getElementById(id);
+            const slots = card.querySelectorAll('.slot');
+
+            const batch = writeBatch(db);
+
+            slots.forEach(s => {
+                if (!s.dataset.uid) return;
+
+                batch.update(doc(db, `sessions/${currentSessionId}/attendance`, s.dataset.uid), {
+                    is_playing: false,
+                    games_played: increment(1),
+                    last_match_end: Date.now()
+                });
+
+                s.innerHTML = "ว่าง";
+                s.classList.remove('occupied');
+                delete s.dataset.uid;
+            });
+
+            await batch.commit();
+
+            autoFillCourt(); // 🔥 เล่นต่อทันที
+        };
+
+        // ---------------- QUEUE UI ----------------
+        window.renderMiddleQueue = () => {
+            const list = document.getElementById('queue-list');
+            list.innerHTML = "";
+
+            middleQueue.forEach((q, i) => {
+                const div = document.createElement('div');
+                div.className = "player-item";
+
+                const names = q.slots.map(s => s?.name || "-");
+
+                div.innerHTML = `
+        <b>Q${i + 1}</b> 
+        ${safeText(names[0])}+${safeText(names[1])}
+        VS
+        ${safeText(names[2])}+${safeText(names[3])}
+        `;
+
+                list.appendChild(div);
+            });
+        };
+
+        // ---------------- MATCH HISTORY ----------------
+        function renderMatches(snap) {
+            const list = document.getElementById('match-history-list');
+            list.innerHTML = "";
+
+            snap.docs.forEach(doc => {
+                const m = doc.data();
+
+                const row = `
+        <tr>
+            <td>${safeText(m.teamA.join(" + "))}</td>
+            <td>VS</td>
+            <td>${safeText(m.teamB.join(" + "))}</td>
+        </tr>
+        `;
+
+                list.insertAdjacentHTML('beforeend', row);
             });
         }
 
-        // เพิ่มฟังก์ชันนี้ลงใน <script> ของคุณ
-        window.highlightName = (name) => {
-            // ลบไฮไลต์เก่าทั้งหมดก่อน
-            document.querySelectorAll('.clickable-name').forEach(el => el.style.border = "none");
-            
-            // ค้นหาทุกชื่อที่ตรงกับที่กด แล้วใส่ Border เน้นให้เห็นชัด
-            document.querySelectorAll('.clickable-name').forEach(el => {
-                if(el.innerText.trim() === name.trim()) {
-                    el.style.border = "2px solid #ff0000"; // ขอบแดงเน้นชื่อ
-                    el.style.boxShadow = "0 0 5px rgba(255,0,0,0.5)";
-                }
+        // ---------------- UI ----------------
+        window.updateBtn = () => {
+            document.getElementById('confirmBtn').innerText =
+                `ยืนยัน (${selectedSlots.filter(s => s).length}/4)`;
+        };
+
+        // ---------------- QR ----------------
+        window.generateQR = (id) => {
+            document.getElementById("qrcode").innerHTML = "";
+            new QRCode(document.getElementById("qrcode"), {
+                text: `https://early-bird-queue.vercel.app/index.html?session=${id}`,
+                width: 60,
+                height: 60
             });
         };
-
-        // ดึงข้อมูล "สมุดรายชื่อ" จากเครื่อง
-        const getMasterList = () => JSON.parse(localStorage.getItem('player_master_list') || "{}");
-
-        // บันทึก/อัปเดตสีของชื่อนั้นๆ ลงในสมุดรายชื่อ
-        const updateMasterSkill = (name, skill) => {
-            if (!name) return; // กันพัง
-            const master = getMasterList();
-            master[name.toString().trim()] = skill; // trim ชื่อทิ้งช่องว่างเสมอ
-            localStorage.setItem('player_master_list', JSON.stringify(master));
-        };
-
-        // เช็กว่าชื่อนี้เคยมีสีอะไร ถ้าไม่มีให้คืนค่า 'yellow'
-        const getSkillFromName = (name) => {
-            if (!name) return 'yellow';
-            const master = getMasterList();
-            return master[name.toString().trim()] || 'yellow';
-        };
-        
-        // ตัวอย่าง: ถ้าคุณมีฟังก์ชันเปลี่ยนระดับฝีมือ
-        window.changePlayerSkill = async (uid, name, newSkill) => {
-            // 1. อัปเดตใน Firebase (ของปัจจุบัน)
-            await updateDoc(doc(db, `sessions/${currentSessionId}/attendance`, uid), {
-                skill_level: newSkill
-            });
-            
-            // 2. ✨ สั่งให้จำไว้ใช้ในครั้งหน้าด้วย!
-            updateMasterSkill(name, newSkill);
-            
-            alert(`จำระดับของ ${name} เป็นสี ${newSkill} แล้ว!`);
-        };
-
-        // --- Helper ---
-        window.importBulkPlayers = async () => {
-            const input = document.getElementById('bulk-paste-input');
-            const lines = input.value.trim().split('\n').map(l => l.replace(/^\d+\.\s*/, '').trim()).filter(n => n);
-            if(!lines.length) return;
-            
-            const batch = writeBatch(db); 
-            const now = Date.now();
-
-            lines.forEach((name, i) => {
-                const id = "m_" + now + i;
-                // ✨ จุดที่แก้: ไปดึงสีที่เคยจำไว้มาใช้ ถ้าไม่เจอจะเป็นสีเหลือง (yellow)
-                const rememberedSkill = getSkillFromName(name);
-                
-                batch.set(doc(db, `sessions/${currentSessionId}/attendance`, id), { 
-                    id, 
-                    display_name: name, 
-                    skill_level: rememberedSkill, // ใช้สีที่จำได้
-                    is_playing: false, 
-                    is_paid: true, //ให้สถานะเป็นจ่ายแล้วทันทีที่นำเข้า
-                    games_played: 0, 
-                    shuttle_used: 0, 
-                    last_match_end: now + i, 
-                    checkin_at: now 
-                });
-            });
-            
-            await batch.commit(); 
-            input.value = "";
-        };
-
-        window.updateBtn = () => { document.getElementById('confirmBtn').innerText = `ยืนยันลงสนาม (${selectedSlots.filter(s=>s).length})`; };
-        window.generateQR = (id) => { document.getElementById("qrcode").innerHTML = ""; new QRCode(document.getElementById("qrcode"), { text: `https://early-bird-queue.vercel.app/admin.html?session=${id}`, width: 50, height: 50 }); };
-        window.expandQR = () => { document.getElementById('qr-big').innerHTML = ""; new QRCode(document.getElementById('qr-big'), { text: `https://early-bird-queue.vercel.app/admin.html?session=${currentSessionId}`, width: 200, height: 200 }); document.getElementById('sid-text').innerText = "Session ID: " + currentSessionId; document.getElementById('qr-overlay').style.display = 'flex'; };
-
     </script>
 </body>
+
 </html>
