@@ -92,7 +92,7 @@
         }
 
         .player-item {
-            padding: 10px;
+            padding: 5px;
             margin-bottom: 8px;
             border-radius: 10px;
             border: 2px solid #eee;
@@ -605,7 +605,7 @@
                         onclick="event.stopPropagation(); promptChangeSkill('${p.id}', '${p.data.display_name}')" 
                         style="cursor:pointer;"></span> 
                         <span style="flex:1; margin-left:8px;">${p.data.display_name}</span>
-                        <span style="font-size:0.8em; color:#666;">(${games})</span>
+                        <span style="font-size:1.35em; color:#666;">(${games})</span>
                     `;
 
                     div.onclick = () => {
@@ -675,7 +675,7 @@
             middleQueue.forEach((q, i) => {
                 const div = document.createElement('div');
                 div.className = "player-item drag-handle"; // เพิ่ม class สำหรับลาก
-                div.style.fontSize = "0.85em";
+                div.style.fontSize = "1.35em";
                 div.style.cursor = "grab";
                 div.dataset.index = i; // เก็บ index ไว้ใช้อ้างอิง
 
