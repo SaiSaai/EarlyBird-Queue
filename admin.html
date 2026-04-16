@@ -92,7 +92,7 @@
         }
 
         .player-item {
-            padding: 5px;
+            padding: 8px;
             margin-bottom: 8px;
             border-radius: 10px;
             border: 2px solid #eee;
@@ -309,8 +309,14 @@
             user-select: none;
         }
         #queue-list {
-            min-height: 30px;
+            /*min-height: 30px;8/
             /* ให้มีพื้นที่เหลือพอให้ลากมาวางได้ */
+            max-height: 400px; /* ปรับความยาวตามต้องการ (เช่น 500px หรือ 600px) */
+            overflow-y: auto;  /* ถ้าคิวเกินความยาวที่กำหนด จะขึ้น Scrollbar ให้เลื่อนดู */
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 10px;
+            background: #f9f9f9;
         }
     </style>
 </head>
@@ -319,7 +325,7 @@
 
     <div id="left-sidebar-container">
         <div class="queue-split-area">
-            <div class="side-panel" style="border-bottom: 1px solid #eee; min-height: 40%;">
+            <div class="side-panel" style="border-bottom: 1px solid #eee;">
                 <h3>👥 คิวรอ (FIFO)</h3>
                 <div id="checkin-list" class="list-box"></div>
                 <button id="confirmBtn" class="btn-primary"
