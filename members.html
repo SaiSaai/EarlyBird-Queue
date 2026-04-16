@@ -219,7 +219,7 @@
                 <td>
                     <div class="edit-zone">
                         <span class="skill-dot lvl-${m.skill_level || 'yellow'}"></span>
-                        <input style=" font-size: 50pt;" type="text" value="${m.display_name}" onchange="updateMember('${m.id}', {display_name: this.value})">
+                        <input style=" font-size: 30pt;" type="text" value="${m.display_name}" onchange="updateMember('${m.id}', {display_name: this.value})">
                         <select onchange="updateMember('${m.id}', {skill_level: this.value})">
                             <option value="yellow" ${m.skill_level=='yellow'?'selected':''}>มือใหม่</option>
                             <option value="green" ${m.skill_level=='green'?'selected':''}>เบา</option>
