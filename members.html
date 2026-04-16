@@ -219,7 +219,7 @@
                 <td>
                     <div class="edit-zone">
                         <span class="skill-dot lvl-${m.skill_level || 'yellow'}"></span>
-                        <input style=" font-size: 30pt;" type="text" value="${m.display_name}" onchange="updateMember('${m.id}', {display_name: this.value})">
+                        <input style="font-size: 30pt;" type="text" value="${m.display_name}" onchange="updateMember('${m.id}', {display_name: this.value})">
                         <select onchange="updateMember('${m.id}', {skill_level: this.value})">
                             <option value="yellow" ${m.skill_level=='yellow'?'selected':''}>มือใหม่</option>
                             <option value="green" ${m.skill_level=='green'?'selected':''}>เบา</option>
@@ -234,7 +234,7 @@
                 <td style="text-align:center; color:#d32f2f; font-weight:bold;">${m.shuttle_used || 0}</td>
                 <td><input type="number" id="extra-${m.id}" value="${m.extra_cost || 0}" class="input-small" oninput="updateDebounced('${m.id}', 'extra_cost', this.value)"></td>
                 <td><input type="number" id="discount-${m.id}" value="${m.discount || 0}" class="input-small" oninput="updateDebounced('${m.id}', 'discount', this.value)"></td>
-                <td id="total-${m.id}" style="font-weight:bold; color:#1a73e8;">0</td>
+                <td id="total-${m.id}" style="font-weight:bold; color:#1a73e8; font-size: 20pt;">0</td>
                 <td>
                     <button onclick="togglePaid('${m.id}', ${!m.is_paid})" class="btn-paid ${m.is_paid ? 'is-paid' : ''}">
                         ${m.is_paid ? 'ยกเลิก' : 'จ่ายแล้ว'}
