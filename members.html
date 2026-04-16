@@ -288,61 +288,61 @@
         }
     };
 
-    window.terminateSession = async () => {
-        if (members.length === 0) return alert("ไม่มีข้อมูลสมาชิก");
+    // window.terminateSession = async () => {
+    //     if (members.length === 0) return alert("ไม่มีข้อมูลสมาชิก");
 
-        // ดึงราคาต่อหน่วยจาก Input ด้านบน
-        const courtRate = parseFloat(document.getElementById('court-per-person').value) || 0;
-        const shuttlePrice = parseFloat(document.getElementById('shuttle-price').value) || 0;
+    //     // ดึงราคาต่อหน่วยจาก Input ด้านบน
+    //     const courtRate = parseFloat(document.getElementById('court-per-person').value) || 0;
+    //     const shuttlePrice = parseFloat(document.getElementById('shuttle-price').value) || 0;
 
-        let totalShuttle = 0;
-        let totalExtra = 0;
-        let totalDiscount = 0;
-        let grandTotal = 0;
+    //     let totalShuttle = 0;
+    //     let totalExtra = 0;
+    //     let totalDiscount = 0;
+    //     let grandTotal = 0;
 
-        // วนลูปอ่านค่าจากหน้าจอ (DOM) โดยตรง
-        members.forEach(m => {
-            const extra = parseFloat(document.getElementById(`extra-${m.id}`)?.value) || 0;
-            const discount = parseFloat(document.getElementById(`discount-${m.id}`)?.value) || 0;
-            const shuttleCount = m.shuttle_used || 0;
+    //     // วนลูปอ่านค่าจากหน้าจอ (DOM) โดยตรง
+    //     members.forEach(m => {
+    //         const extra = parseFloat(document.getElementById(`extra-${m.id}`)?.value) || 0;
+    //         const discount = parseFloat(document.getElementById(`discount-${m.id}`)?.value) || 0;
+    //         const shuttleCount = m.shuttle_used || 0;
             
-            const playerTotal = courtRate + (shuttleCount * shuttlePrice) + extra - discount;
+    //         const playerTotal = courtRate + (shuttleCount * shuttlePrice) + extra - discount;
 
-            totalShuttle += shuttleCount;
-            totalExtra += extra;
-            totalDiscount += discount;
-            grandTotal += playerTotal;
+    //         totalShuttle += shuttleCount;
+    //         totalExtra += extra;
+    //         totalDiscount += discount;
+    //         grandTotal += playerTotal;
             
-            // อัปเดตสีฝีมือลง Master List (ถ้ามีฟังก์ชันนี้ในหน้านี้)
-            if (typeof updateMasterSkill === "function" && m.display_name && m.skill_level) {
-                updateMasterSkill(m.display_name, m.skill_level);
-            }
-        });
+    //         // อัปเดตสีฝีมือลง Master List (ถ้ามีฟังก์ชันนี้ในหน้านี้)
+    //         if (typeof updateMasterSkill === "function" && m.display_name && m.skill_level) {
+    //             updateMasterSkill(m.display_name, m.skill_level);
+    //         }
+    //     });
 
-        const report = `📊 สรุปก๊วนวันนี้\n----------------\n👥 สมาชิก: ${members.length} คน\n🏸 ลูกแบดรวม: ${totalShuttle}/4 ลูก\n💰 ยอดเพิ่มรวม: ${totalExtra.toLocaleString()} บ.\n💸 ส่วนลดรวม: ${totalDiscount.toLocaleString()} บ.\n----------------\n💵 ยอดสุทธิ: ${Math.round(grandTotal).toLocaleString()} บาท`;
+    //     //const report = `📊 สรุปก๊วนวันนี้\n----------------\n👥 สมาชิก: ${members.length} คน\n🏸 ลูกแบดรวม: ${totalShuttle}/4 ลูก\n💰 ยอดเพิ่มรวม: ${totalExtra.toLocaleString()} บ.\n💸 ส่วนลดรวม: ${totalDiscount.toLocaleString()} บ.\n----------------\n💵 ยอดสุทธิ: ${Math.round(grandTotal).toLocaleString()} บาท`;
 
-        if (confirm(report + "\n\n⚠️ คำเตือน: กดตกลงเพื่อปิดก๊วนและคัดลอกรายงาน (ชื่อในสนามและคิวจะหายไป)")) {
-            try {
-                await navigator.clipboard.writeText(report);
+    //     if (confirm(report + "\n\n⚠️ คำเตือน: กดตกลงเพื่อปิดก๊วนและคัดลอกรายงาน (ชื่อในสนามและคิวจะหายไป)")) {
+    //         try {
+    //             await navigator.clipboard.writeText(report);
                 
-                // ปิด Session ใน Firebase
-                await updateDoc(doc(db, "sessions", sessionId), { 
-                    status: "closed", 
-                    summary: report,
-                    closed_at: Date.now()
-                });
+    //             // ปิด Session ใน Firebase
+    //             await updateDoc(doc(db, "sessions", sessionId), { 
+    //                 status: "closed", 
+    //                 summary: report,
+    //                 closed_at: Date.now()
+    //             });
 
-                // ล้างคิวใน LocalStorage
-                localStorage.removeItem(`courts_${sessionId}`);
-                localStorage.removeItem(`queue_${sessionId}`);
+    //             // ล้างคิวใน LocalStorage
+    //             localStorage.removeItem(`courts_${sessionId}`);
+    //             localStorage.removeItem(`queue_${sessionId}`);
 
-                alert("ปิดก๊วนและคัดลอกรายงานแล้ว!");
-                window.location.href = "index.html"; // หรือหน้าแรกของคุณ
-            } catch (err) {
-                alert("เกิดข้อผิดพลาด: " + err.message);
-            }
-        }
-    };
+    //             alert("ปิดก๊วนและคัดลอกรายงานแล้ว!");
+    //             window.location.href = "index.html"; // หรือหน้าแรกของคุณ
+    //         } catch (err) {
+    //             alert("เกิดข้อผิดพลาด: " + err.message);
+    //         }
+    //     }
+    // };
 
     window.previewSummary = async () => {
         if (members.length === 0) return alert("ไม่มีข้อมูลสมาชิก");
@@ -374,7 +374,7 @@
             textDetail += `${index + 1}. ${m.display_name} ${statusEmoji} ${Math.round(playerTotal).toLocaleString()} บ.\n`;
         });
 
-        const report = `📊 สรุปยอดก๊วนแบด (อัปเดตล่าสุด)\n----------------------\n${textDetail}----------------------\n🏸 ลูกแบดรวม: ${totalShuttle} ลูก\n💰 ยอดรวมทั้งหมด: ${Math.round(grandTotal).toLocaleString()} บาท\n----------------------\n*หมายเหตุ: ✅=จ่ายแล้ว, ⏳=รอโอน*`;
+        const report = `📊 สรุปยอดก๊วนแบด (อัปเดตล่าสุด)\n----------------------\n${textDetail}----------------------\n🏸 ลูกแบดรวม: ${totalShuttle/4} ลูก\n💰 ยอดเพิ่มรวม: ${totalExtra.toLocaleString()} บ.\n💸 ส่วนลดรวม: ${totalDiscount.toLocaleString()} บ.\n----------------\n💵 ยอดรวมทั้งหมด: ${Math.round(grandTotal).toLocaleString()} บาท\n----------------------\n*หมายเหตุ: ✅=จ่ายแล้ว, ⏳=รอโอน*`;
 
         try {
             await navigator.clipboard.writeText(report);
