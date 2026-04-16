@@ -385,6 +385,7 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
+        let editingQueueIndex = null; // เพิ่มตัวแปรนี้เพื่อจำว่ากำลังแก้คิวลำดับที่เท่าไหร่
         let selectedSlots = [null, null, null, null], currentSessionId = localStorage.getItem('last_sid') || "", lastSnapshotData = [], middleQueue = [], nextCourtNumber = 1;
 
         window.onload = () => {
@@ -694,14 +695,20 @@
 
                 // คลิกเพื่อดึงกลับมาแก้ไข (Optional: ถ้าลากแล้วไม่อยากให้คลิกโดนง่ายๆ ให้ใช้ double click แทนได้ครับ)
                 div.onclick = () => {
-                    //if(confirm("ดึงคิวนี้กลับมาแก้ไข?")) {
+                    // 1. ดึงรายชื่อกลับมาที่ช่องเลือก (selectedSlots)
                     selectedSlots = [...q.slots];
-                    middleQueue.splice(i, 1);
-                    saveQueue();
-                    renderMiddleQueue();
+                    // 2. จำ Index ที่กำลังแก้ไข
+                    editingQueueIndex = i;
+
+                    // 3. เปลี่ยนสีปุ่มกดยืนยันให้รู้ว่ากำลัง "แก้ไข" ไม่ใช่ "เพิ่มใหม่"
+                    document.getElementById('confirmBtn').style.background = "#ff9800";
+                    document.getElementById('confirmBtn').innerText = `บันทึกการแก้ไข (Q${i + 1})`;
+
+                    //middleQueue.splice(i, 1); //
+                    //saveQueue(); //
+                    //renderMiddleQueue(); //
                     renderFIFO();
                     updateBtn();
-                    //}
                 };
                 list.appendChild(div);
             });
@@ -709,12 +716,24 @@
 
         document.getElementById('confirmBtn').onclick = async () => {
             if (!selectedSlots.filter(s => s).length) return;
+
+            if (editingQueueIndex !== null) {
+                // --- กรณีแก้ไข: บันทึกทับตำแหน่งเดิม ---
+                middleQueue[editingQueueIndex] = { slots: [...selectedSlots] };
+                editingQueueIndex = null; // เคลียร์สถานะการแก้ไข
+                document.getElementById('confirmBtn').style.background = ""; // คืนค่าสีปุ่ม
+            } else {
+                // --- กรณีเพิ่มใหม่: ต่อท้ายตามปกติ ---
+                middleQueue.push({ slots: [...selectedSlots] });
+            }
+
             // เพิ่มข้อมูลลงใน Array middleQueue
-            middleQueue.push({slots: [...selectedSlots]});
-            selectedSlots = [null, null, null, null]; 
-            await saveQueue(); 
-            renderFIFO(); 
-            renderMiddleQueue(); 
+            //middleQueue.push({ slots: [...selectedSlots] });
+            selectedSlots = [null, null, null, null];
+            await saveQueue();
+            renderFIFO();
+            renderMiddleQueue();
+            updateBtn();
             checkAndFillEmptyCourts();
         };
 
