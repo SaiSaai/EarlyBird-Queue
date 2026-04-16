@@ -308,13 +308,8 @@
             /* สำคัญมากสำหรับ iPad เพื่อให้ลากได้ลื่นไม่ติด Scroll จอ */
             user-select: none;
         }
-
-        #checkin-list {
-            min-height: 40%;
-            /* ให้มีพื้นที่เหลือพอให้ลากมาวางได้ */
-        }
         #queue-list {
-            min-height: 20%;
+            min-height: 30px;
             /* ให้มีพื้นที่เหลือพอให้ลากมาวางได้ */
         }
     </style>
@@ -326,7 +321,7 @@
         <div class="queue-split-area">
             <div class="side-panel" style="border-bottom: 1px solid #eee;">
                 <h3>👥 คิวรอ (FIFO)</h3>
-                <div id="checkin-list" class="list-box"></div>
+                <div id="checkin-list" class="list-box" style="min-height: 40%;"></div>
                 <button id="confirmBtn" class="btn-primary"
                     style="width:100%; padding:14px; margin-top:8px; font-size:1em;">ยืนยันลงสนาม (0)</button>
             </div>
