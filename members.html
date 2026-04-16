@@ -66,7 +66,7 @@
         </div>
     </div>
 
-    <table>
+    <table style="font-size: larger;">
         <thead>
             <tr>
                 <th>สมาชิก / ระดับ</th>
@@ -319,7 +319,7 @@
             }
         });
 
-        const report = `📊 สรุปก๊วนวันนี้\n----------------\n👥 สมาชิก: ${members.length} คน\n🏸 ลูกแบดรวม: ${totalShuttle/4} ลูก\n💰 ยอดเพิ่มรวม: ${totalExtra.toLocaleString()} บ.\n💸 ส่วนลดรวม: ${totalDiscount.toLocaleString()} บ.\n----------------\n💵 ยอดสุทธิ: ${Math.round(grandTotal).toLocaleString()} บาท`;
+        const report = `📊 สรุปก๊วนวันนี้\n----------------\n👥 สมาชิก: ${members.length} คน\n🏸 ลูกแบดรวม: ${totalShuttle}/4 ลูก\n💰 ยอดเพิ่มรวม: ${totalExtra.toLocaleString()} บ.\n💸 ส่วนลดรวม: ${totalDiscount.toLocaleString()} บ.\n----------------\n💵 ยอดสุทธิ: ${Math.round(grandTotal).toLocaleString()} บาท`;
 
         if (confirm(report + "\n\n⚠️ คำเตือน: กดตกลงเพื่อปิดก๊วนและคัดลอกรายงาน (ชื่อในสนามและคิวจะหายไป)")) {
             try {
