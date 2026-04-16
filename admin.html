@@ -707,10 +707,15 @@
             });
         };
 
-        document.getElementById('confirmBtn').onclick = () => {
+        document.getElementById('confirmBtn').onclick = async () => {
             if (!selectedSlots.filter(s => s).length) return;
-            middleQueue.push({ slots: [...selectedSlots] });
-            selectedSlots = [null, null, null, null]; saveQueue(); renderFIFO(); renderMiddleQueue(); checkAndFillEmptyCourts();
+            // เพิ่มข้อมูลลงใน Array middleQueue
+            middleQueue.push({slots: [...selectedSlots]});
+            selectedSlots = [null, null, null, null]; 
+            await saveQueue(); 
+            renderFIFO(); 
+            renderMiddleQueue(); 
+            checkAndFillEmptyCourts();
         };
 
         async function checkAndFillEmptyCourts() {
@@ -853,11 +858,25 @@
             input.value = "";
         };
 
-        const saveQueue = () => localStorage.setItem(`queue_${currentSessionId}`, JSON.stringify(middleQueue));
+        //const saveQueue = () => localStorage.setItem(`queue_${currentSessionId}`, JSON.stringify(middleQueue));
+        // แก้ไขฟังก์ชันนี้ในหน้า Admin
+        const saveQueue = async () => {
+            if (!currentSessionId) return;
+
+            // บันทึกลงเครื่องไว้สำรอง (Optional)
+            localStorage.setItem(`queue_${currentSessionId}`, JSON.stringify(middleQueue));
+
+            // 🔥 บันทึกขึ้น Firebase เพื่อให้หน้า Index และเครื่องอื่นเห็น
+            const sessionRef = doc(db, "sessions", currentSessionId);
+            await updateDoc(sessionRef, {
+                middle_queue: middleQueue
+            });
+        };
         window.changeShuttle = (id, v) => { const el = document.getElementById(`shuttle-${id}`); let n = parseInt(el.innerText) + v; if (n > 0) { el.innerText = n; saveCourtsToLocal(); } };
         window.updateBtn = () => { document.getElementById('confirmBtn').innerText = `ยืนยันลงสนาม (${selectedSlots.filter(s => s).length})`; };
         window.generateQR = (id) => { document.getElementById("qrcode").innerHTML = ""; new QRCode(document.getElementById("qrcode"), { text: `https://early-bird-queue.vercel.app/index.html?session=${id}`, width: 50, height: 50 }); };
         window.expandQR = () => { document.getElementById('qr-big').innerHTML = ""; new QRCode(document.getElementById('qr-big'), { text: `https://early-bird-queue.vercel.app/profile.html?session=${currentSessionId}`, width: 200, height: 200 }); document.getElementById('sid-text').innerText = "Session ID: " + currentSessionId; document.getElementById('qr-overlay').style.display = 'flex'; };
     </script>
 </body>
+
 </html>
