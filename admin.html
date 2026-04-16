@@ -309,11 +309,14 @@
             /* สำคัญมากสำหรับ iPad เพื่อให้ลากได้ลื่นไม่ติด Scroll จอ */
             user-select: none;
         }
+
         #queue-list {
             /*min-height: 30px;8/
             /* ให้มีพื้นที่เหลือพอให้ลากมาวางได้ */
-            max-height: 300px; /* ปรับความยาวตามต้องการ (เช่น 500px หรือ 600px) */
-            overflow-y: auto;  /* ถ้าคิวเกินความยาวที่กำหนด จะขึ้น Scrollbar ให้เลื่อนดู */
+            max-height: 300px;
+            /* ปรับความยาวตามต้องการ (เช่น 500px หรือ 600px) */
+            overflow-y: auto;
+            /* ถ้าคิวเกินความยาวที่กำหนด จะขึ้น Scrollbar ให้เลื่อนดู */
             border: 1px solid #ddd;
             border-radius: 8px;
             padding: 10px;
@@ -584,7 +587,12 @@
             // 1. รวบรวม ID ของคนที่ "ถูกเลือกอยู่" ทั้งใน selectedSlots และใน middleQueue (คิวกลาง)
             // เพื่อเอาไปกรองออก ไม่ให้ชื่อปรากฏซ้ำในคิวรอ
             const selectedIds = selectedSlots.filter(s => s).map(s => s.id);
-            const inMiddleQueueIds = middleQueue.flatMap(q => q.slots.filter(s => s).map(s => s.id));
+            //const inMiddleQueueIds = middleQueue.flatMap(q => q.slots.filter(s => s).map(s => s.id));
+            // 🔥 แก้จุดนี้: กรองชื่อจากคิวกลาง "ยกเว้น" คิวที่เรากำลังกดแก้ไขอยู่
+            const inMiddleQueueIds = middleQueue
+                .filter((q, index) => index !== editingQueueIndex) // ถ้า index ตรงกับที่กำลังแก้ ไม่ต้องเอามารวมในรายการชื่อที่ถูกแบน
+                .flatMap(q => q.slots.filter(s => s).map(s => s.id));
+
             const excludedIds = [...selectedIds, ...inMiddleQueueIds];
 
             lastSnapshotData.forEach(p => {
